@@ -1,0 +1,28 @@
+extends Node2D
+
+
+@export var Radius_dot = 2
+@export var Radius_impcat = 80
+@export var Dot_color = Color.YELLOW
+@export var Highlight_color = Color.GRAY
+
+@export var Highlighted = false
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	$CollisionShape2D.shape.radius = Radius_dot
+
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta):
+	pass
+
+
+func _draw():
+	draw_circle(Vector2(0,0),Radius_dot, Dot_color)
+	if Highlighted:
+		draw_circle(Vector2(0,0),Radius_dot *2, Highlight_color)
+
+func highlight():
+	Highlighted = true
+	queue_redraw()

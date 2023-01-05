@@ -10,6 +10,7 @@ var Connection_color = Color.DARK_GRAY
 
 var Focus_node_scene = preload("res://FocusCraft/FocusNode.tscn")
 var Connection_scene = preload("res://FocusCraft/Connection.tscn")
+#var Energie_dots_scene = preload("res://FocusCraft/EnergieDots.tscn")
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
@@ -22,11 +23,17 @@ func _ready():
 		focus_node_instance.position.y = randi_range(20, 580)
 		add_child(focus_node_instance)
 		
-		
+#	for n in range (0, 1000):
+#		var energie_dots_instance = Energie_dots_scene.instantiate()
+#		energie_dots_instance.position.x = randi_range(0, 600)
+#		energie_dots_instance.position.y = randi_range(0, 600)
+#		add_child(energie_dots_instance)
+#		
 
 func _draw():
 	if Input.is_action_pressed("left_mouse"):
 		draw_line(get_last_node().position, Conection_hover_position, Connection_color, 3)
+		draw_circle(get_viewport().get_mouse_position(), $StartNode.Radius_node, Connection_color)
 		
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
@@ -36,7 +43,7 @@ func _process(delta):
 		$RayCast2D.target_position = $RayCast2D.get_local_mouse_position()
 		var result = $RayCast2D.get_collider()
 		if result:
-			if result.is_in_group("connectable"):
+			if result.is_in_group("connectable") and !Connected_nodes.has(result):
 				Conection_hover_position = result.position
 				Conection_hover_Node = result
 				Connection_color = Color.GREEN
@@ -64,6 +71,7 @@ func add_new_connection(new_node):
 		var connection_instance = Connection_scene.instantiate()		
 		connection_instance.init(new_node.position, get_last_node().position)
 		add_child(connection_instance)
+		move_child(connection_instance, 0)
 		Conections.append(connection_instance)
 		
 		Connected_nodes.append(new_node)
