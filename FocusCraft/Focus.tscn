@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://FocusCraft/Focus.gd" id="1_7w1du"]
 [ext_resource type="PackedScene" uid="uid://docbr1dhq3udq" path="res://FocusCraft/FocusNode.tscn" id="2_thmlg"]
 
-[node name="Node2D" type="Node2D"]
+[node name="Focus" type="Node2D"]
 script = ExtResource("1_7w1du")
 
 [node name="StartNode" parent="." instance=ExtResource("2_thmlg")]
@@ -11,3 +11,4 @@ position = Vector2(300, 300)
 Node_color = Color(0.784314, 0.784314, 0.784314, 1)
 
 [node name="RayCast2D" type="RayCast2D" parent="."]
+collide_with_areas = true
