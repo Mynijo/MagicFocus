@@ -2,14 +2,14 @@
 
 [ext_resource type="Script" path="res://FocusCraft/FocusNode.gd" id="1_nxfdb"]
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_juao4"]
+[sub_resource type="CircleShape2D" id="CircleShape2D_jsg64"]
 
 [node name="Node2D" type="Area2D" groups=["connectable"]]
 script = ExtResource("1_nxfdb")
 Node_color = Color(1, 1, 1, 0.392157)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-shape = SubResource("CircleShape2D_juao4")
+shape = SubResource("CircleShape2D_jsg64")
 debug_color = Color(0, 0.6, 0.701961, 0.419608)
 
 [connection signal="mouse_entered" from="." to="." method="_on_mouse_entered"]
