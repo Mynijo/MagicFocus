@@ -5,6 +5,8 @@ var Conections = []
 var Conection_hover_position
 var Conection_hover_Node
 
+var All_nodes = []
+
 var Connection_color = Color.DARK_GRAY
 
 
@@ -16,20 +18,46 @@ var Energie_dots_scene = preload("res://FocusCraft/EnergieDots.tscn")
 func _ready():
 	$RayCast2D.position = $StartNode.position	
 	Connected_nodes.append($StartNode)
+	
+	for n in range (0, 10):
+		var pos
+		var flag_ok = false
+		while !flag_ok:
+			flag_ok = true
+			pos =  Vector2( randi_range(20, 580), randi_range(20, 580))
+			for i in All_nodes:				
+				if i.position.distance_to(pos) < 20 and $StartNode.position.distance_to(pos) < 20:
+					flag_ok = false
+					
+		var focus_node_instance = Focus_node_scene.instantiate()
+		focus_node_instance.position = pos
+		add_child(focus_node_instance)
+		All_nodes.append(focus_node_instance)
 		
 	for n in range (0, 100):
+		var pos
+		var flag_ok  = false
+		var flag_ok_2 = true
+		while !flag_ok:
+			pos =  Vector2( randi_range(0, 600), randi_range(0, 600) )
+			for i in All_nodes:
+				if i.position.distance_to(pos) < 80:
+					flag_ok_2 = true
+					for m in All_nodes:
+						if m.position.distance_to(pos) < 15 or $StartNode.position.distance_to(pos) < 15:
+							flag_ok_2 = false
+							break
+					if flag_ok_2:
+						flag_ok = true
+				
+			
 		var energie_dots_instance = Energie_dots_scene.instantiate()
-		energie_dots_instance.position.x = randi_range(0, 600)
-		energie_dots_instance.position.y = randi_range(0, 600)
+		energie_dots_instance.position = pos
 		if n > 60:
 			energie_dots_instance.Dot_color = Color.RED
 		add_child(energie_dots_instance)
 			
-	for n in range (0, 10):
-		var focus_node_instance = Focus_node_scene.instantiate()
-		focus_node_instance.position.x = randi_range(20, 580)
-		focus_node_instance.position.y = randi_range(20, 580)
-		add_child(focus_node_instance)
+
 
 func _draw():
 	if Input.is_action_pressed("left_mouse"):
