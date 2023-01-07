@@ -2,15 +2,31 @@
 
 [ext_resource type="Script" path="res://FocusCraft/FocusNode.gd" id="1_nxfdb"]
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_jsg64"]
+[sub_resource type="CircleShape2D" id="CircleShape2D_p77yb"]
 
 [node name="Node2D" type="Area2D" groups=["connectable"]]
 script = ExtResource("1_nxfdb")
-Node_color = Color(1, 1, 1, 0.392157)
+Node_color = Color(0.909804, 0.909804, 0.909804, 1)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-shape = SubResource("CircleShape2D_jsg64")
+shape = SubResource("CircleShape2D_p77yb")
 debug_color = Color(0, 0.6, 0.701961, 0.419608)
+
+[node name="ImpactArea" type="Area2D" parent="."]
+collision_layer = 2
+collision_mask = 2
+
+[node name="ImpactCone" type="CollisionPolygon2D" parent="ImpactArea"]
+rotation = 2.04204
+polygon = PackedVector2Array(-1, -1, 1, 1, 0, 0)
+
+[node name="Label" type="Label" parent="."]
+offset_left = -20.0
+offset_top = -35.0
+offset_right = 20.0
+offset_bottom = -12.0
 
 [connection signal="mouse_entered" from="." to="." method="_on_mouse_entered"]
 [connection signal="mouse_exited" from="." to="." method="_on_mouse_exited"]
+[connection signal="area_entered" from="ImpactArea" to="." method="_on_impact_area_area_entered"]
+[connection signal="area_exited" from="ImpactArea" to="." method="_on_impact_area_area_exited"]

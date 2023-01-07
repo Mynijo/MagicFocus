@@ -12,7 +12,12 @@ extends Node2D
 func _ready():
 	$CollisionShape2D.shape.radius = Radius_dot
 
-
+func claim(flag):
+	self.visible = !flag
+	$CollisionShape2D.disabled = flag
+	queue_redraw()
+	
+	
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
 	pass
@@ -21,8 +26,12 @@ func _process(delta):
 func _draw():
 	draw_circle(Vector2(0,0),Radius_dot, Dot_color)
 	if Highlighted:
-		draw_circle(Vector2(0,0),Radius_dot *2, Highlight_color)
+		draw_circle(Vector2(0,0),Radius_dot *3, Highlight_color)
 
-func highlight():
-	Highlighted = true
-	queue_redraw()
+func highlight(flag):
+	if Highlighted != flag:
+		Highlighted = flag
+		queue_redraw()
+
+func get_Dot_color():
+	return Dot_color

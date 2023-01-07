@@ -8,7 +8,7 @@ script = ExtResource("1_7w1du")
 
 [node name="StartNode" parent="." instance=ExtResource("2_thmlg")]
 position = Vector2(300, 300)
-Node_color = Color(0.784314, 0.784314, 0.784314, 1)
+Node_color = Color(0, 0, 0, 1)
 
 [node name="RayCast2D" type="RayCast2D" parent="."]
 collide_with_areas = true
