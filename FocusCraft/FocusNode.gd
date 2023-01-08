@@ -5,6 +5,10 @@ extends Area2D
 @export var Node_color = Color(255,0,0)
 
 
+var Default_node_color
+
+
+
 var Conecctions = []
 var Impacted_objects = []
 var Impact_cone_pos2
@@ -14,6 +18,7 @@ var Is_claimed = false
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
+	Default_node_color = Node_color
 	$CollisionShape2D.shape.radius = Radius_node
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -46,6 +51,13 @@ func set_hovered(flag):
 func get_conecctions():
 	return Conecctions
 	
+func remove_last_conection():
+	Conecctions.pop_back()
+	Is_hovered = false	
+	if Conecctions.size() != 2:
+		$ImpactArea/ImpactCone.polygon = [Vector2(0,0),Vector2(0,0),Vector2(0,0)]
+		release()
+			
 func add_conecction(conection):
 	Conecctions.append(conection)
 	if Conecctions.size() == 2:
@@ -57,6 +69,8 @@ func get_angle_from_points(pos1, pos2):
 	return direction_to_node1.angle_to(direction_to_node2)
 
 func get_impact_cone_angle():
+	if Impact_cone_pos2 == null and Conecctions.size() == 2:
+		Impact_cone_pos2 = Conecctions.back().position
 	return get_angle_from_points(Conecctions.front().get_conected_pos(position), Impact_cone_pos2)
 
 func calc_impact_shape():
@@ -81,6 +95,15 @@ func claim():
 	Is_claimed = true
 	for n in Impacted_objects:
 		n.claim(true)
+
+func release():
+	Is_claimed = false
+	stop_highlight_impact_cone()
+	Node_color = Default_node_color
+	for n in Impacted_objects:
+		n.claim(false)
+	Impacted_objects.clear()
+	queue_redraw()
 
 func highlight_impact_cone(pos2):
 	Impact_cone_pos2 = pos2	
@@ -108,7 +131,7 @@ func calc_node_color():
 		my_color = my_color / Impacted_objects.size()
 		Node_color = my_color
 	else:
-		Node_color = Color(255,255,255)
+		Node_color = Default_node_color
 
 func _on_impact_area_area_entered(area):
 	if !area.is_in_group("collectables"):

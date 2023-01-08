@@ -28,7 +28,6 @@ func init(node1, node2):
 	node2.add_conecction(self)
 	
 	
-		
 func get_conected_pos(pos):
 	if Conected_node_1.position == pos:
 		return Conected_node_2.position

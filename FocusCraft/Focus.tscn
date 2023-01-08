@@ -12,3 +12,16 @@ Node_color = Color(0, 0, 0, 1)
 
 [node name="RayCast2D" type="RayCast2D" parent="."]
 collide_with_areas = true
+
+[node name="Label" type="Label" parent="."]
+offset_right = 96.0
+offset_bottom = 49.0
+
+[node name="Button" type="Button" parent="."]
+offset_left = 579.0
+offset_top = 605.0
+offset_right = 616.0
+offset_bottom = 636.0
+text = "<--- "
+
+[connection signal="pressed" from="Button" to="." method="_on_button_pressed"]

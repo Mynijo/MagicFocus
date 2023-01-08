@@ -15,6 +15,7 @@ func _ready():
 func claim(flag):
 	self.visible = !flag
 	$CollisionShape2D.disabled = flag
+	Highlighted = false
 	queue_redraw()
 	
 	
