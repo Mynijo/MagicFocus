@@ -26,7 +26,7 @@ func _ready():
 	
 
 #Inly fast and dirty, dont look
-func creat_new_focus():
+func creat_new_focus(shake_flag = false):
 	for n in range (0, 10):
 		var pos
 		var flag_ok = false
@@ -36,12 +36,14 @@ func creat_new_focus():
 			for i in All_nodes:				
 				if i.position.distance_to(pos) < 60 or $StartNode.position.distance_to(pos) < 100:
 					flag_ok = false
+		if !shake_flag:	
+			var focus_node_instance = Focus_node_scene.instantiate()
+			focus_node_instance.position = pos
+			add_child(focus_node_instance)
+			All_nodes.append(focus_node_instance)
+		else:
+			All_nodes[n].position = pos
 					
-		var focus_node_instance = Focus_node_scene.instantiate()
-		focus_node_instance.position = pos
-		add_child(focus_node_instance)
-		All_nodes.append(focus_node_instance)
-		
 	for n in range (0, 100):
 		var pos
 		var flag_ok  = false
@@ -58,13 +60,15 @@ func creat_new_focus():
 					if flag_ok_2:
 						flag_ok = true
 				
-			
-		var energie_dots_instance = Energie_dots_scene.instantiate()
-		energie_dots_instance.position = pos
+		if !shake_flag:
+			var energie_dots_instance = Energie_dots_scene.instantiate()
+			energie_dots_instance.position = pos
+			add_child(energie_dots_instance)
+			All_dos.append(energie_dots_instance)
+		else:
+			All_dos[n].position = pos
 		if n > 60:
-			energie_dots_instance.Dot_color = Color.RED
-		add_child(energie_dots_instance)
-		All_dos.append(energie_dots_instance)
+			All_dos[n].Dot_color = Color.RED
 	
 
 
@@ -149,9 +153,23 @@ func back():
 	if Conections.size() > 0:
 		$RayCast2D.add_exception(Conections.back())
 	
-	
+func reset():
+	for i in range(0,Conections.size()):
+		back()	
 
+func shake():
+	reset()
+	creat_new_focus(true)
+	
 
 func _on_button_pressed():
 	back()
 
+
+
+func _on_button_2_pressed():
+	reset()
+
+
+func _on_button_3_pressed():
+	shake()
