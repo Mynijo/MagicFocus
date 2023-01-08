@@ -82,8 +82,18 @@ func _process(delta):
 	var counter_dos = 0
 	for n in All_nodes:
 		counter_dos += n.Impacted_objects.size()
-		
 	$Label.text = str(counter_dos) + " / " + str(All_dos.size())
+		
+	var connection_length = 0
+	for n in Conections:
+		connection_length += n.Length
+	if Input.is_action_pressed("left_mouse"):
+		if Conection_hover_position != null:
+			connection_length += (Conection_hover_position.distance_to(get_last_node().position))
+		else:
+			connection_length += (get_viewport().get_mouse_position().distance_to(get_last_node().position))
+	$Mana.text = "Mana: " + str(int(connection_length))
+		
 	
 func _physics_process(delta):
 	var mouse_pos = get_viewport().get_mouse_position()

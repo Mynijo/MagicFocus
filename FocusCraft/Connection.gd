@@ -2,6 +2,7 @@ extends Area2D
 
 var Conected_node_1
 var Conected_node_2
+var Length
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
@@ -26,6 +27,8 @@ func init(node1, node2):
 	
 	node1.add_conecction(self)
 	node2.add_conecction(self)
+		
+	Length = node1.position.distance_to(node2.position)
 	
 	
 func get_conected_pos(pos):
