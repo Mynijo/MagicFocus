@@ -11,6 +11,17 @@ func _ready():
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
 	pass
+		
+func sort_object_counter():
+	if Object_counter.size() <= 1:
+		return
+	Object_counter.sort_custom(
+		func(a: Node, b: Node): return a.Obj_counter > b.Obj_counter
+	)
+	for node in Object_counter:
+		remove_child(node)
+	for node in Object_counter:
+		add_child(node)
 	
 func set_FocusNode(node):	
 	var dup_node = node.duplicate()
@@ -32,3 +43,4 @@ func set_FocusNode(node):
 			object_counter_instance.increase_counter()
 			add_child(object_counter_instance)
 			Object_counter.append(object_counter_instance)
+	sort_object_counter()

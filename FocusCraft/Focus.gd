@@ -6,6 +6,8 @@ var Conection_hover_position
 var Conection_hover_Node
 
 var Focus_size = 500
+var Focus_max_node = 20
+var Focus_max_dots = 200
 
 var All_nodes = []
 var All_dos = []
@@ -27,7 +29,7 @@ func _ready():
 
 #Inly fast and dirty, dont look
 func creat_new_focus(shake_flag = false):
-	for n in range (0, 10):
+	for n in range (0, Focus_max_node):
 		var pos
 		var flag_ok = false
 		while !flag_ok:
@@ -44,7 +46,7 @@ func creat_new_focus(shake_flag = false):
 		else:
 			All_nodes[n].position = pos
 					
-	for n in range (0, 100):
+	for n in range (0, Focus_max_dots):
 		var pos
 		var flag_ok  = false
 		var flag_ok_2 = true
@@ -67,8 +69,10 @@ func creat_new_focus(shake_flag = false):
 			All_dos.append(energie_dots_instance)
 		else:
 			All_dos[n].position = pos
-		if n > 60:
+		if (n % 2) == 0:
 			All_dos[n].Dot_color = Color.RED
+		if (n % 3) == 0:
+			All_dos[n].Dot_color = Color.BLUE
 	
 
 

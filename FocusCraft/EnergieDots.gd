@@ -36,3 +36,9 @@ func highlight(flag):
 
 func get_Dot_color():
 	return Dot_color
+	
+func reset():
+	position = Vector2(0,0)
+	visible = true
+	Highlighted = false
+	

@@ -7,9 +7,12 @@ offset_right = 40.0
 offset_bottom = 40.0
 script = ExtResource("1_k41ja")
 
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 2
+
+[node name="Icon" type="CenterContainer" parent="CenterContainer"]
+layout_mode = 2
+
 [node name="Count" type="Label" parent="."]
 layout_mode = 2
 text = "0"
-
-[node name="Icon" type="CenterContainer" parent="."]
-layout_mode = 2

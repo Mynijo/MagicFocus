@@ -17,8 +17,8 @@ func _process(delta):
 
 func set_type(type):
 	var my_type = type.duplicate()
-	my_type.position = Vector2(0,0)
-	$Icon.add_child(my_type)
+	my_type.reset()
+	$CenterContainer/Icon.add_child(my_type)
 	if type.is_in_group("dots"):
 		Object_sub_type = type.get_Dot_color()
 		$Count.set_modulate(type.get_Dot_color())
