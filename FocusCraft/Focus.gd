@@ -146,6 +146,8 @@ func add_new_connection(new_node):
 		$RayCast2D.clear_exceptions()
 		$RayCast2D.add_exception(connection_instance)
 		
+		$FocusSummary.set_Focus(self)
+		
 func back():
 	if Conections.size() == 0:
 		return
@@ -157,6 +159,8 @@ func back():
 	var connection = Conections.back()
 	Conections.pop_back()
 	connection.queue_free()
+	
+	$FocusSummary.set_Focus(self)
 	
 	$RayCast2D.clear_exceptions()
 	$RayCast2D.position = get_last_node().position
