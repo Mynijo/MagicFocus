@@ -1,0 +1,149 @@
+[gd_scene load_steps=3 format=3 uid="uid://s4bvrxnj3b6g"]
+
+[ext_resource type="Script" path="res://FocusLexicon/SpellSummary.gd" id="1_mcvee"]
+[ext_resource type="Texture2D" uid="uid://dkrmk5th427j1" path="res://FocusCraft/FocusCore/ElementalSpells/Spell.png" id="2_dyox0"]
+
+[node name="SpellSummary" type="Node2D"]
+script = ExtResource("1_mcvee")
+
+[node name="MainContainer" type="VBoxContainer" parent="."]
+offset_right = 307.0
+offset_bottom = 497.0
+
+[node name="SpellName" type="Label" parent="MainContainer"]
+layout_mode = 2
+text = "Spell Name"
+horizontal_alignment = 1
+
+[node name="CenterContainer" type="CenterContainer" parent="MainContainer"]
+layout_mode = 2
+
+[node name="SpellIcon" type="TextureRect" parent="MainContainer/CenterContainer"]
+clip_contents = true
+custom_minimum_size = Vector2(100, 100)
+layout_mode = 2
+texture = ExtResource("2_dyox0")
+expand_mode = 2
+stretch_mode = 3
+
+[node name="SpellCombination" type="HBoxContainer" parent="MainContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MainContainer/SpellCombination"]
+layout_mode = 2
+text = "SpellCombo:"
+
+[node name="SpellDescription" type="Label" parent="MainContainer"]
+layout_mode = 2
+text = "Description:"
+
+[node name="SpellValuesLabel" type="Label" parent="MainContainer"]
+layout_mode = 2
+text = "Modifier"
+horizontal_alignment = 1
+
+[node name="ModContainer" type="HBoxContainer" parent="MainContainer"]
+layout_mode = 2
+
+[node name="AttackModContainer" type="VBoxContainer" parent="MainContainer/ModContainer"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+
+[node name="Dmg" type="HBoxContainer" parent="MainContainer/ModContainer/AttackModContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MainContainer/ModContainer/AttackModContainer/Dmg"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+text = "Dmg:"
+
+[node name="Value" type="Label" parent="MainContainer/ModContainer/AttackModContainer/Dmg"]
+layout_mode = 2
+text = "0"
+horizontal_alignment = 2
+
+[node name="Max_targes" type="HBoxContainer" parent="MainContainer/ModContainer/AttackModContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MainContainer/ModContainer/AttackModContainer/Max_targes"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+text = "Targets:"
+
+[node name="Value" type="Label" parent="MainContainer/ModContainer/AttackModContainer/Max_targes"]
+layout_mode = 2
+text = "0"
+horizontal_alignment = 2
+
+[node name="Debuffs" type="HBoxContainer" parent="MainContainer/ModContainer/AttackModContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MainContainer/ModContainer/AttackModContainer/Debuffs"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+text = "Debuffs:"
+
+[node name="Value" type="Label" parent="MainContainer/ModContainer/AttackModContainer/Debuffs"]
+layout_mode = 2
+text = "0"
+horizontal_alignment = 2
+
+[node name="SpacerModContainer" type="VBoxContainer" parent="MainContainer/ModContainer"]
+custom_minimum_size = Vector2(20, 0)
+layout_mode = 2
+
+[node name="DefModContainer" type="VBoxContainer" parent="MainContainer/ModContainer"]
+layout_mode = 2
+
+[node name="Mana" type="HBoxContainer" parent="MainContainer/ModContainer/DefModContainer"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MainContainer/ModContainer/DefModContainer/Mana"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+text = "Mana:"
+
+[node name="Value" type="Label" parent="MainContainer/ModContainer/DefModContainer/Mana"]
+layout_mode = 2
+text = "0"
+horizontal_alignment = 2
+
+[node name="Shield" type="HBoxContainer" parent="MainContainer/ModContainer/DefModContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MainContainer/ModContainer/DefModContainer/Shield"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+text = "Shield:"
+
+[node name="Value" type="Label" parent="MainContainer/ModContainer/DefModContainer/Shield"]
+layout_mode = 2
+text = "0"
+horizontal_alignment = 2
+
+[node name="Health" type="HBoxContainer" parent="MainContainer/ModContainer/DefModContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MainContainer/ModContainer/DefModContainer/Health"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+text = "Health:"
+
+[node name="Value" type="Label" parent="MainContainer/ModContainer/DefModContainer/Health"]
+layout_mode = 2
+text = "0"
+horizontal_alignment = 2
+
+[node name="Buffs" type="HBoxContainer" parent="MainContainer/ModContainer/DefModContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MainContainer/ModContainer/DefModContainer/Buffs"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+text = "Buffs:"
+
+[node name="Value" type="Label" parent="MainContainer/ModContainer/DefModContainer/Buffs"]
+layout_mode = 2
+text = "0"
+horizontal_alignment = 2

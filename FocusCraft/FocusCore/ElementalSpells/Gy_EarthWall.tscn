@@ -1,0 +1,12 @@
+[gd_scene load_steps=3 format=3 uid="uid://cabw35066dcyj"]
+
+[ext_resource type="PackedScene" uid="uid://crhid412j7mrw" path="res://FocusCraft/FocusCore/Spell.tscn" id="1_vgiy2"]
+[ext_resource type="Texture2D" uid="uid://ci0jmhdjtnrs5" path="res://FocusCraft/FocusCore/ElementalSpells/Shield.jpg" id="2_25lsi"]
+
+[node name="Node2D" instance=ExtResource("1_vgiy2")]
+Color_combination = Array[Color]([Color(0.745098, 0.745098, 0.745098, 1)])
+SpellName = "EarthWall"
+Shield_mod = [Color(0.745098, 0.745098, 0.745098, 1), 1, 2]
+
+[node name="Icon" parent="." index="0"]
+texture = ExtResource("2_25lsi")

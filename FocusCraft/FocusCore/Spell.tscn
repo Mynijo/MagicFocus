@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3 uid="uid://crhid412j7mrw"]
+
+[ext_resource type="Script" path="res://FocusCraft/FocusCore/Spell.gd" id="1_mo0ej"]
+[ext_resource type="Texture2D" uid="uid://dkrmk5th427j1" path="res://FocusCraft/FocusCore/ElementalSpells/Spell.png" id="2_33vef"]
+
+[node name="Spell" type="Node2D"]
+script = ExtResource("1_mo0ej")
+
+[node name="Icon" type="TextureRect" parent="."]
+texture = ExtResource("2_33vef")

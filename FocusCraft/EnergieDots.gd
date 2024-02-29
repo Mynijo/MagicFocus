@@ -3,7 +3,7 @@ extends Node2D
 @export var object_type = "dot"
 @export var Radius_dot = 2
 @export var Radius_impcat = 80
-@export var Dot_color = Color.YELLOW
+@export var Dot_color = Color.WHITE
 @export var Highlight_color = Color.GRAY
 
 @export var Highlighted = false

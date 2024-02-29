@@ -2,14 +2,11 @@ extends Area2D
 
 @export var Radius_node = 10
 @export var Radius_impcat = 80
-@export var Node_color = Color(255,0,0)
+@export var Node_color : Color = Color.WHITE
 
+var Default_node_color = Color.WHITE
 
-var Default_node_color
-
-
-
-var Conecctions = []
+var Connections = []
 var Impacted_objects = []
 var Impact_cone_pos2
 
@@ -29,7 +26,7 @@ func _draw():
 	draw_circle(Vector2(0,0),Radius_node, Node_color)
 	if Is_hovered or Is_claimed:
 		draw_arc(Vector2(0,0),Radius_impcat, 0, PI*2,500, Color(255,255,255))
-	if Conecctions.size() == 2 or (Conecctions.size() == 1 and Impact_cone_pos2 != null):
+	if Connections.size() == 2 or (Connections.size() == 1 and Impact_cone_pos2 != null):
 		var angle = get_impact_cone_angle()
 		if angle > 0:
 			draw_arc(Vector2(0,0),Radius_impcat,0,  2*PI-angle,500,Node_color,3)
@@ -48,19 +45,19 @@ func set_hovered(flag):
 	Is_hovered = flag
 	queue_redraw()
 
-func get_conecctions():
-	return Conecctions
+func get_Connections():
+	return Connections
 	
 func remove_last_conection():
-	Conecctions.pop_back()
+	Connections.pop_back()
 	Is_hovered = false	
-	if Conecctions.size() != 2:
+	if Connections.size() != 2:
 		$ImpactArea/ImpactCone.polygon = [Vector2(0,0),Vector2(0,0),Vector2(0,0)]
 		release()
 			
-func add_conecction(conection):
-	Conecctions.append(conection)
-	if Conecctions.size() == 2:
+func add_connection(conection):
+	Connections.append(conection)
+	if Connections.size() == 2:
 		claim()
 
 func get_angle_from_points(pos1, pos2):
@@ -69,9 +66,9 @@ func get_angle_from_points(pos1, pos2):
 	return direction_to_node1.angle_to(direction_to_node2)
 
 func get_impact_cone_angle():
-	if Impact_cone_pos2 == null and Conecctions.size() == 2:
-		Impact_cone_pos2 = Conecctions.back().position
-	return get_angle_from_points(Conecctions.front().get_conected_pos(position), Impact_cone_pos2)
+	if Impact_cone_pos2 == null and Connections.size() == 2:
+		Impact_cone_pos2 = Connections.back().position
+	return get_angle_from_points(Connections.front().get_connected_pos(position), Impact_cone_pos2)
 
 func calc_impact_shape():
 	var angleFrom = 0
@@ -107,7 +104,7 @@ func release():
 
 func highlight_impact_cone(pos2):
 	Impact_cone_pos2 = pos2	
-	if get_conecctions().size() != 1:
+	if get_Connections().size() != 1:
 		return
 	$ImpactArea.monitoring = true
 	look_at(pos2)
@@ -123,15 +120,7 @@ func stop_highlight_impact_cone():
 func calc_node_stats():
 	calc_node_color()
 		
-func calc_node_color():
-	var my_color = Color(0,0,0)
-	if Impacted_objects.size() > 0:
-		for n in Impacted_objects:
-			my_color += n.get_Dot_color()
-		my_color = my_color / Impacted_objects.size()
-		Node_color = my_color
-	else:
-		Node_color = Default_node_color
+
 
 func _on_impact_area_area_entered(area):
 	if !area.is_in_group("collectables"):
@@ -152,3 +141,40 @@ func _on_impact_area_area_exited(area):
 	
 	Impacted_objects.erase(area)
 	calc_node_stats()
+	
+	
+func calc_node_color():
+	var colors = count_and_sort_colors()
+	if colors.size() > 0 and colors[0]["count"] >= 10:
+		Node_color = colors[0]["color"] # Speichert die Farbe des ersten Elements
+
+		
+func get_color() -> Color:
+	calc_node_color()
+	return Node_color
+	
+func get_all_dots_color() -> Array:
+	return count_and_sort_colors()
+
+func count_and_sort_colors():
+	var impacted_objects = Impacted_objects
+	var color_count = {} # Dictionary zur Speicherung der Farbzählung
+	for obj in impacted_objects:
+		var color = obj.get_Dot_color()
+		if color in color_count:
+			color_count[color] += 1
+		else:
+			color_count[color] = 1
+	# Umwandlung des Dictionaries in ein Array von Dictionaries für die Sortierung
+	var sortable_array = []
+	for color in color_count.keys():
+		sortable_array.append({"color": color, "count": color_count[color]})
+	# Sortieren des Arrays basierend auf der Anzahl der Vorkommen in absteigender Reihenfolge
+	sortable_array.sort_custom(func(a, b):
+		if a["count"] > b["count"]:
+			return true
+		return false
+	)
+	# Rückgabe der sortierten Ergebnisse
+	return sortable_array
+

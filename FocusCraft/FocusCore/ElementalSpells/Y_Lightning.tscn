@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3 uid="uid://dr8esxhpvhsjh"]
+
+[ext_resource type="PackedScene" uid="uid://crhid412j7mrw" path="res://FocusCraft/FocusCore/Spell.tscn" id="1_1a4ch"]
+[ext_resource type="Texture2D" uid="uid://xlbt3rn1ov2l" path="res://FocusCraft/FocusCore/ElementalSpells/Lightning.png" id="2_v8yi6"]
+
+[node name="Node2D" instance=ExtResource("1_1a4ch")]
+Color_combination = Array[Color]([Color(1, 1, 0, 1)])
+SpellName = "Lightning"
+
+[node name="Icon" parent="." index="0"]
+texture = ExtResource("2_v8yi6")

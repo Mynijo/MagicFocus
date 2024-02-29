@@ -6,7 +6,6 @@
 
 [node name="Node2D" type="Area2D" groups=["connectable"]]
 script = ExtResource("1_nxfdb")
-Node_color = Color(0.909804, 0.909804, 0.909804, 1)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_sp6rk")

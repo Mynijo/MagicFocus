@@ -1,0 +1,12 @@
+[gd_scene load_steps=3 format=3 uid="uid://6wxnyrnx5rfv"]
+
+[ext_resource type="PackedScene" uid="uid://crhid412j7mrw" path="res://FocusCraft/FocusCore/Spell.tscn" id="1_r3jav"]
+[ext_resource type="Texture2D" uid="uid://b4khqb1ofouuv" path="res://FocusCraft/FocusCore/ElementalSpells/Mana.png" id="2_b1yuw"]
+
+[node name="Node2D" instance=ExtResource("1_r3jav")]
+Color_combination = Array[Color]([Color(0, 0, 1, 1)])
+SpellName = "ManaBall"
+Mana_mod = [Color(0, 0, 1, 1), 1, 2]
+
+[node name="Icon" parent="." index="0"]
+texture = ExtResource("2_b1yuw")

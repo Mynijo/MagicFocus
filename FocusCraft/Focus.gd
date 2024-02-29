@@ -6,8 +6,8 @@ var Conection_hover_position
 var Conection_hover_Node
 
 var Focus_size = 500
-var Focus_max_node = 20
-var Focus_max_dots = 200
+var Focus_max_node = 3
+var Focus_max_dots = 50
 
 var All_nodes = []
 var All_dos = []
@@ -69,10 +69,11 @@ func creat_new_focus(shake_flag = false):
 			All_dos.append(energie_dots_instance)
 		else:
 			All_dos[n].position = pos
+		All_dos[n].Dot_color = Color.YELLOW
 		if (n % 2) == 0:
 			All_dos[n].Dot_color = Color.RED
 		if (n % 3) == 0:
-			All_dos[n].Dot_color = Color.BLUE
+			All_dos[n].Dot_color = Color.RED
 	
 
 
@@ -87,17 +88,17 @@ func _process(delta):
 	for n in All_nodes:
 		counter_dos += n.Impacted_objects.size()
 	$Label.text = str(counter_dos) + " / " + str(All_dos.size())
+	var connection_length = get_connection_length()
+	$Mana.text = "Mana: " + str(int(connection_length))
 		
+
+func get_connection_length():
 	var connection_length = 0
 	for n in Conections:
 		connection_length += n.Length
-	if Input.is_action_pressed("left_mouse"):
-		if Conection_hover_position != null:
-			connection_length += (Conection_hover_position.distance_to(get_last_node().position))
-		else:
-			connection_length += (get_viewport().get_mouse_position().distance_to(get_last_node().position))
-	$Mana.text = "Mana: " + str(int(connection_length))
-		
+		connection_length += (Conection_hover_position.distance_to(get_last_node().position))
+	return connection_length
+	
 	
 func _physics_process(delta):
 	var mouse_pos = get_viewport().get_mouse_position()
@@ -151,6 +152,7 @@ func add_new_connection(new_node):
 		$RayCast2D.add_exception(connection_instance)
 		
 		$FocusSummary.set_Focus(self)
+	$SpellSummary.add_focus(self)
 		
 func back():
 	if Conections.size() == 0:
@@ -171,9 +173,12 @@ func back():
 	if Conections.size() > 0:
 		$RayCast2D.add_exception(Conections.back())
 	
+	$SpellSummary.add_focus(self)
+	
 func reset():
 	for i in range(0,Conections.size()):
-		back()	
+		back()
+	$SpellSummary.add_focus(self)
 
 func shake():
 	reset()
@@ -183,11 +188,69 @@ func shake():
 func _on_button_pressed():
 	back()
 
-
-
 func _on_button_2_pressed():
 	reset()
 
-
 func _on_button_3_pressed():
 	shake()
+
+	
+# Funktion, die Farben von Fokus-Knoten basierend auf Tiefensuche zurückgibt
+func get_colors() -> Array[Color]:
+	var colors : Array[Color] = []
+	var visited_nodes = {}
+	var start_node = $StartNode
+	
+	visited_nodes[start_node] = true
+	
+	if start_node.Connections.size() > 0:
+		dfs_visit(start_node, start_node.Connections[0], colors, visited_nodes, false)
+	
+	return colors
+
+# Funktion, die alle Punktfarben von Fokus-Knoten basierend auf Tiefensuche zurückgibt
+func get_dots():
+	var dots_colors = []
+	var visited_nodes = {}
+	var start_node = $StartNode
+	
+	visited_nodes[start_node] = true
+	
+	if start_node.Connections.size() > 0:
+		dfs_visit(start_node, start_node.Connections[0], dots_colors, visited_nodes, true)
+	
+	return dots_colors
+	
+func get_dots_sum():
+	var dots_pro_node = get_dots()
+	var dots_pro_focus = {}
+	# Durchlaufe jedes Array in dots_pro_node
+	for node_array in dots_pro_node:
+		for color_dict in node_array:
+				var color = color_dict["color"]
+				var count = color_dict["count"]
+				# Füge Werte für gleiche Farben zusammen
+				if color in dots_pro_focus:
+					dots_pro_focus[Color(color)] += count
+				else:
+					dots_pro_focus[Color(color)] = count
+	return dots_pro_focus
+# Angepasste Hilfsfunktion für die Tiefensuche ab einem bestimmten Knoten
+func dfs_visit(prev_node, connection, colors, visited_nodes: Dictionary, get_dots: bool) -> void:
+	var next_node = connection.Connected_node_1 if prev_node != connection.Connected_node_1 else connection.Connected_node_2
+	
+	if next_node == null or next_node in visited_nodes:
+		return
+	
+	if get_dots:
+		var dots_colors = next_node.get_all_dots_color()
+		colors.append(dots_colors)
+	else:
+		var next_color = next_node.get_color()
+		if next_color != Color.WHITE:
+			colors.append(next_color)
+	
+	visited_nodes[next_node] = true
+	
+	for next_connection in next_node.Connections:
+		dfs_visit(next_node, next_connection, colors, visited_nodes, get_dots)

@@ -1,8 +1,10 @@
-[gd_scene load_steps=4 format=3 uid="uid://sur0ioip0ubr"]
+[gd_scene load_steps=6 format=3 uid="uid://sur0ioip0ubr"]
 
 [ext_resource type="Script" path="res://FocusCraft/Focus.gd" id="1_7w1du"]
 [ext_resource type="PackedScene" uid="uid://docbr1dhq3udq" path="res://FocusCraft/FocusNode.tscn" id="2_thmlg"]
 [ext_resource type="PackedScene" uid="uid://c46axl4piwupq" path="res://FocusLexicon/FocusSummary.tscn" id="3_fqbai"]
+[ext_resource type="PackedScene" uid="uid://s4bvrxnj3b6g" path="res://FocusLexicon/SpellSummary.tscn" id="4_47nw0"]
+[ext_resource type="PackedScene" uid="uid://bpl6m0rra2dmp" path="res://FocusCraft/FocusCore/ElementalCore.tscn" id="5_gkobq"]
 
 [node name="Focus" type="Node2D"]
 script = ExtResource("1_7w1du")
@@ -48,7 +50,11 @@ offset_bottom = 631.0
 text = "Shake"
 
 [node name="FocusSummary" parent="." instance=ExtResource("3_fqbai")]
-position = Vector2(800, 100)
+position = Vector2(672, 100)
+
+[node name="SpellSummary" parent="." instance=ExtResource("4_47nw0")]
+position = Vector2(843, 97)
+FocusCore = ExtResource("5_gkobq")
 
 [connection signal="pressed" from="Button" to="." method="_on_button_pressed"]
 [connection signal="pressed" from="Button2" to="." method="_on_button_2_pressed"]

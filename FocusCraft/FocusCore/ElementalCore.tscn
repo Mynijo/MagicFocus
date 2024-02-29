@@ -1,0 +1,11 @@
+[gd_scene load_steps=7 format=3 uid="uid://bpl6m0rra2dmp"]
+
+[ext_resource type="PackedScene" uid="uid://c6vmop3sa5a5y" path="res://FocusCraft/FocusCore/FocusCore.tscn" id="1_ops3m"]
+[ext_resource type="PackedScene" uid="uid://6wxnyrnx5rfv" path="res://FocusCraft/FocusCore/ElementalSpells/B_ManaBall.tscn" id="2_d53es"]
+[ext_resource type="PackedScene" uid="uid://cabw35066dcyj" path="res://FocusCraft/FocusCore/ElementalSpells/Gy_EarthWall.tscn" id="3_4sd1n"]
+[ext_resource type="PackedScene" uid="uid://4qnukqno1pak" path="res://FocusCraft/FocusCore/ElementalSpells/G_Heal.tscn" id="4_yx611"]
+[ext_resource type="PackedScene" uid="uid://df3u5h8tjeots" path="res://FocusCraft/FocusCore/ElementalSpells/R_FireBall.tscn" id="5_v7ldo"]
+[ext_resource type="PackedScene" uid="uid://dr8esxhpvhsjh" path="res://FocusCraft/FocusCore/ElementalSpells/Y_Lightning.tscn" id="6_d85wv"]
+
+[node name="Node2D" instance=ExtResource("1_ops3m")]
+Spells = Array[PackedScene]([ExtResource("2_d53es"), ExtResource("3_4sd1n"), ExtResource("4_yx611"), ExtResource("5_v7ldo"), ExtResource("6_d85wv")])
