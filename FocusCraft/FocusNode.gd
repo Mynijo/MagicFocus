@@ -177,4 +177,3 @@ func count_and_sort_colors():
 	)
 	# Rückgabe der sortierten Ergebnisse
 	return sortable_array
-

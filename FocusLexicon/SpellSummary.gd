@@ -63,6 +63,22 @@ func refresh():
 	$MainContainer/ModContainer/DefModContainer/Health/Value.text = "%d" % Spell.get_Health()
 	#$MainContainer/ModContainer/DefModContainer/Buffs/Value.text = Spell.get_Buffs()
 	
+	set_spell_combination(Spell.get_color_combination())
 		
 	is_refreshed = true
 	
+	
+func set_spell_combination(colors):
+	var spell_combination_node = $MainContainer/SpellCombination
+
+	# Entfernt zuerst alle bestehenden Kinder (Kreise)
+	for child in spell_combination_node.get_children():
+		spell_combination_node.remove_child(child)
+		child.queue_free()
+
+	# Fügt neue Kreise basierend auf den Farben hinzu
+	for i in range(colors.size()):
+		var circle = ColorRect.new()
+		circle.color = colors[i]# Setzt die Größe des Kreises
+		circle.position = Vector2(i * 25, 0)  # Setzt die Position des Kreises
+		spell_combination_node.add_child(circle)

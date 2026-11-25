@@ -69,11 +69,11 @@ func creat_new_focus(shake_flag = false):
 			All_dos.append(energie_dots_instance)
 		else:
 			All_dos[n].position = pos
-		All_dos[n].Dot_color = Color.YELLOW
+		All_dos[n].Dot_color = Color.GREEN
 		if (n % 2) == 0:
-			All_dos[n].Dot_color = Color.RED
+			All_dos[n].Dot_color = Color.BLUE
 		if (n % 3) == 0:
-			All_dos[n].Dot_color = Color.RED
+			All_dos[n].Dot_color = Color.BLUE
 	
 
 

@@ -89,6 +89,9 @@ func set_Focus(focus):
 		Focus = focus
 		set_Focus_Dots(Focus.get_dots_sum())
 	
+func get_color_combination():
+	return Color_combination
+	
 func set_Focus_Dots(focus_Dots):
 	Focus_Dots = focus_Dots
 	
