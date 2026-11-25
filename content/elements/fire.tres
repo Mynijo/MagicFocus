@@ -8,7 +8,7 @@ script = ExtResource("2_rule")
 source = 1
 element_id = &"fire"
 per_n = 5
-stat = &"burning"
+stat = &"burn"
 amount = 1.0
 
 [resource]

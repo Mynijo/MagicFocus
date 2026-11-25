@@ -14,6 +14,9 @@
 [ext_resource type="Resource" path="res://content/spell_forms/energieschild.tres" id="21_schild"]
 [ext_resource type="Resource" path="res://content/runes/hauptrune_geschoss.tres" id="30_main_geschoss"]
 [ext_resource type="Resource" path="res://content/runes/hauptrune_schild.tres" id="31_main_schild"]
+[ext_resource type="Resource" path="res://content/runes/hauptrune_explosion.tres" id="36_main_explosion"]
+[ext_resource type="Resource" path="res://content/runes/zusatzrune_status.tres" id="37_minor_status"]
+[ext_resource type="Resource" path="res://content/spell_forms/explosion.tres" id="22_explosion"]
 [ext_resource type="Resource" path="res://content/runes/zusatzrune_standard.tres" id="32_minor"]
 [ext_resource type="Resource" path="res://content/runes/zusatzrune_innen.tres" id="33_minor_inner"]
 [ext_resource type="Resource" path="res://content/runes/zusatzrune_rund.tres" id="34_minor_round"]
@@ -30,6 +33,6 @@
 [resource]
 script = ExtResource("1_content")
 elements = Array[ExtResource("2_element")]([ExtResource("10_fire"), ExtResource("11_water"), ExtResource("12_earth"), ExtResource("13_air"), ExtResource("14_lightning")])
-spell_forms = Array[ExtResource("3_form")]([ExtResource("20_geschoss"), ExtResource("21_schild")])
-runes = Array[ExtResource("4_rune")]([ExtResource("30_main_geschoss"), ExtResource("31_main_schild"), ExtResource("32_minor"), ExtResource("33_minor_inner"), ExtResource("34_minor_round"), ExtResource("35_minor_wide")])
+spell_forms = Array[ExtResource("3_form")]([ExtResource("20_geschoss"), ExtResource("21_schild"), ExtResource("22_explosion")])
+runes = Array[ExtResource("4_rune")]([ExtResource("30_main_geschoss"), ExtResource("31_main_schild"), ExtResource("36_main_explosion"), ExtResource("32_minor"), ExtResource("33_minor_inner"), ExtResource("34_minor_round"), ExtResource("35_minor_wide"), ExtResource("37_minor_status")])
 foci = Array[ExtResource("5_focus")]([ExtResource("40_small"), ExtResource("41_medium"), ExtResource("42_large"), ExtResource("43_huge"), ExtResource("44_star"), ExtResource("45_drop"), ExtResource("46_fire"), ExtResource("47_neutral")])

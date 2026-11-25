@@ -29,6 +29,9 @@ func _init() -> void:
 		test_canvas_auto_connect_and_preview,
 		test_focus_shapes,
 		test_allowed_elements,
+		test_edges_must_stay_inside_shape,
+		test_status_rune,
+		test_explosion_rune,
 	]
 	for test: Callable in tests:
 		_current = test.get_method()
@@ -339,7 +342,7 @@ func test_content_loads_and_evaluates() -> void:
 	if content == null:
 		return
 	check(content.elements.size() == 5, "5 Elemente erwartet")
-	check(content.runes.size() == 6, "6 Runen erwartet")
+	check(content.runes.size() == 8, "8 Runen erwartet")
 	check(content.foci.size() == 8, "8 Fokus-Typen erwartet")
 	check(content.get_element(&"fire").minor_rules.size() == 1, "Feuer sollte eine Regel haben")
 	check(content.get_rune(&"hauptrune_geschoss").spell_form != null, "Hauptrune braucht eine Spell-Form")
@@ -502,7 +505,7 @@ func test_allowed_elements() -> void:
 	focus.loop = PackedInt32Array([0, 1, 2])
 	focus.loop_closed = true
 	var r := SpellEvaluator.evaluate(focus, content.elements)
-	check(not r.valid and _has_error(r, "kein Wasser"), "Wasser im Feuer-Fokus sollte abgelehnt werden: %s" % [r.errors])
+	check(not r.valid and _has_error(r, "keine Wasser-Essenz"), "Wasser im Feuer-Fokus sollte abgelehnt werden: %s" % [r.errors])
 	focus.element_fill = {&"fire": 80}
 	r = SpellEvaluator.evaluate(focus, content.elements)
 	check(r.valid, "80 Feuer im Feuer-Fokus sollte gültig sein: %s" % [r.errors])
@@ -510,10 +513,104 @@ func test_allowed_elements() -> void:
 	focus.focus_def = content.get_focus(&"neutraler_fokus")
 	focus.base_count = 300
 	r = SpellEvaluator.evaluate(focus, content.elements)
-	check(not r.valid and _has_error(r, "Zu viele farbige"), "Farbige Punkte im neutralen Fokus sollten abgelehnt werden")
+	check(not r.valid and _has_error(r, "Zu viele Essenzen"), "Essenzen im neutralen Fokus sollten abgelehnt werden")
 	focus.element_fill = {}
 	r = SpellEvaluator.evaluate(focus, content.elements)
 	check(r.valid, "300 Basispunkte im neutralen Fokus sollten gültig sein: %s" % [r.errors])
+
+
+func test_edges_must_stay_inside_shape() -> void:
+	var content := load("res://content/crafting_content.tres") as CraftingContent
+	var star_def := content.get_focus(&"stern_fokus")
+	var star := star_def.shape
+	var top := Vector2(0, -300)
+	var right := Vector2.from_angle(deg_to_rad(-18)) * 300  # benachbarte Zacke
+	check(star.contains(top) and star.contains(right), "Beide Zackenspitzen liegen im Stern")
+	check(not star.contains_segment(top, right), "Strecke zwischen zwei Zacken verlässt den Stern")
+	check(star.contains_segment(Vector2.ZERO, top), "Strecke von der Mitte in eine Zacke bleibt im Stern")
+	check(content.get_focus(&"kleiner_fokus").shape.contains_segment(Vector2(-200, 0), Vector2(200, 0)),
+		"Im Kreis bleibt jede Strecke zwischen inneren Punkten innerhalb")
+
+	var focus := FocusInstance.new()
+	focus.focus_def = star_def
+	focus.runes = [
+		PlacedRune.create(content.get_rune(&"hauptrune_geschoss"), top),
+		PlacedRune.create(content.get_rune(&"zusatzrune_standard"), right),
+		PlacedRune.create(content.get_rune(&"zusatzrune_standard"), Vector2(0, 50)),
+	]
+	focus.loop = PackedInt32Array([0, 1, 2])
+	focus.loop_closed = true
+	var r := SpellEvaluator.evaluate(focus, content.elements)
+	check(not r.valid and _has_error(r, "innerhalb des Fokus verlaufen"),
+		"Kante durch den leeren Bereich sollte abgelehnt werden: %s" % [r.errors])
+
+	focus.runes[1].position = Vector2(100, -40)
+	r = SpellEvaluator.evaluate(focus, content.elements)
+	check(r.valid, "Kreis innerhalb des Sterns sollte gültig sein: %s" % [r.errors])
+
+	var canvas := FocusCanvas.new()
+	canvas.focus = focus
+	canvas.auto_connect = false
+	focus.loop = PackedInt32Array([0])
+	focus.loop_closed = false
+	focus.runes[1].position = right
+	check(canvas.connect_error(1).contains("innerhalb des Fokus"), "Werkstatt sollte die Verbindung ablehnen")
+	canvas.free()
+
+
+## Fokus mit kleiner Hauptrune bei (0,0), Test-Rune bei (300,0) und Füllrune bei (0,400).
+func _single_rune_focus(content: CraftingContent, main: RuneDef, minor: RuneDef) -> FocusInstance:
+	var placed: Array[PlacedRune] = [
+		PlacedRune.create(main, Vector2(0, 0)),
+		PlacedRune.create(minor, Vector2(300, 0)),
+		PlacedRune.create(make_rune(RuneDef.Role.MINOR, RuneDef.Area.BOTH, 10), Vector2(0, 400)),
+	]
+	return make_focus(placed, [0, 1, 2])
+
+
+func test_status_rune() -> void:
+	var content := load("res://content/crafting_content.tres") as CraftingContent
+	var status := content.get_rune(&"zusatzrune_status")
+	check(status != null and not status.use_element_rules, "Statuseffekt-Rune sollte existieren und keine Element-Boni nutzen")
+	var rune := status.duplicate() as RuneDef
+	rune.area = RuneDef.Area.BOTH  # Für den Test alle Punkte im Radius zählen
+	var focus := _single_rune_focus(content, make_rune(RuneDef.Role.MAIN, RuneDef.Area.BOTH, 10), rune)
+
+	var center := Vector2(300, 0)
+	var dots := dots_around(center, 5, 20, &"fire") + dots_around(center, 4, 30, &"water") \
+		+ dots_around(center, 10, 40, &"air") + dots_around(center, 1, 50, &"lightning")
+	var r := SpellEvaluator.evaluate(focus, content.elements, dots)
+	check(r.valid, "sollte gültig sein: %s" % [r.errors])
+	check(is_equal_approx(r.get_stat(&"burn"), 5.0), "5 Feuer = 5 Burn, war %s" % r.get_stat(&"burn"))
+	check(is_equal_approx(r.get_stat(&"wet"), 0.0), "4 Wasser = kein Wet (unter 5), war %s" % r.get_stat(&"wet"))
+	check(is_equal_approx(r.get_stat(&"slow"), 10.0), "10 Luft = 10 Slow, war %s" % r.get_stat(&"slow"))
+	check(is_equal_approx(r.get_stat(&"shock"), 0.0), "1 Blitz = kein Shock")
+	check(r.rune_results[1].element_id == &"air", "Rune nimmt trotzdem Luft als Element an")
+	check(is_equal_approx(r.get_stat(&"cast_time_reduction"), 0.0),
+		"Element-Bonus der Luft (Cast-Zeit) darf bei der Statuseffekt-Rune nicht greifen")
+
+	# Gegenprobe: Standard-Zusatzrune mit gleichen Punkten bekommt den Luft-Bonus
+	var standard := content.get_rune(&"zusatzrune_standard").duplicate() as RuneDef
+	standard.area = RuneDef.Area.BOTH
+	r = SpellEvaluator.evaluate(_single_rune_focus(content, make_rune(RuneDef.Role.MAIN, RuneDef.Area.BOTH, 10), standard),
+		content.elements, dots)
+	check(r.get_stat(&"cast_time_reduction") > 0.0, "Standard-Zusatzrune sollte den Luft-Bonus bekommen")
+
+
+func test_explosion_rune() -> void:
+	var content := load("res://content/crafting_content.tres") as CraftingContent
+	var explosion := content.get_rune(&"hauptrune_explosion")
+	check(explosion.role == RuneDef.Role.MAIN and explosion.area == RuneDef.Area.OUTER, "Explosion ist eine Hauptrune mit Außenbereich")
+	check(explosion.radius > content.get_rune(&"hauptrune_geschoss").radius, "Explosion hat einen größeren Einflussbereich")
+	check(explosion.strength < 1.0, "Explosion hat einen niedrigeren Multiplikator")
+
+	var rune := explosion.duplicate() as RuneDef
+	rune.area = RuneDef.Area.BOTH
+	var focus := _single_rune_focus(content, rune, make_rune(RuneDef.Role.MINOR, RuneDef.Area.BOTH, 10))
+	var r := SpellEvaluator.evaluate(focus, content.elements, dots_around(Vector2.ZERO, 20, 50, &"fire"))
+	check(r.valid and r.form.id == &"explosion", "Spell sollte eine Explosion sein")
+	# Grundschaden 8 + 20 Feuer * 1 * Stärke 0.6 = 20
+	check(is_equal_approx(r.get_stat(&"damage"), 20.0), "Schaden 8 + 20 * 0.6 = 20, war %s" % r.get_stat(&"damage"))
 
 
 func _has_error(result: SpellResult, fragment: String) -> bool:

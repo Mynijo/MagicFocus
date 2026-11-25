@@ -1,0 +1,53 @@
+[gd_resource type="Resource" script_class="RuneDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/rune_def.gd" id="1_rune"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="2_rule"]
+
+[sub_resource type="Resource" id="Rule_shock"]
+script = ExtResource("2_rule")
+source = 1
+element_id = &"lightning"
+per_n = 1
+stat = &"shock"
+amount = 1.0
+min_count = 5
+
+[sub_resource type="Resource" id="Rule_burn"]
+script = ExtResource("2_rule")
+source = 1
+element_id = &"fire"
+per_n = 1
+stat = &"burn"
+amount = 1.0
+min_count = 5
+
+[sub_resource type="Resource" id="Rule_wet"]
+script = ExtResource("2_rule")
+source = 1
+element_id = &"water"
+per_n = 1
+stat = &"wet"
+amount = 1.0
+min_count = 5
+
+[sub_resource type="Resource" id="Rule_slow"]
+script = ExtResource("2_rule")
+source = 1
+element_id = &"air"
+per_n = 1
+stat = &"slow"
+amount = 1.0
+min_count = 5
+
+[resource]
+script = ExtResource("1_rune")
+id = &"zusatzrune_status"
+display_name = "Statuseffekt-Rune"
+role = 1
+radius = 85.0
+area = 1
+max_base = 10
+max_element = 20
+strength = 1.0
+extra_rules = Array[ExtResource("2_rule")]([SubResource("Rule_shock"), SubResource("Rule_burn"), SubResource("Rule_wet"), SubResource("Rule_slow")])
+use_element_rules = false
