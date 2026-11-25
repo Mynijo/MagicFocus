@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="EngravingDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_qa7ty"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="2_oec4m"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="3_32bbt"]
+
+[sub_resource type="Resource" id="Resource_j8lrk"]
+script = ExtResource("2_oec4m")
+source = 1
+element_id = &"fire"
+stat = &"burn"
+
+[sub_resource type="Resource" id="Resource_m55d0"]
+script = ExtResource("2_oec4m")
+source = 1
+element_id = &"water"
+stat = &"wet"
+
+[sub_resource type="Resource" id="Resource_3mj3v"]
+script = ExtResource("2_oec4m")
+source = 1
+element_id = &"air"
+stat = &"bleed"
+
+[sub_resource type="Resource" id="Resource_elvxf"]
+script = ExtResource("2_oec4m")
+source = 1
+element_id = &"earth"
+stat = &"armor_break"
+
+[sub_resource type="Resource" id="Resource_j2rwo"]
+script = ExtResource("2_oec4m")
+source = 1
+element_id = &"lightning"
+stat = &"shock"
+
+[resource]
+script = ExtResource("3_32bbt")
+id = &"status"
+display_name = "Status"
+description = "1 Status pro Essenz: Feuer → Burn, Wasser → Nass, Luft → Bleed, Erde → Armor Break, Blitz → Schock"
+rules = Array[ExtResource("2_oec4m")]([SubResource("Resource_j8lrk"), SubResource("Resource_m55d0"), SubResource("Resource_3mj3v"), SubResource("Resource_elvxf"), SubResource("Resource_j2rwo")])

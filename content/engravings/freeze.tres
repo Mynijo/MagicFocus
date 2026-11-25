@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="EngravingDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_i81w2"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="2_rrmx7"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="3_vrc83"]
+
+[sub_resource type="Resource" id="Resource_qrsfd"]
+script = ExtResource("2_rrmx7")
+stat = &"damage"
+
+[resource]
+script = ExtResource("3_vrc83")
+id = &"freeze"
+display_name = "Freeze"
+role = 0
+description = "Wandelt 100 Nass in 1 Eis. +1 Schaden pro neutraler Essenz"
+base_stats = {
+&"freeze_conversion": 100.0
+}
+rules = Array[ExtResource("2_rrmx7")]([SubResource("Resource_qrsfd")])

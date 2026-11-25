@@ -30,6 +30,7 @@ const COLOR_FOCUS := Color(0.11, 0.11, 0.18)
 const COLOR_FOCUS_EDGE := Color(0.55, 0.55, 0.9)
 const COLOR_EDGE := Color(0.45, 0.75, 1.0)
 const COLOR_NEUTRAL := Color(0.92, 0.92, 0.95)
+const COLOR_MAIN := Color(1.0, 0.82, 0.35)
 const COLOR_BASE_DOT := Color(0.8, 0.8, 0.88)
 const COLOR_OK := Color(0.4, 1.0, 0.5)
 const COLOR_BAD := Color(1.0, 0.35, 0.35)
@@ -39,8 +40,9 @@ var focus: FocusInstance
 var result: SpellResult
 var content: CraftingContent
 var mode: Mode = Mode.PLACE
-## In der Bibliothek gewählte Gem (wird im Modus SETZEN platziert).
+## In der Bibliothek gewählte Gem-Form und Gravur (werden im Modus SETZEN platziert).
 var placing_gem: GemDef
+var placing_engraving: EngravingDef
 var auto_connect := true
 ## Wertet einen (hypothetischen) Fokus aus: func(FocusInstance) -> SpellResult.
 ## Wird für die Vorschau beim Setzen benutzt.
@@ -193,7 +195,7 @@ func _try_place(gem: GemDef, pos: Vector2) -> void:
 ## Fügt ein Gem hinzu und verbindet sie (bei `auto_connect`) mit der zuvor gesetzten.
 ## Wird auch für die Vorschau auf einer Kopie des Fokus benutzt.
 func _insert_gem(target: FocusInstance, gem: GemDef, pos: Vector2) -> void:
-	target.gems.append(PlacedGem.create(gem, pos))
+	target.gems.append(PlacedGem.create(gem, placing_engraving, pos))
 	var idx := target.gems.size() - 1
 	if not auto_connect:
 		target.loop_closed = false
@@ -367,7 +369,6 @@ func _compute_preview() -> void:
 
 	var copy := FocusInstance.new()
 	copy.focus_def = focus.focus_def
-	copy.base_count = focus.base_count
 	copy.element_fill = focus.element_fill
 	copy.dot_seed = focus.dot_seed
 	copy.gems = focus.gems.duplicate()
@@ -401,7 +402,7 @@ func _preview_summary(dots: Array[EnergyDot]) -> String:
 			base += 1
 		else:
 			counts[dot.element_id] = counts.get(dot.element_id, 0) + 1
-	var parts := PackedStringArray(["Energie %d" % base])
+	var parts := PackedStringArray(["neutrale Essenz %d" % base])
 	if content != null:
 		for element in content.elements:
 			if counts.has(element.id):
@@ -422,10 +423,22 @@ func _element_color(element_id: StringName, fallback: Color) -> Color:
 	return fallback
 
 
+func _gem_color(gem: GemDef) -> Color:
+	return COLOR_MAIN if gem.role == GemDef.Role.MAIN else COLOR_NEUTRAL
+
+
+## Beschriftung am Gem: Gravur und Multiplikator, z. B. "Feuerball ×2".
+static func _gem_label(gem: GemDef, engraving: EngravingDef) -> String:
+	var engraving_name := engraving.display_name if engraving != null else "ohne Gravur"
+	var multiplier := gem.get_multiplier()
+	var number := str(int(multiplier)) if is_equal_approx(multiplier, roundf(multiplier)) else String.num(multiplier, 2)
+	return "%s ×%s" % [engraving_name, number]
+
+
 func _draw_sector(rr: GemResult, fill_alpha: float, border: Color, px: float) -> void:
 	if rr.sector_sweep < 0.01:
 		return
-	var color := _element_color(rr.element_id, COLOR_NEUTRAL)
+	var color := _gem_color(rr.placed.gem)
 	var polygon := FocusGeometry.sector_polygon(
 		rr.placed.position, rr.placed.gem.radius, rr.sector_start, rr.sector_sweep, 48)
 	draw_colored_polygon(polygon, Color(color, fill_alpha))
@@ -460,7 +473,7 @@ func _draw() -> void:
 			for dot in rr.collected:
 				claimed[dot] = true
 			if show_sectors:
-				var color := _element_color(rr.element_id, COLOR_NEUTRAL)
+				var color := _gem_color(rr.placed.gem)
 				_draw_sector(rr, 0.13, Color(color, 0.45), px)
 
 	# Reichweite (immer, solange noch kein gültiger Spell besteht)
@@ -529,9 +542,7 @@ func _draw() -> void:
 	for i in focus.gems.size():
 		var placed := focus.gems[i]
 		var is_main := placed.gem.role == GemDef.Role.MAIN
-		var fill := COLOR_NEUTRAL
-		if valid:
-			fill = _element_color(result.gem_results[i].element_id, COLOR_NEUTRAL)
+		var fill := _gem_color(placed.gem)
 		var radius := (MAIN_GEM_SIZE if is_main else MINOR_GEM_SIZE) * px
 		draw_circle(placed.position, radius, fill, true, -1.0, true)
 		var ring := Color.BLACK
@@ -544,17 +555,16 @@ func _draw() -> void:
 	# Beschriftungen in Bildschirm-Koordinaten
 	draw_set_transform_matrix(Transform2D.IDENTITY)
 	var font := get_theme_default_font()
-	var minor_number := 0
-	for i in focus.gems.size():
-		var is_main := focus.gems[i].gem.role == GemDef.Role.MAIN
-		if not is_main:
-			minor_number += 1
-		var label := "H" if is_main else str(minor_number)
-		draw_string(font, to_screen(focus.gems[i].position) + Vector2(12, -10), label,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(1, 1, 1, 0.85))
+	for placed in focus.gems:
+		var label := _gem_label(placed.gem, placed.engraving)
+		var label_pos := to_screen(placed.position) + Vector2(14, -10)
+		draw_string_outline(font, label_pos, label, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, 4, Color(0, 0, 0, 0.8))
+		draw_string(font, label_pos, label, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(1, 1, 1, 0.9))
 
 	if show_ghost:
 		var text := _preview_error if _preview_error != "" else _preview_summary(preview_dots)
+		if _preview_error == "":
+			text = _gem_label(placing_gem, placing_engraving) + "  ·  " + text
 		var text_color := COLOR_BAD if _preview_error != "" else COLOR_PREVIEW
 		var text_pos := to_screen(_mouse_focus) + Vector2(16, 22)
 		draw_string_outline(font, text_pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, 4, Color(0, 0, 0, 0.8))

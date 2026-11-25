@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="EngravingDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_5cgx2"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="2_ljor5"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="3_8c20c"]
+
+[sub_resource type="Resource" id="Resource_irah5"]
+script = ExtResource("2_ljor5")
+stat = &"damage"
+
+[sub_resource type="Resource" id="Resource_sum3p"]
+script = ExtResource("2_ljor5")
+source = 1
+element_id = &"earth"
+per_n = 2
+stat = &"armor_break"
+
+[resource]
+script = ExtResource("3_8c20c")
+id = &"kanone"
+display_name = "Kanone"
+role = 0
+description = "+1 Schaden pro neutraler Essenz, 1 Armor Break pro 2 Erd-Essenzen"
+rules = Array[ExtResource("2_ljor5")]([SubResource("Resource_irah5"), SubResource("Resource_sum3p")])

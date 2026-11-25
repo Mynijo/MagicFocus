@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="EngravingDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_0sxaa"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="2_ltv6k"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="3_loysd"]
+
+[sub_resource type="Resource" id="Resource_o8b4v"]
+script = ExtResource("2_ltv6k")
+stat = &"damage"
+
+[sub_resource type="Resource" id="Resource_pf0tv"]
+script = ExtResource("2_ltv6k")
+source = 1
+element_id = &"lightning"
+per_n = 2
+stat = &"shock"
+
+[resource]
+script = ExtResource("3_loysd")
+id = &"blitzschlag"
+display_name = "Blitzschlag"
+role = 0
+description = "+1 Schaden pro neutraler Essenz, 1 Schock pro 2 Blitz-Essenzen"
+rules = Array[ExtResource("2_ltv6k")]([SubResource("Resource_o8b4v"), SubResource("Resource_pf0tv")])

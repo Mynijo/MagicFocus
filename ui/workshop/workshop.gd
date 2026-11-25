@@ -8,20 +8,22 @@ const SAVE_DIR := "user://foci/"
 
 const STAT_NAMES := {
 	&"damage": "Schaden",
-	&"shield": "Schild",
-	&"resistance": "Resistenz",
 	&"heal": "Heilung",
+	&"armor": "Armor",
+	&"crit": "Crit",
+	&"slow": "Slow (Stacks)",
 	&"burn": "Burn (Stacks)",
-	&"wet": "Wet (Stacks)",
-	&"shock": "Shock (Stacks)",
-	&"slow": "Slow (Stacks, verlangsamt Gegner-Casts)",
+	&"wet": "Nass (Stacks)",
+	&"bleed": "Bleed (Stacks)",
+	&"armor_break": "Armor Break (Stacks)",
+	&"shock": "Schock (Stacks)",
+	&"freeze_conversion": "Freeze (Nass pro Eis)",
+	&"mana_reduction": "Mana-Reduktion",
 	&"cast_time_reduction": "Cast-Zeit-Verkürzung (s)",
 }
-const AREA_NAMES := ["innen", "außen", "innen + außen"]
 
 var focus: FocusInstance
 var result: SpellResult
-var threshold := SpellEvaluator.ELEMENT_THRESHOLD
 ## Auswertung mit dem Gem unter dem Mauszeiger (beim Setzen), sonst null.
 var _preview_result: SpellResult
 ## Auswertung vor Beginn des Verschiebens (während des Ziehens), sonst null.
@@ -30,16 +32,22 @@ var _drag_baseline: SpellResult
 var _canvas: FocusCanvas
 var _focus_select: OptionButton
 var _focus_info: Label
-var _base_spin: SpinBox
+var _base_value: Label
 var _element_spins := {}  # Element-ID -> SpinBox
 var _element_total: Label
 var _library_group := ButtonGroup.new()
+var _engraving_select: OptionButton
+var _engraving_info: Label
+## Zuletzt gewählte Gravur je Rolle (GemDef.Role -> EngravingDef)
+var _engraving_choice := {}
 var _mode_place: Button
 var _mode_connect: Button
 var _status: Label
 var _result_text: RichTextLabel
 var _save_name: LineEdit
 var _save_select: OptionButton
+## Gem-Liste im Ergebnis aufgeklappt?
+var _show_gem_details := false
 
 
 func _ready() -> void:
@@ -57,9 +65,8 @@ func _ready() -> void:
 func _new_focus(def: FocusDef) -> void:
 	focus = FocusInstance.new()
 	focus.focus_def = def
-	focus.base_count = def.max_base_dots
 	focus.element_fill = {}
-	# Zum Start die Hälfte der farbigen Kapazität mit dem ersten erlaubten Element füllen
+	# Zum Start die Hälfte der Essenz-Kapazität mit dem ersten erlaubten Element füllen
 	for element in CONTENT.elements:
 		if def.allows_element(element.id) and def.max_element_dots > 0:
 			focus.element_fill[element.id] = int(def.max_element_dots / 2.0)
@@ -68,17 +75,18 @@ func _new_focus(def: FocusDef) -> void:
 
 
 func _load_example() -> void:
+	var standard := CONTENT.get_engraving(&"standard")
 	focus.gems = [
-		PlacedGem.create(CONTENT.get_gem(&"hauptgem_geschoss"), Vector2(-110, 70)),
-		PlacedGem.create(CONTENT.get_gem(&"nebengem_standard"), Vector2(130, 50)),
-		PlacedGem.create(CONTENT.get_gem(&"nebengem_innen"), Vector2(0, -140)),
+		PlacedGem.create(CONTENT.get_gem(&"hauptgem_grob"), CONTENT.get_engraving(&"magischer_bolzen"), Vector2(-110, 70)),
+		PlacedGem.create(CONTENT.get_gem(&"nebengem_mittel_grob"), standard, Vector2(130, 50)),
+		PlacedGem.create(CONTENT.get_gem(&"nebengem_mittel_spitz"), standard, Vector2(0, -140)),
 	]
 	focus.loop = PackedInt32Array([0, 1, 2])
 	focus.loop_closed = true
 
 
 func _refresh() -> void:
-	result = SpellEvaluator.evaluate(focus, CONTENT.elements, null, threshold)
+	result = SpellEvaluator.evaluate(focus, CONTENT.elements)
 	_canvas.focus = focus
 	_canvas.result = result
 	_canvas.update_preview()
@@ -142,12 +150,14 @@ func _build_left_panel() -> Control:
 	var base_row := HBoxContainer.new()
 	box.add_child(base_row)
 	var base_label := Label.new()
-	base_label.text = "Energiepunkte"
+	base_label.text = "Neutrale Essenz"
+	base_label.tooltip_text = "Füllt den Fokus automatisch bis zur Gesamtkapazität auf."
+	base_label.mouse_filter = Control.MOUSE_FILTER_PASS
 	base_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	base_row.add_child(base_label)
-	_base_spin = SpinBox.new()
-	_base_spin.value_changed.connect(_on_base_changed)
-	base_row.add_child(_base_spin)
+	_base_value = Label.new()
+	base_row.add_child(_base_value)
+	_small_label(box, "Wird automatisch bis zum Maximum aufgefüllt.")
 
 	_small_label(box, "Essenzen")
 	for element in CONTENT.elements:
@@ -175,8 +185,21 @@ func _build_left_panel() -> Control:
 
 	# Gem-Bibliothek
 	_header(box, "3. Gems setzen")
-	_small_label(box, "Gem wählen und in den Fokus klicken – die Vorschau zeigt, welche Punkte es einsammeln würde. Gems jederzeit ziehen = verschieben, Rechtsklick = entfernen.")
+	_small_label(box, "Form und Gravur wählen, dann in den Fokus klicken – die Vorschau zeigt, welche Punkte das Gem einsammeln würde. Gems ziehen = verschieben, Rechtsklick = entfernen. Spitze Gems zählen Essenzen doppelt (×2).")
 	_check(box, "Automatisch verbinden", true, _set_auto_connect)
+	var engraving_row := HBoxContainer.new()
+	box.add_child(engraving_row)
+	var engraving_label := Label.new()
+	engraving_label.text = "Gravur"
+	engraving_row.add_child(engraving_label)
+	_engraving_select = OptionButton.new()
+	_engraving_select.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_engraving_select.item_selected.connect(_on_engraving_selected)
+	engraving_row.add_child(_engraving_select)
+	_engraving_info = _small_label(box, "")
+	for role in [GemDef.Role.MAIN, GemDef.Role.MINOR]:
+		_engraving_choice[role] = CONTENT.get_engravings_for(role)[0]
+	_fill_engraving_select(GemDef.Role.MAIN)
 	_library_group.allow_unpress = true
 	for gem in CONTENT.gems:
 		var button := Button.new()
@@ -184,7 +207,7 @@ func _build_left_panel() -> Control:
 		button.button_group = _library_group
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		var prefix := "★ " if gem.role == GemDef.Role.MAIN else "• "
-		button.text = "%s%s  (r%d, %s)" % [prefix, gem.display_name, int(gem.radius), AREA_NAMES[gem.area]]
+		button.text = "%s%s  (r%d, ×%s)" % [prefix, gem.display_name, int(gem.radius), _format_number(gem.get_multiplier())]
 		button.tooltip_text = _gem_tooltip(gem)
 		button.toggled.connect(_on_library_toggled.bind(gem))
 		box.add_child(button)
@@ -211,20 +234,6 @@ func _build_left_panel() -> Control:
 	_check(box, "Einflussbereiche", true, _set_display.bind(&"show_sectors"))
 	_check(box, "Reichweite immer zeigen", false, _set_display.bind(&"show_radii"))
 	_check(box, "Freie Punkte zeigen", true, _set_display.bind(&"show_free_dots"))
-	var threshold_row := HBoxContainer.new()
-	box.add_child(threshold_row)
-	var threshold_label := Label.new()
-	threshold_label.text = "Element-Schwelle"
-	threshold_label.tooltip_text = "Ab so vielen Essenzen eines Elements nimmt ein Gem dieses Element an."
-	threshold_label.mouse_filter = Control.MOUSE_FILTER_PASS
-	threshold_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	threshold_row.add_child(threshold_label)
-	var threshold_spin := SpinBox.new()
-	threshold_spin.min_value = 1
-	threshold_spin.max_value = 50
-	threshold_spin.value = threshold
-	threshold_spin.value_changed.connect(_on_threshold_changed)
-	threshold_row.add_child(threshold_spin)
 
 	# Speichern / Laden
 	_header(box, "Speichern & Laden")
@@ -258,6 +267,8 @@ func _build_right_panel() -> Control:
 
 	_result_text = RichTextLabel.new()
 	_result_text.bbcode_enabled = true
+	_result_text.meta_underlined = false
+	_result_text.meta_clicked.connect(_on_result_meta_clicked)
 	_result_text.fit_content = false
 	_result_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_child(_result_text)
@@ -324,13 +335,35 @@ func _gem_tooltip(gem: GemDef) -> String:
 	var lines := PackedStringArray()
 	lines.append(gem.display_name + (" (Hauptgem)" if gem.role == GemDef.Role.MAIN else " (Nebengem)"))
 	lines.append("Radius: %d" % int(gem.radius))
-	lines.append("Bereich: %s" % AREA_NAMES[gem.area])
-	lines.append("Max. Energiepunkte: %d" % gem.max_base)
+	lines.append("Winkel: %s (%s)" % [gem.get_angle_name(), "Innenwinkel" if gem.is_inner() else "Außenwinkel"])
+	lines.append("Multiplikator: ×%s" % _format_number(gem.get_multiplier()))
+	lines.append("Max. neutrale Essenz: %d" % gem.max_base)
 	lines.append("Max. Essenzen: %d" % gem.max_element)
-	lines.append("Stärke: x%.2f" % gem.strength)
-	if gem.spell_form != null:
-		lines.append("Spell-Form: %s" % gem.spell_form.display_name)
 	return "\n".join(lines)
+
+
+## Füllt das Gravur-Dropdown mit den Gravuren der Rolle und wählt die zuletzt benutzte.
+func _fill_engraving_select(role: GemDef.Role) -> void:
+	_engraving_select.clear()
+	var list := CONTENT.get_engravings_for(role)
+	for engraving in list:
+		_engraving_select.add_item(engraving.display_name)
+		_engraving_select.set_item_metadata(_engraving_select.item_count - 1, engraving)
+	var chosen: EngravingDef = _engraving_choice[role]
+	_engraving_select.select(maxi(0, list.find(chosen)))
+	_apply_engraving(chosen)
+
+
+func _apply_engraving(engraving: EngravingDef) -> void:
+	_canvas_placing_engraving(engraving)
+	_engraving_info.text = engraving.description if engraving != null else ""
+
+
+func _canvas_placing_engraving(engraving: EngravingDef) -> void:
+	if _canvas != null:
+		_canvas.placing_engraving = engraving
+		_canvas.update_preview()
+		_canvas.queue_redraw()
 
 
 # --- Ereignisse -------------------------------------------------------------
@@ -368,6 +401,7 @@ func _set_mode(mode: FocusCanvas.Mode) -> void:
 func _on_library_toggled(on: bool, gem: GemDef) -> void:
 	if on:
 		_canvas.placing_gem = gem
+		_fill_engraving_select(gem.role)
 		_mode_place.button_pressed = true
 		_set_mode(FocusCanvas.Mode.PLACE)
 	elif _canvas.placing_gem == gem:
@@ -376,8 +410,14 @@ func _on_library_toggled(on: bool, gem: GemDef) -> void:
 	_canvas.queue_redraw()
 
 
+func _on_engraving_selected(index: int) -> void:
+	var engraving: EngravingDef = _engraving_select.get_item_metadata(index)
+	_engraving_choice[engraving.role] = engraving
+	_apply_engraving(engraving)
+
+
 func _evaluate(target: FocusInstance) -> SpellResult:
-	return SpellEvaluator.evaluate(target, CONTENT.elements, null, threshold)
+	return SpellEvaluator.evaluate(target, CONTENT.elements)
 
 
 func _set_auto_connect(on: bool) -> void:
@@ -389,11 +429,6 @@ func _set_auto_connect(on: bool) -> void:
 func _set_display(on: bool, property: StringName) -> void:
 	_canvas.set(property, on)
 	_canvas.queue_redraw()
-
-
-func _on_threshold_changed(value: float) -> void:
-	threshold = int(value)
-	_refresh()
 
 
 func _on_example_pressed() -> void:
@@ -429,8 +464,7 @@ func _show_status(text: String) -> void:
 func _on_focus_type_selected(index: int) -> void:
 	var def := CONTENT.foci[index]
 	focus.focus_def = def
-	focus.base_count = mini(focus.base_count, def.max_base_dots)
-	# Farbige Punkte auf erlaubte Elemente und die neue Kapazität kürzen
+	# Essenzen auf erlaubte Elemente und die neue Kapazität kürzen
 	var remaining := def.max_element_dots
 	for element in CONTENT.elements:
 		var count := mini(int(focus.element_fill.get(element.id, 0)), remaining)
@@ -442,11 +476,6 @@ func _on_focus_type_selected(index: int) -> void:
 		else:
 			focus.element_fill.erase(element.id)
 	_sync_fill_ui()
-	_refresh()
-
-
-func _on_base_changed(value: float) -> void:
-	focus.base_count = int(value)
 	_refresh()
 
 
@@ -469,8 +498,6 @@ func _reroll() -> void:
 
 func _sync_fill_ui() -> void:
 	var def := focus.focus_def
-	_base_spin.max_value = def.max_base_dots
-	_base_spin.set_value_no_signal(focus.base_count)
 	for element_id: StringName in _element_spins:
 		var spin: SpinBox = _element_spins[element_id]
 		var allowed := def.allows_element(element_id) and def.max_element_dots > 0
@@ -486,7 +513,7 @@ func _sync_fill_ui() -> void:
 
 func _allowed_text(def: FocusDef) -> String:
 	if def.max_element_dots <= 0:
-		return "keine (nur Energiepunkte)"
+		return "keine (nur neutrale Essenz)"
 	if def.allowed_elements.is_empty():
 		return "alle"
 	var names := PackedStringArray()
@@ -498,10 +525,11 @@ func _allowed_text(def: FocusDef) -> String:
 
 func _update_fill_labels() -> void:
 	var def := focus.focus_def
-	_focus_info.text = "Form: %s   ·   Gems: %d / %d\nEnergiepunkte max. %d   ·   Essenzen max. %d\nErlaubte Essenzen: %s" % [
+	_focus_info.text = "Form: %s   ·   Gems: %d / %d\nKapazität: %d (davon max. %d Essenzen)\nErlaubte Essenzen: %s" % [
 		def.shape.get_shape_name(), focus.gems.size(), def.max_gems,
-		def.max_base_dots, def.max_element_dots, _allowed_text(def)]
+		def.max_dots, def.max_element_dots, _allowed_text(def)]
 	_element_total.text = "Essenzen: %d / %d" % [focus.get_element_total(), def.max_element_dots]
+	_base_value.text = str(focus.get_base_count())
 
 
 # --- Ergebnis ---------------------------------------------------------------
@@ -521,7 +549,7 @@ func _counts_text(counts: Dictionary) -> String:
 	var parts := PackedStringArray()
 	for element in CONTENT.elements:
 		if counts.has(element.id):
-			parts.append("%s %d" % [_element_bbcode(element.id), counts[element.id]])
+			parts.append("%s %s" % [_element_bbcode(element.id), _format_number(float(counts[element.id]))])
 	return ", ".join(parts)
 
 
@@ -535,12 +563,9 @@ func _diff_text(before: SpellResult, after: SpellResult) -> String:
 
 	var t := ""
 	if not before.valid:
-		t += "[color=#80ff90]Der Spell wird gültig: %s[/color]\n" % after.form.display_name
-	elif before.form != after.form:
-		t += "Form: %s → %s\n" % [before.form.display_name, after.form.display_name]
-	if not before.valid or before.element_id != after.element_id:
-		var old_element := _element_bbcode(before.element_id) if before.valid else "–"
-		t += "Element: %s → %s\n" % [old_element, _element_bbcode(after.element_id)]
+		t += "[color=#80ff90]Der Spell wird gültig: %s[/color]\n" % after.engraving.display_name
+	elif before.engraving != after.engraving:
+		t += "Spell: %s → %s\n" % [before.engraving.display_name, after.engraving.display_name]
 
 	var old_cast := before.cast_time if before.valid else 0.0
 	var old_mana := before.mana_cost if before.valid else 0.0
@@ -579,19 +604,16 @@ func _update_result_text() -> void:
 		t += "[font_size=18][b][color=#fff2a0]Änderung durch Verschieben[/color][/b][/font_size]\n"
 		t += _diff_text(_drag_baseline, result) + "\n[color=#555555]────────────[/color]\n\n"
 	if result.valid:
-		t += "[font_size=22][b]%s[/b][/font_size]\n" % result.form.display_name
-		t += "Element: %s\n\n" % _element_bbcode(result.element_id)
+		t += "[font_size=22][b]%s[/b][/font_size]\n" % result.engraving.display_name
+		t += "[color=#aaaaaa]%s[/color]\n\n" % result.engraving.description
 		t += "Cast-Zeit: [b]%.2f s[/b]\nMana: [b]%.1f[/b]\n\n" % [result.cast_time, result.mana_cost]
 		t += "[b]Werte[/b]\n"
 		for stat: StringName in result.stats:
 			t += "  %s: %s\n" % [STAT_NAMES.get(stat, String(stat)), _format_number(result.stats[stat])]
-		t += "\n[b]Gems[/b]\n"
-		for rr in result.gem_results:
-			var gem := rr.placed.gem
-			var title := "★ Hauptgem" if rr.is_main() else "Nebengem"
-			t += "%s – %s → %s\n" % [title, gem.display_name, _element_bbcode(rr.element_id)]
-			t += "    Energie %d/%d · Essenzen %d/%d: %s\n" % [
-				rr.base_count, gem.max_base, rr.get_element_total(), gem.max_element, _counts_text(rr.element_counts)]
+		var arrow := "▾" if _show_gem_details else "▸"
+		t += "\n[url=toggle_gems][b]%s Gems (%d)[/b][/url]\n" % [arrow, result.gem_results.size()]
+		if _show_gem_details:
+			t += _gem_details_text()
 	else:
 		t += "[font_size=18][b]Noch kein gültiger Spell[/b][/font_size]\n\n"
 		for error in result.errors:
@@ -604,6 +626,38 @@ func _update_result_text() -> void:
 	t += "Tasten: 1 = Setzen, 2 = Verbinden, R = neu würfeln, "
 	t += "Rücktaste = Verbindung zurück, Esc = Gem abwählen[/font_size][/color]"
 	_result_text.text = t
+
+
+func _gem_details_text() -> String:
+	var t := ""
+	for gr in result.gem_results:
+		var gem := gr.placed.gem
+		var title := "★ " if gr.is_main() else ""
+		t += "%s%s · %s  ×%s\n" % [title, gem.display_name, gr.placed.engraving.display_name,
+			_format_number(gr.multiplier)]
+		var details := "eingesammelt: neutrale Essenz %d/%d, Essenzen %d/%d%s" % [
+			gr.base_count, gem.max_base, gr.get_element_total(), gem.max_element,
+			"" if gr.element_counts.is_empty() else " (%s)" % _counts_text(gr.element_counts)]
+		if not is_equal_approx(gr.multiplier, 1.0):
+			details += "\nzählt: %s" % _essence_text(gr.effective_base, gr.effective_elements)
+		if gr.is_main() and (gr.received_base > 0.0 or not gr.received_elements.is_empty()):
+			details += "\nübertragen: %s" % _essence_text(gr.received_base, gr.received_elements)
+		t += "[indent][color=#bbbbbb]%s[/color][/indent]\n" % details
+	return t
+
+
+## "neutrale Essenz 12, Feuer 3, Luft 1"
+func _essence_text(base: float, counts: Dictionary) -> String:
+	var text := "neutrale Essenz %s" % _format_number(base)
+	if not counts.is_empty():
+		text += ", " + _counts_text(counts)
+	return text
+
+
+func _on_result_meta_clicked(meta: Variant) -> void:
+	if str(meta) == "toggle_gems":
+		_show_gem_details = not _show_gem_details
+		_update_result_text()
 
 
 func _format_number(value: float) -> String:

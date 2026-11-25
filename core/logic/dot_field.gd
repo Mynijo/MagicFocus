@@ -13,8 +13,8 @@ static func generate(focus: FocusInstance) -> Array[EnergyDot]:
 	rng.seed = focus.dot_seed
 	var shape := focus.focus_def.shape
 
-	# Basispunkte zuerst: Ihre Lage hängt dann nicht von der Element-Füllung ab.
-	for i in focus.base_count:
+	# Neutrale Essenz zuerst
+	for i in focus.get_base_count():
 		dots.append(EnergyDot.new(shape.random_point(rng)))
 
 	# Feste Reihenfolge der Elemente -> gleiche Füllung ergibt gleiche Punkte.

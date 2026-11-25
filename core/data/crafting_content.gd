@@ -1,11 +1,11 @@
 class_name CraftingContent
 extends Resource
-## Sammlung aller verfügbaren Inhalte (später: Gem-Bibliothek, Werkstatt).
-## Die Reihenfolge von `elements` entscheidet bei Gleichstand der Elemente in einem Gem.
+## Sammlung aller verfügbaren Inhalte: Elemente, Gem-Formen, Gravuren, Foki.
+## Die Reihenfolge der Listen bestimmt die Reihenfolge in der Oberfläche.
 
 @export var elements: Array[ElementDef] = []
-@export var spell_forms: Array[SpellFormDef] = []
 @export var gems: Array[GemDef] = []
+@export var engravings: Array[EngravingDef] = []
 @export var foci: Array[FocusDef] = []
 
 
@@ -21,6 +21,21 @@ func get_gem(id: StringName) -> GemDef:
 		if gem.id == id:
 			return gem
 	return null
+
+
+func get_engraving(id: StringName) -> EngravingDef:
+	for engraving in engravings:
+		if engraving.id == id:
+			return engraving
+	return null
+
+
+func get_engravings_for(role: GemDef.Role) -> Array[EngravingDef]:
+	var list: Array[EngravingDef] = []
+	for engraving in engravings:
+		if engraving.role == role:
+			list.append(engraving)
+	return list
 
 
 func get_focus(id: StringName) -> FocusDef:

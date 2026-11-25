@@ -14,5 +14,5 @@ display_name = "Neutraler Fokus"
 shape = SubResource("Shape_circle")
 size_class = 1
 max_gems = 5
-max_base_dots = 300
+max_dots = 300
 max_element_dots = 0

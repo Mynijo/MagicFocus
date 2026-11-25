@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="GemDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_def.gd" id="1_fea3c"]
+
+[resource]
+script = ExtResource("1_fea3c")
+id = &"nebengem_klein_grob"
+display_name = "Nebengem klein Grob"
+radius = 60.0
+max_base = 10
+max_element = 10

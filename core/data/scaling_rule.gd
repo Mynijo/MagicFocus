@@ -1,14 +1,14 @@
 class_name ScalingRule
 extends Resource
 ## Allgemeine Skalierungsregel:
-## "Pro `per_n` Punkte aus `source` -> +`amount` auf den Wert `stat`".
-## Deckt z. B. "pro 5 Feuerpunkte +1 Burning" oder "pro farbigem Punkt +1 Resistenz" ab.
+## "Pro `per_n` Essenzen aus `source` -> +`amount` auf den Wert `stat`".
+## Beispiele: "+2 Schaden pro E", "1 Slow pro 10 Luft-E".
+## Gezählt werden effektive Essenzen (nach Multiplikator), daher float.
 
 enum Source {
-	BASE,         ## Basis-Energiepunkte
-	ELEMENT,      ## Punkte eines bestimmten Elements (`element_id`)
-	ANY_ELEMENT,  ## alle farbigen Punkte zusammen
-	GEM_ELEMENT, ## Punkte des Elements, das das Gem angenommen hat
+	BASE,         ## neutrale Essenzen (N-E)
+	ELEMENT,      ## Essenzen eines bestimmten Elements (`element_id`)
+	ANY_ELEMENT,  ## alle Element-Essenzen zusammen (E)
 }
 
 @export var source: Source = Source.BASE
@@ -20,26 +20,23 @@ enum Source {
 @export var min_count: int = 0
 
 
-func count_from(base_count: int, element_counts: Dictionary, gem_element: StringName) -> int:
+func count_from(base_count: float, element_counts: Dictionary) -> float:
 	match source:
 		Source.BASE:
 			return base_count
 		Source.ELEMENT:
-			return element_counts.get(element_id, 0)
+			return float(element_counts.get(element_id, 0.0))
 		Source.ANY_ELEMENT:
-			var total := 0
-			for count: int in element_counts.values():
-				total += count
+			var total := 0.0
+			for count in element_counts.values():
+				total += float(count)
 			return total
-		Source.GEM_ELEMENT:
-			if gem_element == &"":
-				return 0
-			return element_counts.get(gem_element, 0)
-	return 0
+	return 0.0
 
 
-func evaluate(base_count: int, element_counts: Dictionary, gem_element: StringName) -> float:
-	var count := count_from(base_count, element_counts, gem_element)
+func evaluate(base_count: float, element_counts: Dictionary) -> float:
+	var count := count_from(base_count, element_counts)
 	if count < min_count or per_n <= 0:
 		return 0.0
-	return floori(count / float(per_n)) * amount
+	# kleine Toleranz, damit z. B. 4.9999 effektive Essenzen nicht abgerundet werden
+	return floorf(count / float(per_n) + 0.0001) * amount

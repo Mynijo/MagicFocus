@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="EngravingDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_c08b7"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="2_o810k"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="3_ca5hn"]
+
+[sub_resource type="Resource" id="Resource_4yb2p"]
+script = ExtResource("2_o810k")
+stat = &"damage"
+
+[sub_resource type="Resource" id="Resource_1galj"]
+script = ExtResource("2_o810k")
+source = 1
+element_id = &"fire"
+per_n = 2
+stat = &"burn"
+
+[resource]
+script = ExtResource("3_ca5hn")
+id = &"feuerball"
+display_name = "Feuerball"
+role = 0
+description = "+1 Schaden pro neutraler Essenz, 1 Burn pro 2 Feuer-Essenzen"
+rules = Array[ExtResource("2_o810k")]([SubResource("Resource_4yb2p"), SubResource("Resource_1galj")])

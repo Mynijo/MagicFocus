@@ -1,8 +1,8 @@
 class_name FocusDef
 extends Resource
-## Ein Fokus-Typ: Form, Größe, Kapazitäten und erlaubte Energiearten.
+## Ein Fokus-Typ: Form, Größe, Kapazitäten und erlaubte Elemente.
 ## Beispiele: Feuer-Fokus (nur Feuer, dafür viel davon), neutraler Fokus
-## (keine farbigen Punkte, dafür sehr viele Basispunkte).
+## (keine Essenzen, nur neutrale Essenz).
 
 enum SizeClass { SMALL, MEDIUM, LARGE, HUGE }
 
@@ -12,9 +12,12 @@ enum SizeClass { SMALL, MEDIUM, LARGE, HUGE }
 @export var size_class: SizeClass = SizeClass.SMALL
 ## Feste Obergrenze dieses Fokus (klein 3, mittel 3-5, groß 5-7, sehr groß bis 10).
 @export var max_gems: int = 3
-@export var max_base_dots: int = 100
+## Gesamtkapazität für neutrale Essenz und Essenzen zusammen. Der Rest neben
+## den Essenzen wird immer mit neutraler Essenz aufgefüllt.
+@export var max_dots: int = 140
+## Zusätzliches Limit für alle Essenzen zusammen (nicht pro Element).
 @export var max_element_dots: int = 40
-## Erlaubte Elemente für farbige Punkte. Leer = alle Elemente erlaubt.
+## Erlaubte Elemente für Essenzen. Leer = alle Elemente erlaubt.
 @export var allowed_elements: Array[StringName] = []
 
 

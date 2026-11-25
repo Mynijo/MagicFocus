@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="EngravingDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_du45e"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="2_3i6v0"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="3_rh5ny"]
+
+[sub_resource type="Resource" id="Resource_othq6"]
+script = ExtResource("2_3i6v0")
+stat = &"damage"
+
+[sub_resource type="Resource" id="Resource_qupra"]
+script = ExtResource("2_3i6v0")
+source = 1
+element_id = &"air"
+per_n = 2
+stat = &"bleed"
+
+[resource]
+script = ExtResource("3_rh5ny")
+id = &"luftklinge"
+display_name = "Luftklinge"
+role = 0
+description = "+1 Schaden pro neutraler Essenz, 1 Bleed pro 2 Luft-Essenzen"
+rules = Array[ExtResource("2_3i6v0")]([SubResource("Resource_othq6"), SubResource("Resource_qupra")])

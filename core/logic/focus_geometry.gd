@@ -40,14 +40,12 @@ static func has_crossing(points: PackedVector2Array) -> bool:
 	return false
 
 
-## Einflussbereich einem Gem als Vector2(startwinkel, öffnungswinkel).
+## Einflussbereich eines Gems als Vector2(startwinkel, öffnungswinkel).
+## `inner` = Innenwinkel (Spitz), sonst Außenwinkel (Grob).
 ## `ccw` = Umlaufrichtung des Kreises (signed_area > 0). "Innen" ist immer die
 ## Seite zum Inneren des Polygons, auch bei konkaven Formen.
 static func sector_for(prev: Vector2, current: Vector2, next: Vector2,
-		area: GemDef.Area, ccw: bool) -> Vector2:
-	if area == GemDef.Area.BOTH:
-		return Vector2(0.0, TAU)
-
+		inner: bool, ccw: bool) -> Vector2:
 	var to_prev := (prev - current).angle()
 	var to_next := (next - current).angle()
 	var inner_start: float
@@ -59,7 +57,7 @@ static func sector_for(prev: Vector2, current: Vector2, next: Vector2,
 		inner_start = to_prev
 		inner_sweep = wrapf(to_next - to_prev, 0.0, TAU)
 
-	if area == GemDef.Area.INNER:
+	if inner:
 		return Vector2(inner_start, inner_sweep)
 	return Vector2(inner_start + inner_sweep, TAU - inner_sweep)
 

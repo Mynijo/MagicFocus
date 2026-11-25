@@ -5,7 +5,6 @@ extends Resource
 ## aus `dot_seed` und der Füllung reproduzierbar erzeugt.
 
 @export var focus_def: FocusDef
-@export var base_count: int = 0
 ## Element-ID -> Anzahl farbiger Punkte, z. B. {&"fire": 25}
 @export var element_fill: Dictionary = {}
 @export var dot_seed: int = 0
@@ -24,6 +23,13 @@ func get_element_total() -> int:
 	for count: int in element_fill.values():
 		total += count
 	return total
+
+
+## Neutrale Essenz füllt den Fokus immer bis zur Gesamtkapazität auf.
+func get_base_count() -> int:
+	if focus_def == null:
+		return 0
+	return maxi(0, focus_def.max_dots - get_element_total())
 
 
 func get_main_gem_index() -> int:

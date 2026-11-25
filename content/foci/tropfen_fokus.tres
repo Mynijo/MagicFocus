@@ -16,5 +16,5 @@ display_name = "Tropfen-Fokus"
 shape = SubResource("Shape_drop")
 size_class = 1
 max_gems = 4
-max_base_dots = 140
+max_dots = 195
 max_element_dots = 55

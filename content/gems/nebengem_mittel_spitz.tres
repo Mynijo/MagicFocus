@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="GemDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_def.gd" id="1_1r6sy"]
+
+[resource]
+script = ExtResource("1_1r6sy")
+id = &"nebengem_mittel_spitz"
+display_name = "Nebengem mittel Spitz"
+angle = 0

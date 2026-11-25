@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="EngravingDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_vxygq"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="2_1simr"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="3_h82ll"]
+
+[sub_resource type="Resource" id="Resource_ra3xh"]
+script = ExtResource("2_1simr")
+source = 1
+element_id = &"fire"
+stat = &"crit"
+
+[resource]
+script = ExtResource("3_h82ll")
+id = &"crit"
+display_name = "Crit"
+description = "+1 Crit pro Feuer-Essenz"
+rules = Array[ExtResource("2_1simr")]([SubResource("Resource_ra3xh")])

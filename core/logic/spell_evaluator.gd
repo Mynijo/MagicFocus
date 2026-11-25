@@ -4,29 +4,28 @@ extends RefCounted
 ## damit sie auch in der Werkstatt-Vorschau und später im Kampf (headless) läuft.
 ##
 ## Phasen:
-##   1. Prüfen        Gem-Anzahl, genau ein Hauptgem, geschlossener Kreis, keine Kreuzung
-##   2. Bereiche      Einflusssektor jedem Gem (Radius + Innen/Außen/beides)
-##   3. Einsammeln    Hauptgem zuerst, dann kleine Gems in Platzierungsreihenfolge;
-##                    jede nimmt die nächsten freien Punkte bis zu ihrer Kapazität
-##   4. Effekte       Spezial-Gems (Schnittstelle, in M1 leer)
-##   5. Elemente      häufigstes Element je Gem (ab `threshold` Punkten)
-##   6. Spell         Form, Element, Werte, Cast-Zeit, Mana
+##   1. Prüfen         Gem-Anzahl, genau ein Hauptgem, Gravuren, geschlossener Kreis
+##   2. Bereiche       Einflusssektor jedes Gems (Radius + Innen-/Außenwinkel)
+##   3. Einsammeln     Hauptgem zuerst, dann Nebengems in Platzierungsreihenfolge;
+##                     jedes nimmt die nächsten freien Punkte bis zu seiner Kapazität
+##   4. Multiplizieren Eingesammeltes × Flächen-Multiplikator der Gem-Form
+##   5. Übertragen     Standard-Gems geben ihre effektiven Essenzen an das Hauptgem
+##   6. Spell          Regeln der Gravuren, Effekte, Cast-Zeit, Mana
 
 const MIN_GEMS := 3
-## Vorläufiger Standard; in der Werkstatt einstellbar (Balancing noch offen).
-const ELEMENT_THRESHOLD := 4
 const CAST_TIME_PER_GEM := 1.0
 const MIN_CAST_TIME := 0.5
 const MANA_PER_LENGTH := 0.1
+const MIN_MANA := 1.0
 
 const STAT_CAST_TIME_REDUCTION := &"cast_time_reduction"
+const STAT_MANA_REDUCTION := &"mana_reduction"
 
 
-## `elements` legt auch die Reihenfolge bei Gleichstand fest.
+## `elements` wird für lesbare Fehlermeldungen gebraucht.
 ## `dots` ist optional (für Tests); sonst werden sie aus dem Fokus erzeugt.
-## `threshold` = Mindestanzahl Punkte, ab der ein Gem ein Element annimmt.
 static func evaluate(focus: FocusInstance, elements: Array[ElementDef],
-		dots: Variant = null, threshold: int = ELEMENT_THRESHOLD) -> SpellResult:
+		dots: Variant = null) -> SpellResult:
 	var result := SpellResult.new()
 	result.dots.assign(dots if dots != null else DotField.generate(focus))
 
@@ -40,10 +39,11 @@ static func evaluate(focus: FocusInstance, elements: Array[ElementDef],
 
 	var order := _collection_order(result)
 	_collect(order, result)
-	_apply_effects(order, result)
-	_assign_elements(result, elements, threshold)
-	if not _compute_spell(focus, elements, points, result):
-		return result
+	for gr in result.gem_results:
+		gr.apply_multiplier(gr.placed.gem.get_multiplier())
+	var main := result.gem_results[focus.get_main_gem_index()]
+	_transfer(main, result)
+	_compute_spell(main, order, points, result)
 
 	result.valid = true
 	return result
@@ -65,8 +65,6 @@ static func _validate(focus: FocusInstance, result: SpellResult, elements: Array
 					element_name = element.display_name
 			result.errors.append("%s nimmt keine %s-Essenz auf." % [def.display_name, element_name])
 
-	if focus.base_count > def.max_base_dots:
-		result.errors.append("Zu viele Energiepunkte (%d / %d)." % [focus.base_count, def.max_base_dots])
 	if focus.get_element_total() > def.max_element_dots:
 		result.errors.append("Zu viele Essenzen (%d / %d)." % [focus.get_element_total(), def.max_element_dots])
 
@@ -83,6 +81,11 @@ static func _validate(focus: FocusInstance, result: SpellResult, elements: Array
 			continue
 		if placed.gem.role == GemDef.Role.MAIN:
 			main_count += 1
+		if placed.engraving == null:
+			result.errors.append("%s hat keine Gravur." % placed.gem.display_name)
+		elif placed.engraving.role != placed.gem.role:
+			result.errors.append("Die Gravur „%s“ passt nicht auf %s." % [
+				placed.engraving.display_name, placed.gem.display_name])
 		if def.shape != null and not def.shape.contains(placed.position):
 			result.errors.append("%s liegt außerhalb des Fokus." % placed.gem.display_name)
 	if main_count != 1:
@@ -130,23 +133,23 @@ static func _loop_points(focus: FocusInstance) -> PackedVector2Array:
 static func _build_gem_results(focus: FocusInstance, points: PackedVector2Array,
 		ccw: bool, result: SpellResult) -> void:
 	for i in focus.gems.size():
-		var rr := GemResult.new()
-		rr.index = i
-		rr.placed = focus.gems[i]
-		result.gem_results.append(rr)
+		var gr := GemResult.new()
+		gr.index = i
+		gr.placed = focus.gems[i]
+		result.gem_results.append(gr)
 
 	var n := points.size()
 	for k in n:
-		var rr := result.gem_results[focus.loop[k]]
+		var gr := result.gem_results[focus.loop[k]]
 		var sector := FocusGeometry.sector_for(
-			points[(k - 1 + n) % n], points[k], points[(k + 1) % n], rr.placed.gem.area, ccw)
-		rr.sector_start = sector.x
-		rr.sector_sweep = sector.y
+			points[(k - 1 + n) % n], points[k], points[(k + 1) % n], gr.placed.gem.is_inner(), ccw)
+		gr.sector_start = sector.x
+		gr.sector_sweep = sector.y
 
 
 # --- Phase 3 ---------------------------------------------------------------
 
-## Hauptgem zuerst, danach kleine Gems in Platzierungsreihenfolge.
+## Hauptgem zuerst, danach Nebengems in Platzierungsreihenfolge.
 static func _collection_order(result: SpellResult) -> Array[GemResult]:
 	var order := result.gem_results.duplicate()
 	order.sort_custom(func(a: GemResult, b: GemResult) -> bool:
@@ -158,15 +161,15 @@ static func _collection_order(result: SpellResult) -> Array[GemResult]:
 
 static func _collect(order: Array[GemResult], result: SpellResult) -> void:
 	var claimed := {}
-	for rr in order:
-		var gem := rr.placed.gem
-		var center := rr.placed.position
+	for gr in order:
+		var gem := gr.placed.gem
+		var center := gr.placed.position
 
 		var candidates: Array[EnergyDot] = []
 		for dot in result.dots:
 			if claimed.has(dot):
 				continue
-			if FocusGeometry.in_sector(dot.position, center, gem.radius, rr.sector_start, rr.sector_sweep):
+			if FocusGeometry.in_sector(dot.position, center, gem.radius, gr.sector_start, gr.sector_sweep):
 				candidates.append(dot)
 		candidates.sort_custom(func(a: EnergyDot, b: EnergyDot) -> bool:
 			return a.position.distance_squared_to(center) < b.position.distance_squared_to(center))
@@ -182,77 +185,41 @@ static func _collect(order: Array[GemResult], result: SpellResult) -> void:
 				if element_taken >= gem.max_element:
 					continue
 				element_taken += 1
-			rr.add_dot(dot)
+			gr.add_dot(dot)
 			claimed[dot] = true
-
-
-# --- Phase 4 ---------------------------------------------------------------
-
-static func _apply_effects(order: Array[GemResult], result: SpellResult) -> void:
-	for rr in order:
-		for effect in rr.placed.gem.effects:
-			if effect != null:
-				effect.apply(rr, result)
 
 
 # --- Phase 5 ---------------------------------------------------------------
 
-static func _assign_elements(result: SpellResult, elements: Array[ElementDef],
-		threshold: int) -> void:
-	for rr in result.gem_results:
-		var best_id: StringName = &""
-		var best_count := 0
-		for element in elements:
-			var count: int = rr.element_counts.get(element.id, 0)
-			# strikt größer: bei Gleichstand gewinnt das zuerst gelistete Element
-			if count > best_count:
-				best_count = count
-				best_id = element.id
-		rr.element_id = best_id if best_count >= maxi(1, threshold) else &""
+static func _transfer(main: GemResult, result: SpellResult) -> void:
+	for gr in result.gem_results:
+		if gr != main and gr.placed.engraving.transfer_to_main:
+			main.receive(gr)
 
 
 # --- Phase 6 ---------------------------------------------------------------
 
-static func _compute_spell(focus: FocusInstance, elements: Array[ElementDef],
-		points: PackedVector2Array, result: SpellResult) -> bool:
-	var main := result.gem_results[focus.get_main_gem_index()]
-	var form := main.placed.gem.spell_form
-	if form == null:
-		result.errors.append("Das Hauptgem hat keine Spell-Form.")
-		return false
+static func _compute_spell(main: GemResult, order: Array[GemResult],
+		points: PackedVector2Array, result: SpellResult) -> void:
+	var main_engraving := main.placed.engraving
+	result.engraving = main_engraving
+	for stat: StringName in main_engraving.base_stats:
+		result.add_stat(stat, float(main_engraving.base_stats[stat]))
 
-	result.form = form
-	result.element_id = main.element_id
+	# Hauptgem: eigene und übertragene Essenzen; Nebengems: nur eigene
+	for gr in order:
+		var engraving := gr.placed.engraving
+		var base := gr.total_base() if gr.is_main() else gr.effective_base
+		var counts := gr.total_elements() if gr.is_main() else gr.effective_elements
+		for rule in engraving.rules:
+			result.add_stat(rule.stat, rule.evaluate(base, counts))
 
-	for stat: StringName in form.base_stats:
-		result.add_stat(stat, float(form.base_stats[stat]))
+	for gr in order:
+		for effect in gr.placed.engraving.effects:
+			if effect != null:
+				effect.apply(gr, result)
 
-	# Haupt-Spell: farbige Punkte dem Hauptgem, Basispunkte aller Gems
-	var total_base := 0
-	for rr in result.gem_results:
-		total_base += rr.base_count
-	var main_strength := main.placed.gem.strength
-	for rule in form.scaling_rules:
-		result.add_stat(rule.stat, rule.evaluate(total_base, main.element_counts, main.element_id) * main_strength)
-
-	var elements_by_id := {}
-	for element in elements:
-		elements_by_id[element.id] = element
-
-	for rr in result.gem_results:
-		var gem := rr.placed.gem
-		for rule in gem.extra_rules:
-			result.add_stat(rule.stat, rule.evaluate(rr.base_count, rr.element_counts, rr.element_id) * gem.strength)
-		# Kleine Gems verbessern den Spell über ihr Element
-		if rr.is_main() or rr.element_id == &"" or not gem.use_element_rules:
-			continue
-		var element: ElementDef = elements_by_id.get(rr.element_id)
-		if element == null:
-			continue
-		for rule in element.minor_rules:
-			result.add_stat(rule.stat, rule.evaluate(rr.base_count, rr.element_counts, rr.element_id) * gem.strength)
-
-	var reduction := result.get_stat(STAT_CAST_TIME_REDUCTION)
-	result.cast_time = maxf(MIN_CAST_TIME, focus.gems.size() * CAST_TIME_PER_GEM - reduction)
-	result.mana_cost = FocusGeometry.perimeter(points) * MANA_PER_LENGTH
-	return true
+	var cast_time := result.gem_results.size() * CAST_TIME_PER_GEM - result.get_stat(STAT_CAST_TIME_REDUCTION)
+	result.cast_time = maxf(MIN_CAST_TIME, cast_time)
+	var mana := FocusGeometry.perimeter(points) * MANA_PER_LENGTH - result.get_stat(STAT_MANA_REDUCTION)
+	result.mana_cost = maxf(MIN_MANA, mana)

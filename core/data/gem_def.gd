@@ -1,28 +1,35 @@
 class_name GemDef
 extends Resource
-## Eine Gem aus der Gem-Bibliothek.
+## Eine Gem-Form aus der Bibliothek: Radius und Winkel.
+## Was das Gem bewirkt, legt die Gravur fest (EngravingDef).
+##
+## Multiplikator: Spitze Gems zählen jede eingesammelte Essenz doppelt
+## (Ausgleich für den kleineren Innenwinkel), grobe Gems einfach.
 
 enum Role { MAIN, MINOR }
-## Welcher Teil des Einflusskreises zählt: Innenwinkel, Außenwinkel oder beides.
-enum Area { INNER, OUTER, BOTH }
+## Spitz sammelt im Innenwinkel der Ecke, Grob im Außenwinkel.
+enum Angle { SPITZ, GROB }
+
+const SPITZ_MULTIPLIER := 2.0
 
 @export var id: StringName
 @export var display_name: String
 @export var role: Role = Role.MINOR
 @export var radius: float = 80.0
-@export var area: Area = Area.OUTER
-## Maximal einsammelbare Basis-Energiepunkte.
+@export var angle: Angle = Angle.GROB
+## Maximal einsammelbare neutrale Essenzen (N-E).
 @export var max_base: int = 15
-## Maximal einsammelbare farbige Energiepunkte.
+## Maximal einsammelbare Element-Essenzen (E).
 @export var max_element: int = 15
-## Multipliziert alle Beiträge diesem Gem.
-@export var strength: float = 1.0
-## Nur für Hauptgems: welche Spell-Form sie erzeugt.
-@export var spell_form: SpellFormDef
-## Zusätzliche Regeln diesem Gem, unabhängig von ihrem Element.
-@export var extra_rules: Array[ScalingRule] = []
-## Nur Nebengems: Wendet die Regeln des angenommenen Elements an (ElementDef.minor_rules).
-## Aus bei Gems, die Elemente über `extra_rules` selbst auswerten (z. B. Statuseffekt-Gem).
-@export var use_element_rules := true
-## Spezial-Effekte (noch ungenutzt).
-@export var effects: Array[GemEffect] = []
+
+
+func is_inner() -> bool:
+	return angle == Angle.SPITZ
+
+
+func get_multiplier() -> float:
+	return SPITZ_MULTIPLIER if angle == Angle.SPITZ else 1.0
+
+
+func get_angle_name() -> String:
+	return "Spitz" if angle == Angle.SPITZ else "Grob"

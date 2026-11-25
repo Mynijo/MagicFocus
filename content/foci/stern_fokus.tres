@@ -16,5 +16,5 @@ display_name = "Stern-Fokus"
 shape = SubResource("Shape_star")
 size_class = 1
 max_gems = 5
-max_base_dots = 150
+max_dots = 210
 max_element_dots = 60

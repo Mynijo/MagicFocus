@@ -1,27 +1,9 @@
 [gd_resource type="Resource" script_class="ElementDef" format=3]
 
 [ext_resource type="Script" path="res://core/data/element_def.gd" id="1_element"]
-[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="2_rule"]
-
-[sub_resource type="Resource" id="Rule_wet"]
-script = ExtResource("2_rule")
-source = 1
-element_id = &"water"
-per_n = 5
-stat = &"wet"
-amount = 1.0
-
-[sub_resource type="Resource" id="Rule_heal"]
-script = ExtResource("2_rule")
-source = 1
-element_id = &"water"
-per_n = 5
-stat = &"heal"
-amount = 2.0
 
 [resource]
 script = ExtResource("1_element")
 id = &"water"
 display_name = "Wasser"
 color = Color(0.2, 0.55, 1, 1)
-minor_rules = Array[ExtResource("2_rule")]([SubResource("Rule_wet"), SubResource("Rule_heal")])

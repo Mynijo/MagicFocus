@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="EngravingDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_4smk0"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="2_uda7c"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="3_1ushk"]
+
+[sub_resource type="Resource" id="Resource_mnchd"]
+script = ExtResource("2_uda7c")
+source = 2
+stat = &"heal"
+amount = 10.0
+
+[sub_resource type="Resource" id="Resource_lt7ti"]
+script = ExtResource("2_uda7c")
+source = 1
+element_id = &"water"
+stat = &"heal"
+amount = 20.0
+
+[resource]
+script = ExtResource("3_1ushk")
+id = &"heal"
+display_name = "Heal"
+role = 0
+description = "10 Heilung pro Essenz, zusätzlich 20 pro Wasser-Essenz"
+rules = Array[ExtResource("2_uda7c")]([SubResource("Resource_mnchd"), SubResource("Resource_lt7ti")])
