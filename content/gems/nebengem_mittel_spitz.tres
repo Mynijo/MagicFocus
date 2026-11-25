@@ -6,4 +6,6 @@
 script = ExtResource("1_1r6sy")
 id = &"nebengem_mittel_spitz"
 display_name = "Nebengem mittel Spitz"
+radius = 60.0
 angle = 0
+max_base = 25

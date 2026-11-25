@@ -622,8 +622,8 @@ func _gem_details_text() -> String:
 	for gr in result.gem_results:
 		var gem := gr.placed.gem
 		var title := "★ " if gr.is_main() else ""
-		t += "%s%s · %s  ×%s\n" % [title, gem.display_name, gr.placed.engraving.display_name,
-			_format_number(gr.multiplier)]
+		var multiplier := "" if is_equal_approx(gr.multiplier, 1.0) else "  ×" + _format_number(gr.multiplier)
+		t += "%s%s · %s%s\n" % [title, gem.display_name, gr.placed.engraving.display_name, multiplier]
 		var details := "eingesammelt: neutrale Essenz %d/%d, Essenzen %d/%d%s" % [
 			gr.base_count, gem.max_base, gr.get_element_total(), gem.max_element,
 			"" if gr.element_counts.is_empty() else " (%s)" % _counts_text(gr.element_counts)]

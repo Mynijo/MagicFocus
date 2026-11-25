@@ -42,11 +42,26 @@ func _ready() -> void:
 				canvas.placing_engraving = content.get_engraving(&"status_burn")
 				canvas._mouse_inside = true
 				canvas._mouse_focus = Vector2(150, 40)
+				# --place-at=x,y setzt die Mausposition der Vorschau
+				for place_arg in OS.get_cmdline_user_args():
+					if place_arg.begins_with("--place-at="):
+						var xy := place_arg.trim_prefix("--place-at=").split_floats(",")
+						canvas._mouse_focus = Vector2(xy[0], xy[1])
 				canvas.update_preview()
 				canvas.queue_redraw()
 			return
 
 	workshop._on_example_pressed()
+	# Optional: --hover zeigt, welche Punkte das Hauptgem einsammelt (Maus darüber)
+	if OS.get_cmdline_user_args().has("--hover"):
+		canvas.placing_gem = workshop.focus.gems[0].gem
+		canvas.placing_engraving = workshop.focus.gems[0].engraving
+		canvas._mouse_inside = true
+		canvas._hovered = 0
+		canvas._mouse_focus = workshop.focus.gems[0].position
+		canvas.update_preview()
+		canvas.queue_redraw()
+		return
 	# Optional: --replace zeigt die Vorschau beim Ändern eines gesetzten Gems
 	if OS.get_cmdline_user_args().has("--replace"):
 		canvas.placing_gem = content.get_gem(&"nebengem_klein_spitz")

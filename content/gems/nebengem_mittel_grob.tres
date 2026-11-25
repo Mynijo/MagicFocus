@@ -6,3 +6,5 @@
 script = ExtResource("1_jgvkl")
 id = &"nebengem_mittel_grob"
 display_name = "Nebengem mittel Grob"
+radius = 60.0
+max_base = 25

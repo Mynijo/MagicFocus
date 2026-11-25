@@ -14,6 +14,6 @@ display_name = "Feuer-Fokus"
 shape = SubResource("Shape_circle")
 size_class = 0
 max_gems = 3
-max_dots = 160
+max_dots = 240
 max_element_dots = 80
 allowed_elements = Array[StringName]([&"fire"])

@@ -7,6 +7,5 @@ script = ExtResource("1_fea3c")
 id = &"nebengem_klein_grob"
 display_name = "Nebengem klein Grob"
 size = 0
-radius = 60.0
-max_base = 10
+radius = 45.0
 max_element = 10

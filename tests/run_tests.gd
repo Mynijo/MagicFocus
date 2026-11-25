@@ -47,6 +47,7 @@ func _init() -> void:
 		test_canvas_editing,
 		test_canvas_auto_connect_and_preview,
 		test_canvas_replace_engraving,
+		test_gems_outside_other_radius,
 		test_new_main_engravings,
 		test_mana_burn_minor,
 		test_element_factor_per_element,
@@ -951,3 +952,45 @@ func test_freeze_counts_water_and_air() -> void:
 	var r := evaluate(lab(make_gem(MAIN, GROB, 80), engraving(&"freeze"), make_gem(MINOR, GROB, 80), null), dots)
 	check_stat(r, &"damage", 19.0)  # 4 neutral + (2 Wasser + 1 Luft) x 5, Feuer zählt nicht
 	check_stat(r, &"freeze_conversion", 100.0)
+
+
+## Gems dürfen nicht in der Reichweite eines anderen Gems liegen (beide Richtungen).
+func test_gems_outside_other_radius() -> void:
+	var main := content.get_gem(&"hauptgem_mittel_grob")   # Radius 120
+	var minor := content.get_gem(&"nebengem_mittel_grob")  # Radius 60
+	var big := content.get_gem(&"nebengem_gross_grob")     # Radius 90
+	check(main.radius == 120.0 and minor.radius == 60.0 and big.radius == 90.0, "Radien wie im Test angenommen")
+	var focus := FocusInstance.new()
+	focus.focus_def = content.get_focus(&"grosser_fokus")
+	var canvas := FocusCanvas.new()
+	canvas.focus = focus
+	var messages: Array[String] = []
+	canvas.message.connect(func(text: String) -> void: messages.append(text))
+
+	place_on(canvas, main, Vector2(0, 0))
+	place_on(canvas, minor, Vector2(110, 0))
+	check(focus.gems.size() == 1 and messages.back().contains("Reichweite"), "Nebengem im Radius des Hauptgems abgelehnt")
+	place_on(canvas, minor, Vector2(130, 0))
+	check(focus.gems.size() == 2, "Außerhalb des Hauptgem-Radius erlaubt")
+	place_on(canvas, minor, Vector2(130, 40))  # 40 vom Nebengem (Radius 60)
+	check(focus.gems.size() == 2, "Im Radius eines Nebengems abgelehnt")
+	place_on(canvas, big, Vector2(0, -130))
+	check(focus.gems.size() == 3, "Großes Nebengem mit genug Abstand erlaubt")
+	# beide Richtungen: kleiner Abstand zum großen Gem reicht nicht, auch wenn das neue Gem kleiner ist
+	place_on(canvas, minor, Vector2(-70, -130))
+	check(focus.gems.size() == 3 and messages.back().contains("90"), "Abstand mindestens der größere Radius")
+
+	# Ziehen in einen Radius: das Gem gleitet am Rand entlang statt hängen zu bleiben
+	canvas._move_gem(1, Vector2(100, 0))
+	check(is_equal_approx(snappedf(focus.gems[1].position.x, 0.1), 120.0) and is_zero_approx(focus.gems[1].position.y),
+		"Auf den Rand geschoben, war %s" % focus.gems[1].position)
+	canvas._move_gem(1, Vector2(100, 30))
+	var p := focus.gems[1].position
+	check(absf(p.length() - 120.0) < 0.1 and p.y > 20.0, "Gleitet am Rand entlang, war %s" % p)
+
+	# Vergrößern, sodass ein anderes Gem im Radius läge, wird verhindert
+	canvas.placing_gem = content.get_gem(&"hauptgem_gross_grob")  # Radius 165
+	canvas.placing_engraving = engraving(&"magischer_bolzen")
+	canvas._try_replace(0)
+	check(focus.gems[0].gem == main and messages.back().contains("Reichweite"), "Vergrößern über ein anderes Gem verhindert")
+	canvas.free()

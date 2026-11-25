@@ -23,6 +23,7 @@ enum Mode { PLACE, CONNECT }
 const GEM_PICK_RADIUS := 16.0   # Bildschirm-Pixel
 const DRAG_THRESHOLD := 5.0      # Bildschirm-Pixel, ab denen ein Klick zum Ziehen wird
 const MIN_GEM_DISTANCE := 25.0  # Fokus-Einheiten
+const SLIDE_ATTEMPTS := 4       # Versuche, ein gezogenes Gem aus fremden Reichweiten zu schieben
 const MAIN_GEM_SIZE := 13.0     # Bildschirm-Pixel
 const MINOR_GEM_SIZE := 9.0
 const ELEMENT_DOT_SCALE := 1.6  # Essenz-Punkte größer als neutrale
@@ -173,6 +174,26 @@ func _too_close(target: FocusInstance, pos: Vector2, ignore: int) -> bool:
 	return false
 
 
+## Gems dürfen nicht in der Reichweite eines anderen Gems liegen, in beide Richtungen:
+## Abstand mindestens der größere der beiden Radien. Gibt den Index des ersten
+## störenden Gems zurück, sonst -1. Geprüft nur beim Setzen, Verschieben und Ändern.
+func radius_conflict(gem: GemDef, pos: Vector2, ignore: int) -> int:
+	for i in focus.gems.size():
+		var other := focus.gems[i]
+		if i != ignore and other.position.distance_to(pos) < maxf(gem.radius, other.gem.radius):
+			return i
+	return -1
+
+
+func _radius_error(gem: GemDef, pos: Vector2, ignore: int) -> String:
+	var other := radius_conflict(gem, pos, ignore)
+	if other < 0:
+		return ""
+	return "In der Reichweite von %s, Abstand mindestens %d" % [
+		_gem_label(focus.gems[other].gem, focus.gems[other].engraving),
+		int(maxf(gem.radius, focus.gems[other].gem.radius))]
+
+
 ## Leer = Gem darf hier gesetzt werden, sonst der Grund.
 func place_error(gem: GemDef, pos: Vector2) -> String:
 	var def := focus.focus_def
@@ -187,7 +208,7 @@ func place_error(gem: GemDef, pos: Vector2) -> String:
 		return "Setze zuerst ein Hauptgem."
 	if _too_close(focus, pos, -1):
 		return "Zu nah an einem anderen Gem."
-	return ""
+	return _radius_error(gem, pos, -1)
 
 
 func _try_place(gem: GemDef, pos: Vector2) -> void:
@@ -229,7 +250,7 @@ func replace_error(idx: int) -> String:
 			else "Ein Nebengem braucht eine Nebengravur."
 	if placing_gem == placed.gem and placing_engraving == placed.engraving:
 		return "Das Gem hat schon diese Gravur und Form."
-	return ""
+	return _radius_error(placing_gem, placed.position, idx)
 
 
 ## Ersetzt Gravur und Form des Gems `idx`; Position und Verbindungen bleiben.
@@ -246,10 +267,32 @@ func _try_replace(idx: int) -> void:
 	focus_changed.emit()
 
 
+## Zielposition beim Ziehen: Liegt `pos` in der Reichweite eines anderen Gems,
+## wird sie auf deren Rand geschoben, sodass das Gem daran entlanggleitet.
+## Gibt null zurück, wenn es keine erlaubte Position gibt (dann bleibt das Gem stehen).
+func _slide_position(idx: int, pos: Vector2) -> Variant:
+	var gem := focus.gems[idx].gem
+	var target := pos
+	for attempt in SLIDE_ATTEMPTS:
+		var blocker := radius_conflict(gem, target, idx)
+		if blocker < 0:
+			break
+		var other := focus.gems[blocker].position
+		var direction := target - other
+		if direction.length() < 0.001:
+			direction = focus.gems[idx].position - other
+		target = other + direction.normalized() * (maxf(gem.radius, focus.gems[blocker].gem.radius) + 0.01)
+	if radius_conflict(gem, target, idx) >= 0 or _too_close(focus, target, idx) \
+			or not focus.focus_def.shape.contains(target):
+		return null
+	return target
+
+
 func _move_gem(idx: int, pos: Vector2) -> void:
-	if not focus.focus_def.shape.contains(pos) or _too_close(focus, pos, idx):
+	var target: Variant = _slide_position(idx, pos)
+	if target == null:
 		return
-	focus.gems[idx].position = pos
+	focus.gems[idx].position = target
 	focus_changed.emit()
 
 
@@ -449,6 +492,14 @@ func _preview_dots(claimed: Dictionary) -> Array[EnergyDot]:
 
 
 func _preview_summary(dots: Array[EnergyDot]) -> String:
+	var text := _dots_summary(dots)
+	if not dots.is_empty() and (_preview == null or not _preview.valid):
+		text += "  (in Reichweite)"
+	return text
+
+
+## "neutrale Essenz 12 · Feuer 3"
+func _dots_summary(dots: Array[EnergyDot]) -> String:
 	if dots.is_empty():
 		return "keine Punkte"
 	var base := 0
@@ -463,10 +514,18 @@ func _preview_summary(dots: Array[EnergyDot]) -> String:
 		for element in content.elements:
 			if counts.has(element.id):
 				parts.append("%s %d" % [element.display_name, counts[element.id]])
-	var text := " · ".join(parts)
-	if _preview == null or not _preview.valid:
-		text += "  (in Reichweite)"
-	return text
+	return " · ".join(parts)
+
+
+## Gem, dessen eingesammelte Punkte gerade hervorgehoben werden
+## (unter der Maus oder beim Ziehen), sonst null.
+func _owner_result() -> GemResult:
+	if result == null or not result.valid:
+		return null
+	var idx := _pressed if _dragging else _hovered
+	if idx < 0 or idx >= result.gem_results.size():
+		return null
+	return result.gem_results[idx]
 
 
 # --- Zeichnen ---------------------------------------------------------------
@@ -487,6 +546,8 @@ func _gem_color(gem: GemDef) -> Color:
 static func _gem_label(gem: GemDef, engraving: EngravingDef) -> String:
 	var engraving_name := engraving.display_name if engraving != null else "ohne Gravur"
 	var multiplier := gem.get_multiplier()
+	if is_equal_approx(multiplier, 1.0):
+		return engraving_name  # ×1 wird nicht angezeigt
 	var number := str(int(multiplier)) if is_equal_approx(multiplier, roundf(multiplier)) else String.num(multiplier, 2)
 	return "%s ×%s" % [engraving_name, number]
 
@@ -565,24 +626,37 @@ func _draw() -> void:
 		and _hovered < 0 and _pressed < 0
 	var show_replace := is_replace_preview()
 	var preview_dots: Array[EnergyDot] = []
-	if (show_ghost and _preview_error == "") or show_replace:
+	if show_ghost and _preview_error == "":
 		if _preview != null and _preview.valid:
 			var preview_gem := _preview.gem_results[_preview_index]
 			_draw_sector(preview_gem, 0.22, COLOR_PREVIEW, px)
 		else:
 			draw_arc(_preview_position(), placing_gem.radius, 0.0, TAU, 64, Color(COLOR_PREVIEW, 0.7), 1.0 * px, true)
-		if show_ghost:
-			_draw_preview_edges(px)
+		_draw_preview_edges(px)
 		preview_dots = _preview_dots(claimed)
 
+	# Zugehörigkeit: Punkte des Gems unter der Maus (bzw. des gezogenen) mit Linien zum Gem
+	var owner := _owner_result()
+	var owned := {}
+	if owner != null:
+		_draw_sector(owner, 0.18, Color(_gem_color(owner.placed.gem), 0.9), px)
+		for dot in owner.collected:
+			owned[dot] = true
+			var line_color := Color(_element_color(dot.element_id, COLOR_BASE_DOT), 0.5)
+			draw_line(owner.placed.position, dot.position, line_color, 1.0 * px, true)
+
 	# Energiepunkte
-	# Essenz-Punkte sind größer als neutrale (sie zählen mehr)
+	# Essenz-Punkte sind größer als neutrale (sie zählen mehr). Beim Hervorheben
+	# werden die Punkte anderer Gems blasser.
 	if result != null:
 		for dot in result.dots:
 			var color := _element_color(dot.element_id, COLOR_BASE_DOT)
 			var scale := 1.0 if dot.is_base() else ELEMENT_DOT_SCALE
-			if claimed.has(dot):
-				draw_circle(dot.position, 3.2 * scale * px, color, true, -1.0, true)
+			if owned.has(dot):
+				draw_circle(dot.position, 3.6 * scale * px, color, true, -1.0, true)
+				draw_arc(dot.position, 5.5 * scale * px, 0.0, TAU, 16, Color(1, 1, 1, 0.85), 1.2 * px, true)
+			elif claimed.has(dot):
+				draw_circle(dot.position, 3.2 * scale * px, Color(color, 0.35 if owner != null else 1.0), true, -1.0, true)
 			elif show_free_dots:
 				draw_circle(dot.position, 2.2 * scale * px, Color(color, 0.4), true, -1.0, true)
 	for dot in preview_dots:
@@ -596,6 +670,12 @@ func _draw() -> void:
 		var ghost_color := Color(COLOR_OK if _preview_error == "" else COLOR_BAD, 0.6)
 		if _preview_error != "":
 			draw_arc(_mouse_focus, placing_gem.radius, 0.0, TAU, 64, Color(COLOR_BAD, 0.4), 1.0 * px, true)
+			# Reichweite des Gems, das im Weg ist
+			var blocker := radius_conflict(placing_gem, _mouse_focus, -1)
+			if blocker >= 0:
+				var other := focus.gems[blocker]
+				draw_arc(other.position, maxf(other.gem.radius, placing_gem.radius), 0.0, TAU, 64,
+					Color(COLOR_BAD, 0.8), 2.0 * px, true)
 		var ghost_size := MAIN_GEM_SIZE if placing_gem.role == GemDef.Role.MAIN else MINOR_GEM_SIZE
 		draw_circle(_mouse_focus, ghost_size * px, ghost_color, true, -1.0, true)
 
@@ -627,17 +707,28 @@ func _draw() -> void:
 		if _preview_error == "":
 			text = _gem_label(placing_gem, placing_engraving) + "  ·  " + text
 		_draw_hint(font, to_screen(_mouse_focus), text, COLOR_BAD if _preview_error != "" else COLOR_PREVIEW)
+	elif owner != null:
+		var anchor := to_screen(owner.placed.position)
+		_draw_hint(font, anchor, "Sammelt: " + _dots_summary(owner.collected), Color(1, 1, 1, 0.95))
+		if show_replace:
+			var text := "Klick: wird zu %s  ·  %s" % [
+				_gem_label(placing_gem, placing_engraving), _preview_summary(_preview_dots(claimed))]
+			_draw_hint(font, anchor, text, COLOR_PREVIEW, 1)
 	elif show_replace:
-		var text := "Klick: wird zu %s  ·  %s" % [_gem_label(placing_gem, placing_engraving), _preview_summary(preview_dots)]
+		var text := "Klick: wird zu %s  ·  %s" % [
+			_gem_label(placing_gem, placing_engraving), _preview_summary(_preview_dots(claimed))]
 		_draw_hint(font, to_screen(_preview_position()), text, COLOR_PREVIEW)
 
 
-## Hinweistext unter einem Punkt; passt er rechts nicht mehr hin, steht er links davon.
-func _draw_hint(font: Font, anchor: Vector2, text: String, color: Color) -> void:
+## Hinweistext unter einem Punkt (`line` = weitere Zeile darunter);
+## passt er rechts nicht mehr hin, steht er links davon.
+func _draw_hint(font: Font, anchor: Vector2, text: String, color: Color, line := 0) -> void:
 	var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
-	var pos := anchor + Vector2(16, 22)
+	var pos := anchor + Vector2(16, 22 + 18 * line)
 	if pos.x + width > size.x - 8.0:
 		pos.x = maxf(8.0, anchor.x - 16.0 - width)
+	# dunkler Hintergrund, damit der Hinweis über Beschriftungen lesbar bleibt
+	draw_rect(Rect2(pos + Vector2(-4, -15), Vector2(width + 8, 19)), Color(0.05, 0.05, 0.08, 0.85))
 	draw_string_outline(font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, 4, Color(0, 0, 0, 0.8))
 	draw_string(font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, color)
 

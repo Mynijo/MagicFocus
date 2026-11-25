@@ -16,8 +16,8 @@ const GROB := GemDef.Angle.GROB
 ## Daraus entstehen alle Kombinationen mit Grob und Spitz,
 ## z. B. id "nebengem_mittel_spitz", Name "Nebengem mittel Spitz".
 const GEM_SIZES := {
-	MAIN: [[120.0, 30, 20], [160.0, 40, 25], [220.0, 55, 35]],
-	MINOR: [[60.0, 10, 10], [80.0, 15, 15], [120.0, 20, 20]],
+	MAIN: [[90.0, 45, 20], [120.0, 60, 25], [165.0, 85, 35]],
+	MINOR: [[45.0, 15, 10], [60.0, 25, 15], [90.0, 30, 20]],
 }
 const SIZE_IDS := ["klein", "mittel", "gross"]
 
