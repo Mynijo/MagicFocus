@@ -32,6 +32,7 @@ func _init() -> void:
 		test_edges_must_stay_inside_shape,
 		test_status_rune,
 		test_explosion_rune,
+		test_spell_change_preview,
 	]
 	for test: Callable in tests:
 		_current = test.get_method()
@@ -611,6 +612,55 @@ func test_explosion_rune() -> void:
 	check(r.valid and r.form.id == &"explosion", "Spell sollte eine Explosion sein")
 	# Grundschaden 8 + 20 Feuer * 1 * Stärke 0.6 = 20
 	check(is_equal_approx(r.get_stat(&"damage"), 20.0), "Schaden 8 + 20 * 0.6 = 20, war %s" % r.get_stat(&"damage"))
+
+
+func test_spell_change_preview() -> void:
+	var content := load("res://content/crafting_content.tres") as CraftingContent
+	var workshop: Node = load("res://ui/workshop/workshop.tscn").instantiate()
+
+	var before := SpellResult.new()
+	before.valid = true
+	before.form = content.get_rune(&"hauptrune_geschoss").spell_form
+	before.stats = {&"damage": 10.0}
+	before.cast_time = 3.0
+	before.mana_cost = 50.0
+	var after := SpellResult.new()
+	after.valid = true
+	after.form = before.form
+	after.stats = {&"damage": 14.0, &"burn": 5.0}
+	after.cast_time = 4.0
+	after.mana_cost = 50.0
+
+	var text: String = workshop._diff_text(before, after)
+	check(text.contains("10 → [b]14[/b]") and text.contains("(+4)"), "Schaden-Änderung sollte angezeigt werden: %s" % text)
+	check(text.contains("Burn (Stacks): 0 → [b]5[/b]"), "Neuer Statuswert sollte als Zuwachs erscheinen")
+	check(text.contains("Cast-Zeit (s): 3 → [b]4[/b] [color=#ff9090]"), "Längere Cast-Zeit sollte rot sein")
+
+	var invalid := SpellResult.new()
+	text = workshop._diff_text(invalid, after)
+	check(text.contains("wird gültig"), "Übergang ungültig -> gültig sollte genannt werden")
+	invalid.errors.append("Testfehler")
+	text = workshop._diff_text(before, invalid)
+	check(text.contains("wäre ungültig") and text.contains("Testfehler"), "Ungültige Vorschau sollte die Gründe nennen")
+	workshop.free()
+
+	# Canvas meldet die Vorschau
+	var focus := FocusInstance.new()
+	focus.focus_def = content.get_focus(&"kleiner_fokus")
+	var canvas := FocusCanvas.new()
+	canvas.focus = focus
+	canvas.evaluate_preview = func(f: FocusInstance) -> SpellResult: return SpellEvaluator.evaluate(f, content.elements)
+	var received: Array = []
+	canvas.preview_changed.connect(func(p: SpellResult) -> void: received.append(p))
+	canvas.placing_rune = content.get_rune(&"hauptrune_geschoss")
+	canvas._mouse_inside = true
+	canvas._mouse_focus = Vector2(0, 0)
+	canvas.update_preview()
+	check(received.size() == 1 and received[0] != null, "Vorschau sollte gemeldet werden")
+	canvas._mouse_inside = false
+	canvas.update_preview()
+	check(received.size() == 2 and received[1] == null, "Ohne Maus sollte die Vorschau verschwinden")
+	canvas.free()
 
 
 func _has_error(result: SpellResult, fragment: String) -> bool:

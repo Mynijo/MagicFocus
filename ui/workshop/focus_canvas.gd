@@ -12,6 +12,10 @@ extends Control
 
 signal focus_changed
 signal message(text: String)
+## Neue Vorschau beim Setzen (null = keine Vorschau).
+signal preview_changed(preview: SpellResult)
+signal drag_started
+signal drag_ended
 
 enum Mode { PLACE, CONNECT }
 
@@ -66,7 +70,7 @@ func _notification(what: int) -> void:
 		NOTIFICATION_MOUSE_EXIT:
 			_mouse_inside = false
 			_hovered = -1
-			_clear_preview()
+			update_preview()
 			queue_redraw()
 		NOTIFICATION_RESIZED:
 			queue_redraw()
@@ -109,6 +113,7 @@ func _gui_input(event: InputEvent) -> void:
 		_mouse_focus = to_focus(event.position)
 		if _pressed >= 0 and not _dragging and event.position.distance_to(_press_screen) > DRAG_THRESHOLD:
 			_dragging = true
+			drag_started.emit()
 		if _dragging:
 			_move_rune(_pressed, _mouse_focus)
 		else:
@@ -134,8 +139,11 @@ func _gui_input(event: InputEvent) -> void:
 			# Loslassen ohne Ziehen = Klick auf die Rune
 			if _pressed >= 0 and not _dragging and mode == Mode.CONNECT:
 				_try_connect(_pressed)
+			var was_dragging := _dragging
 			_pressed = -1
 			_dragging = false
+			if was_dragging:
+				drag_ended.emit()
 			update_preview()
 		accept_event()
 	elif button.button_index == MOUSE_BUTTON_RIGHT and button.pressed:
@@ -340,8 +348,14 @@ func _clear_preview() -> void:
 	_preview_error = ""
 
 
-## Berechnet, was die gewählte Rune an der Mausposition einsammeln würde.
+## Berechnet, was die gewählte Rune an der Mausposition einsammeln würde,
+## und meldet das Ergebnis über `preview_changed`.
 func update_preview() -> void:
+	_compute_preview()
+	preview_changed.emit(_preview)
+
+
+func _compute_preview() -> void:
 	_clear_preview()
 	if focus == null or mode != Mode.PLACE or placing_rune == null:
 		return

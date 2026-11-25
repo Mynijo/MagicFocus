@@ -22,6 +22,10 @@ const AREA_NAMES := ["innen", "außen", "innen + außen"]
 var focus: FocusInstance
 var result: SpellResult
 var threshold := SpellEvaluator.ELEMENT_THRESHOLD
+## Auswertung mit der Rune unter dem Mauszeiger (beim Setzen), sonst null.
+var _preview_result: SpellResult
+## Auswertung vor Beginn des Verschiebens (während des Ziehens), sonst null.
+var _drag_baseline: SpellResult
 
 var _canvas: FocusCanvas
 var _focus_select: OptionButton
@@ -106,6 +110,9 @@ func _build_ui() -> void:
 	_canvas.clip_contents = true
 	_canvas.focus_changed.connect(_on_canvas_changed)
 	_canvas.message.connect(_show_status)
+	_canvas.preview_changed.connect(_on_preview_changed)
+	_canvas.drag_started.connect(_on_drag_started)
+	_canvas.drag_ended.connect(_on_drag_ended)
 	root.add_child(_canvas)
 
 	root.add_child(_build_right_panel())
@@ -396,6 +403,20 @@ func _on_example_pressed() -> void:
 	_refresh()
 
 
+func _on_preview_changed(preview: SpellResult) -> void:
+	_preview_result = preview
+	_update_result_text()
+
+
+func _on_drag_started() -> void:
+	_drag_baseline = result
+
+
+func _on_drag_ended() -> void:
+	_drag_baseline = null
+	_update_result_text()
+
+
 func _on_canvas_changed() -> void:
 	_status.text = ""
 	_refresh()
@@ -504,8 +525,59 @@ func _counts_text(counts: Dictionary) -> String:
 	return ", ".join(parts)
 
 
+## Vergleich zweier Auswertungen als BBCode ("vorher -> nachher").
+func _diff_text(before: SpellResult, after: SpellResult) -> String:
+	if not after.valid:
+		var invalid_text := "[color=#ff9090]Der Spell wäre ungültig:[/color]\n"
+		for error in after.errors:
+			invalid_text += "[color=#ff9090]  • %s[/color]\n" % error
+		return invalid_text
+
+	var t := ""
+	if not before.valid:
+		t += "[color=#80ff90]Der Spell wird gültig: %s[/color]\n" % after.form.display_name
+	elif before.form != after.form:
+		t += "Form: %s → %s\n" % [before.form.display_name, after.form.display_name]
+	if not before.valid or before.element_id != after.element_id:
+		var old_element := _element_bbcode(before.element_id) if before.valid else "–"
+		t += "Element: %s → %s\n" % [old_element, _element_bbcode(after.element_id)]
+
+	var old_cast := before.cast_time if before.valid else 0.0
+	var old_mana := before.mana_cost if before.valid else 0.0
+	t += _diff_line("Cast-Zeit (s)", old_cast, after.cast_time, false)
+	t += _diff_line("Mana", old_mana, after.mana_cost, false)
+
+	var stat_names := after.stats.keys()
+	if before.valid:
+		for stat: StringName in before.stats:
+			if not stat_names.has(stat):
+				stat_names.append(stat)
+	for stat: StringName in stat_names:
+		var old_value: float = before.stats.get(stat, 0.0) if before.valid else 0.0
+		t += _diff_line(STAT_NAMES.get(stat, String(stat)), old_value, after.stats.get(stat, 0.0), true)
+	return t
+
+
+## Eine Zeile "Name: alt → neu (+x)"; grün = besser, rot = schlechter.
+func _diff_line(label: String, old_value: float, new_value: float, higher_is_better: bool) -> String:
+	var delta := new_value - old_value
+	if is_zero_approx(delta):
+		return "[color=#999999]%s: %s[/color]\n" % [label, _format_number(new_value)]
+	var better := (delta > 0.0) == higher_is_better
+	var color := "#80ff90" if better else "#ff9090"
+	var prefix := "+" if delta > 0.0 else ""
+	return "%s: %s → [b]%s[/b] [color=%s](%s%s)[/color]\n" % [
+		label, _format_number(old_value), _format_number(new_value), color, prefix, _format_number(delta)]
+
+
 func _update_result_text() -> void:
 	var t := ""
+	if _preview_result != null:
+		t += "[font_size=18][b][color=#fff2a0]Vorschau: mit neuer Rune[/color][/b][/font_size]\n"
+		t += _diff_text(result, _preview_result) + "\n[color=#555555]────────────[/color]\n\n"
+	elif _drag_baseline != null:
+		t += "[font_size=18][b][color=#fff2a0]Änderung durch Verschieben[/color][/b][/font_size]\n"
+		t += _diff_text(_drag_baseline, result) + "\n[color=#555555]────────────[/color]\n\n"
 	if result.valid:
 		t += "[font_size=22][b]%s[/b][/font_size]\n" % result.form.display_name
 		t += "Element: %s\n\n" % _element_bbcode(result.element_id)

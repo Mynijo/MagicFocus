@@ -25,6 +25,14 @@ func _ready() -> void:
 			workshop.focus.loop = PackedInt32Array([0, 1, 2])
 			workshop.focus.loop_closed = true
 			workshop._refresh()
+			# Optional: --place zeigt die Vorschau einer vierten Rune
+			if OS.get_cmdline_user_args().has("--place"):
+				var canvas: FocusCanvas = workshop._canvas
+				canvas.placing_rune = workshop.CONTENT.get_rune(&"zusatzrune_status")
+				canvas._mouse_inside = true
+				canvas._mouse_focus = Vector2(180, 60)
+				canvas.update_preview()
+				canvas.queue_redraw()
 			return
 
 	workshop._on_example_pressed()
