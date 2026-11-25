@@ -5,7 +5,7 @@
 
 [sub_resource type="Resource" id="Shape_circle"]
 script = ExtResource("2_circle")
-radius = 380.0
+radius = 430.0
 
 [resource]
 script = ExtResource("1_focus")
