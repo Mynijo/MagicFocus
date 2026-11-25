@@ -6,6 +6,7 @@
 script = ExtResource("1_fxcdj")
 id = &"nebengem_klein_spitz"
 display_name = "Nebengem klein Spitz"
+size = 0
 radius = 60.0
 angle = 0
 max_base = 10

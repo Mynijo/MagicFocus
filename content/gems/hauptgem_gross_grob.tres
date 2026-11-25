@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="GemDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_def.gd" id="1_i6bgu"]
+
+[resource]
+script = ExtResource("1_i6bgu")
+id = &"hauptgem_gross_grob"
+display_name = "Hauptgem groß Grob"
+role = 0
+size = 2
+radius = 220.0
+max_base = 55
+max_element = 35

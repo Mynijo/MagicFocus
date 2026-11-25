@@ -12,17 +12,14 @@ const MINOR := GemDef.Role.MINOR
 const SPITZ := GemDef.Angle.SPITZ
 const GROB := GemDef.Angle.GROB
 
-## id, Name, Rolle, Radius, Winkel, max. neutrale Essenz, max. Essenzen
-const GEMS := [
-	[&"hauptgem_grob", "Hauptgem Grob", MAIN, 160.0, GROB, 40, 25],
-	[&"hauptgem_spitz", "Hauptgem Spitz", MAIN, 160.0, SPITZ, 40, 25],
-	[&"nebengem_klein_spitz", "Nebengem klein Spitz", MINOR, 60.0, SPITZ, 10, 10],
-	[&"nebengem_klein_grob", "Nebengem klein Grob", MINOR, 60.0, GROB, 10, 10],
-	[&"nebengem_mittel_spitz", "Nebengem mittel Spitz", MINOR, 80.0, SPITZ, 15, 15],
-	[&"nebengem_mittel_grob", "Nebengem mittel Grob", MINOR, 80.0, GROB, 15, 15],
-	[&"nebengem_gross_spitz", "Nebengem groß Spitz", MINOR, 120.0, SPITZ, 20, 20],
-	[&"nebengem_gross_grob", "Nebengem groß Grob", MINOR, 120.0, GROB, 20, 20],
-]
+## Je Rolle und Größe (klein, mittel, groß): Radius, max. neutrale Essenz, max. Essenzen.
+## Daraus entstehen alle Kombinationen mit Grob und Spitz,
+## z. B. id "nebengem_mittel_spitz", Name "Nebengem mittel Spitz".
+const GEM_SIZES := {
+	MAIN: [[120.0, 30, 20], [160.0, 40, 25], [220.0, 55, 35]],
+	MINOR: [[60.0, 10, 10], [80.0, 15, 15], [120.0, 20, 20]],
+}
+const SIZE_IDS := ["klein", "mittel", "gross"]
 
 const FOCI := [&"kleiner_fokus", &"mittlerer_fokus", &"grosser_fokus", &"sehr_grosser_fokus",
 	&"stern_fokus", &"tropfen_fokus", &"feuer_fokus", &"neutraler_fokus"]
@@ -96,18 +93,24 @@ func _init() -> void:
 		_save(element, "res://content/elements/%s.tres" % id)
 		content.elements.append(load("res://content/elements/%s.tres" % id))
 
-	for row in GEMS:
-		var gem := GemDef.new()
-		gem.id = row[0]
-		gem.display_name = row[1]
-		gem.role = row[2]
-		gem.radius = row[3]
-		gem.angle = row[4]
-		gem.max_base = row[5]
-		gem.max_element = row[6]
-		var path := GEM_DIR + String(gem.id) + ".tres"
-		_save(gem, path)
-		content.gems.append(load(path))
+	for role in [MAIN, MINOR]:
+		var role_name := "Hauptgem" if role == MAIN else "Nebengem"
+		for size in 3:
+			for angle in [GROB, SPITZ]:
+				var row: Array = GEM_SIZES[role][size]
+				var gem := GemDef.new()
+				var angle_name := "Spitz" if angle == SPITZ else "Grob"
+				gem.id = StringName("%s_%s_%s" % [role_name.to_lower(), SIZE_IDS[size], angle_name.to_lower()])
+				gem.display_name = "%s %s %s" % [role_name, GemDef.SIZE_NAMES[size], angle_name]
+				gem.role = role
+				gem.size = size
+				gem.angle = angle
+				gem.radius = row[0]
+				gem.max_base = row[1]
+				gem.max_element = row[2]
+				var path := GEM_DIR + String(gem.id) + ".tres"
+				_save(gem, path)
+				content.gems.append(load(path))
 
 	for data: Dictionary in ENGRAVINGS:
 		var engraving := EngravingDef.new()

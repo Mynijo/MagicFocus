@@ -23,7 +23,7 @@ func _ready() -> void:
 			workshop._on_focus_type_selected(content.foci.find(def))
 			var standard := content.get_engraving(&"standard")
 			var gems: Array[PlacedGem] = [
-				PlacedGem.create(content.get_gem(&"hauptgem_grob"), content.get_engraving(&"feuerball"), Vector2(0, 120)),
+				PlacedGem.create(content.get_gem(&"hauptgem_mittel_grob"), content.get_engraving(&"feuerball"), Vector2(0, 120)),
 				PlacedGem.create(content.get_gem(&"nebengem_mittel_grob"), standard, Vector2(-110, -40)),
 				PlacedGem.create(content.get_gem(&"nebengem_mittel_spitz"), content.get_engraving(&"crit"), Vector2(110, -40)),
 			]

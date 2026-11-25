@@ -23,6 +23,14 @@ func get_gem(id: StringName) -> GemDef:
 	return null
 
 
+## Gem-Form zu Rolle, Größe und Winkel (Auswahl in der Werkstatt).
+func find_gem(role: GemDef.Role, size: GemDef.Size, angle: GemDef.Angle) -> GemDef:
+	for gem in gems:
+		if gem.role == role and gem.size == size and gem.angle == angle:
+			return gem
+	return null
+
+
 func get_engraving(id: StringName) -> EngravingDef:
 	for engraving in engravings:
 		if engraving.id == id:

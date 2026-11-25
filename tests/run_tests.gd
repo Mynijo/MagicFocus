@@ -163,7 +163,15 @@ func evaluate(focus: FocusInstance, dots: Array[EnergyDot] = []) -> SpellResult:
 func test_content_loads() -> void:
 	check(content != null, "crafting_content.tres sollte laden")
 	check(content.elements.size() == 5, "5 Elemente erwartet")
-	check(content.gems.size() == 8, "8 Gem-Formen erwartet, waren %d" % content.gems.size())
+	check(content.gems.size() == 12, "12 Gem-Formen erwartet (2 Rollen x 3 Größen x 2 Winkel), waren %d" % content.gems.size())
+	for role in [MAIN, MINOR]:
+		for size in GemDef.Size.values():
+			for angle in [SPITZ, GROB]:
+				var gem := content.find_gem(role, size, angle)
+				check(gem != null and gem.role == role and gem.size == size and gem.angle == angle,
+					"Gem für Rolle %d, Größe %d, Winkel %d sollte existieren" % [role, size, angle])
+	check(content.find_gem(MINOR, GemDef.Size.KLEIN, GROB).radius < content.find_gem(MINOR, GemDef.Size.GROSS, GROB).radius,
+		"Größere Gems haben einen größeren Radius")
 	check(content.foci.size() == 8, "8 Fokus-Typen erwartet")
 	check(content.get_engravings_for(MAIN).size() == 10, "10 Hauptgravuren erwartet")
 	check(content.get_engravings_for(MINOR).size() == 6, "6 Nebengravuren erwartet")
@@ -484,7 +492,7 @@ func test_example_focus_evaluates() -> void:
 	focus.dot_seed = 1234
 	var standard := engraving(&"standard")
 	focus.gems = [
-		PlacedGem.create(content.get_gem(&"hauptgem_grob"), engraving(&"magischer_bolzen"), Vector2(-120, 80)),
+		PlacedGem.create(content.get_gem(&"hauptgem_mittel_grob"), engraving(&"magischer_bolzen"), Vector2(-120, 80)),
 		PlacedGem.create(content.get_gem(&"nebengem_mittel_grob"), standard, Vector2(130, 60)),
 		PlacedGem.create(content.get_gem(&"nebengem_mittel_spitz"), standard, Vector2(0, -150)),
 	]
@@ -509,7 +517,7 @@ func place_on(canvas: FocusCanvas, gem: GemDef, pos: Vector2) -> void:
 
 
 func test_canvas_editing() -> void:
-	var main := content.get_gem(&"hauptgem_grob")
+	var main := content.get_gem(&"hauptgem_mittel_grob")
 	var minor := content.get_gem(&"nebengem_mittel_grob")
 	var focus := FocusInstance.new()
 	focus.focus_def = content.get_focus(&"kleiner_fokus")
@@ -556,7 +564,7 @@ func test_canvas_editing() -> void:
 
 
 func test_canvas_auto_connect_and_preview() -> void:
-	var main := content.get_gem(&"hauptgem_grob")
+	var main := content.get_gem(&"hauptgem_mittel_grob")
 	var minor := content.get_gem(&"nebengem_mittel_grob")
 	var focus := FocusInstance.new()
 	focus.focus_def = content.get_focus(&"mittlerer_fokus")
@@ -635,7 +643,7 @@ func _content_triangle(def: FocusDef, a: Vector2, b: Vector2, c: Vector2) -> Foc
 	focus.focus_def = def
 	var standard := engraving(&"standard")
 	focus.gems = [
-		PlacedGem.create(content.get_gem(&"hauptgem_grob"), engraving(&"magischer_bolzen"), a),
+		PlacedGem.create(content.get_gem(&"hauptgem_mittel_grob"), engraving(&"magischer_bolzen"), a),
 		PlacedGem.create(content.get_gem(&"nebengem_mittel_grob"), standard, b),
 		PlacedGem.create(content.get_gem(&"nebengem_mittel_grob"), standard, c),
 	]
@@ -736,7 +744,7 @@ func test_spell_change_preview() -> void:
 	canvas.evaluate_preview = evaluate_real
 	var received: Array = []
 	canvas.preview_changed.connect(func(p: SpellResult) -> void: received.append(p))
-	canvas.placing_gem = content.get_gem(&"hauptgem_grob")
+	canvas.placing_gem = content.get_gem(&"hauptgem_mittel_grob")
 	canvas.placing_engraving = engraving(&"magischer_bolzen")
 	canvas._mouse_inside = true
 	canvas._mouse_focus = Vector2(0, 0)

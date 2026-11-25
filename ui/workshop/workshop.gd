@@ -35,11 +35,10 @@ var _focus_info: Label
 var _base_value: Label
 var _element_spins := {}  # Element-ID -> SpinBox
 var _element_total: Label
-var _library_group := ButtonGroup.new()
 var _engraving_select: OptionButton
-var _engraving_info: Label
-## Zuletzt gewählte Gravur je Rolle (GemDef.Role -> EngravingDef)
-var _engraving_choice := {}
+var _spitz_check: CheckBox
+var _gem_info: Label
+var _selected_size: GemDef.Size = GemDef.Size.MITTEL
 var _mode_place: Button
 var _mode_connect: Button
 var _status: Label
@@ -58,6 +57,7 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--example"):
 		_load_example()
 	_refresh()
+	_update_placing()
 
 
 # --- Fokus-Zustand ----------------------------------------------------------
@@ -77,7 +77,7 @@ func _new_focus(def: FocusDef) -> void:
 func _load_example() -> void:
 	var standard := CONTENT.get_engraving(&"standard")
 	focus.gems = [
-		PlacedGem.create(CONTENT.get_gem(&"hauptgem_grob"), CONTENT.get_engraving(&"magischer_bolzen"), Vector2(-110, 70)),
+		PlacedGem.create(CONTENT.get_gem(&"hauptgem_mittel_grob"), CONTENT.get_engraving(&"magischer_bolzen"), Vector2(-110, 70)),
 		PlacedGem.create(CONTENT.get_gem(&"nebengem_mittel_grob"), standard, Vector2(130, 50)),
 		PlacedGem.create(CONTENT.get_gem(&"nebengem_mittel_spitz"), standard, Vector2(0, -140)),
 	]
@@ -185,8 +185,9 @@ func _build_left_panel() -> Control:
 
 	# Gem-Bibliothek
 	_header(box, "3. Gems setzen")
-	_small_label(box, "Form und Gravur wählen, dann in den Fokus klicken – die Vorschau zeigt, welche Punkte das Gem einsammeln würde. Gems ziehen = verschieben, Rechtsklick = entfernen. Spitze Gems zählen Essenzen doppelt (×2).")
+	_small_label(box, "Gravur, Größe und Spitz wählen, dann in den Fokus klicken – die Vorschau zeigt, welche Punkte das Gem einsammeln würde. Die Gravur bestimmt, ob es ein Hauptgem oder Nebengem ist. Gems ziehen = verschieben, Rechtsklick = entfernen.")
 	_check(box, "Automatisch verbinden", true, _set_auto_connect)
+
 	var engraving_row := HBoxContainer.new()
 	box.add_child(engraving_row)
 	var engraving_label := Label.new()
@@ -194,23 +195,27 @@ func _build_left_panel() -> Control:
 	engraving_row.add_child(engraving_label)
 	_engraving_select = OptionButton.new()
 	_engraving_select.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_engraving_select.item_selected.connect(_on_engraving_selected)
-	engraving_row.add_child(_engraving_select)
-	_engraving_info = _small_label(box, "")
 	for role in [GemDef.Role.MAIN, GemDef.Role.MINOR]:
-		_engraving_choice[role] = CONTENT.get_engravings_for(role)[0]
-	_fill_engraving_select(GemDef.Role.MAIN)
-	_library_group.allow_unpress = true
-	for gem in CONTENT.gems:
-		var button := Button.new()
-		button.toggle_mode = true
-		button.button_group = _library_group
-		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		var prefix := "★ " if gem.role == GemDef.Role.MAIN else "• "
-		button.text = "%s%s  (r%d, ×%s)" % [prefix, gem.display_name, int(gem.radius), _format_number(gem.get_multiplier())]
-		button.tooltip_text = _gem_tooltip(gem)
-		button.toggled.connect(_on_library_toggled.bind(gem))
-		box.add_child(button)
+		_engraving_select.add_separator("Hauptgem" if role == GemDef.Role.MAIN else "Nebengem")
+		for engraving in CONTENT.get_engravings_for(role):
+			_engraving_select.add_item(engraving.display_name)
+			_engraving_select.set_item_metadata(_engraving_select.item_count - 1, engraving)
+	_engraving_select.item_selected.connect(_on_gem_selection_changed.unbind(1))
+	engraving_row.add_child(_engraving_select)
+	_engraving_select.select(1)  # erste Hauptgravur (Index 0 = Überschrift)
+
+	var size_row := HBoxContainer.new()
+	box.add_child(size_row)
+	var size_group := ButtonGroup.new()
+	for size in GemDef.Size.values():
+		var button := _toggle_button(size_row, GemDef.SIZE_NAMES[size].capitalize(), size_group)
+		button.button_pressed = size == GemDef.Size.MITTEL
+		button.pressed.connect(_on_size_selected.bind(size))
+	_spitz_check = CheckBox.new()
+	_spitz_check.text = "Spitz (Innenwinkel, Essenzen zählen ×2)"
+	_spitz_check.toggled.connect(_on_gem_selection_changed.unbind(1))
+	box.add_child(_spitz_check)
+	_gem_info = _small_label(box, "")
 
 	# Verbinden
 	_header(box, "4. Verbinden")
@@ -331,39 +336,21 @@ func _check(parent: Control, text: String, value: bool, callback: Callable) -> v
 	parent.add_child(check)
 
 
-func _gem_tooltip(gem: GemDef) -> String:
-	var lines := PackedStringArray()
-	lines.append(gem.display_name + (" (Hauptgem)" if gem.role == GemDef.Role.MAIN else " (Nebengem)"))
-	lines.append("Radius: %d" % int(gem.radius))
-	lines.append("Winkel: %s (%s)" % [gem.get_angle_name(), "Innenwinkel" if gem.is_inner() else "Außenwinkel"])
-	lines.append("Multiplikator: ×%s" % _format_number(gem.get_multiplier()))
-	lines.append("Max. neutrale Essenz: %d" % gem.max_base)
-	lines.append("Max. Essenzen: %d" % gem.max_element)
-	return "\n".join(lines)
-
-
-## Füllt das Gravur-Dropdown mit den Gravuren der Rolle und wählt die zuletzt benutzte.
-func _fill_engraving_select(role: GemDef.Role) -> void:
-	_engraving_select.clear()
-	var list := CONTENT.get_engravings_for(role)
-	for engraving in list:
-		_engraving_select.add_item(engraving.display_name)
-		_engraving_select.set_item_metadata(_engraving_select.item_count - 1, engraving)
-	var chosen: EngravingDef = _engraving_choice[role]
-	_engraving_select.select(maxi(0, list.find(chosen)))
-	_apply_engraving(chosen)
-
-
-func _apply_engraving(engraving: EngravingDef) -> void:
-	_canvas_placing_engraving(engraving)
-	_engraving_info.text = engraving.description if engraving != null else ""
-
-
-func _canvas_placing_engraving(engraving: EngravingDef) -> void:
-	if _canvas != null:
-		_canvas.placing_engraving = engraving
-		_canvas.update_preview()
-		_canvas.queue_redraw()
+## Überträgt die Auswahl (Gravur, Größe, Spitz) auf das zu setzende Gem.
+func _update_placing() -> void:
+	var engraving: EngravingDef = _engraving_select.get_item_metadata(_engraving_select.selected)
+	var angle := GemDef.Angle.SPITZ if _spitz_check.button_pressed else GemDef.Angle.GROB
+	var gem := CONTENT.find_gem(engraving.role, _selected_size, angle)
+	_canvas.placing_engraving = engraving
+	_canvas.placing_gem = gem
+	var lines := PackedStringArray([engraving.description])
+	if gem != null:
+		lines.append("%s: Radius %d, %s, Essenzen zählen ×%s, max. %d neutrale Essenz und %d Essenzen" % [
+			gem.display_name, int(gem.radius), "Innenwinkel" if gem.is_inner() else "Außenwinkel",
+			_format_number(gem.get_multiplier()), gem.max_base, gem.max_element])
+	_gem_info.text = "\n".join(lines)
+	_canvas.update_preview()
+	_canvas.queue_redraw()
 
 
 # --- Ereignisse -------------------------------------------------------------
@@ -382,38 +369,24 @@ func _unhandled_input(event: InputEvent) -> void:
 			_reroll()
 		KEY_BACKSPACE:
 			_canvas.undo_connection()
-		KEY_ESCAPE:
-			var pressed := _library_group.get_pressed_button()
-			if pressed != null:
-				pressed.button_pressed = false
 
 
 func _set_mode(mode: FocusCanvas.Mode) -> void:
 	_canvas.mode = mode
-	if mode == FocusCanvas.Mode.CONNECT:
-		var pressed := _library_group.get_pressed_button()
-		if pressed != null:
-			pressed.button_pressed = false
 	_canvas.update_preview()
 	_canvas.queue_redraw()
 
 
-func _on_library_toggled(on: bool, gem: GemDef) -> void:
-	if on:
-		_canvas.placing_gem = gem
-		_fill_engraving_select(gem.role)
-		_mode_place.button_pressed = true
-		_set_mode(FocusCanvas.Mode.PLACE)
-	elif _canvas.placing_gem == gem:
-		_canvas.placing_gem = null
-	_canvas.update_preview()
-	_canvas.queue_redraw()
+func _on_size_selected(size: GemDef.Size) -> void:
+	_selected_size = size
+	_on_gem_selection_changed()
 
 
-func _on_engraving_selected(index: int) -> void:
-	var engraving: EngravingDef = _engraving_select.get_item_metadata(index)
-	_engraving_choice[engraving.role] = engraving
-	_apply_engraving(engraving)
+## Jede Änderung der Auswahl wechselt in den Modus Setzen.
+func _on_gem_selection_changed() -> void:
+	_mode_place.button_pressed = true
+	_set_mode(FocusCanvas.Mode.PLACE)
+	_update_placing()
 
 
 func _evaluate(target: FocusInstance) -> SpellResult:
@@ -624,7 +597,7 @@ func _update_result_text() -> void:
 
 	t += "\n[color=#888888][font_size=12]Gems ziehen = verschieben (in beiden Modi). "
 	t += "Tasten: 1 = Setzen, 2 = Verbinden, R = neu würfeln, "
-	t += "Rücktaste = Verbindung zurück, Esc = Gem abwählen[/font_size][/color]"
+	t += "Rücktaste = Verbindung zurück[/font_size][/color]"
 	_result_text.text = t
 
 

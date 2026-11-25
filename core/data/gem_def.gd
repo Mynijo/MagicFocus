@@ -9,12 +9,16 @@ extends Resource
 enum Role { MAIN, MINOR }
 ## Spitz sammelt im Innenwinkel der Ecke, Grob im Außenwinkel.
 enum Angle { SPITZ, GROB }
+enum Size { KLEIN, MITTEL, GROSS }
+
+const SIZE_NAMES := ["klein", "mittel", "groß"]
 
 const SPITZ_MULTIPLIER := 2.0
 
 @export var id: StringName
 @export var display_name: String
 @export var role: Role = Role.MINOR
+@export var size: Size = Size.MITTEL
 @export var radius: float = 80.0
 @export var angle: Angle = Angle.GROB
 ## Maximal einsammelbare neutrale Essenzen (N-E).

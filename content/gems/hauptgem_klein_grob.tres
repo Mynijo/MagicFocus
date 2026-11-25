@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="GemDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_def.gd" id="1_r3prb"]
+
+[resource]
+script = ExtResource("1_r3prb")
+id = &"hauptgem_klein_grob"
+display_name = "Hauptgem klein Grob"
+role = 0
+size = 0
+radius = 120.0
+max_base = 30
+max_element = 20
