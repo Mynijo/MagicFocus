@@ -1,14 +1,16 @@
 class_name ScalingRule
 extends Resource
 ## Allgemeine Skalierungsregel:
-## "Pro `per_n` Essenzen aus `source` -> +`amount` auf den Wert `stat`".
-## Beispiele: "+2 Schaden pro E", "1 Slow pro 10 Luft-E".
-## Gezählt werden effektive Essenzen (nach Multiplikator), daher float.
+## "Pro `per_n` Punkte aus `source` -> +`amount` auf den Wert `stat`".
+## Beispiele: "+1 Schaden pro Punkt", "1 Burn pro 10 Feuer-Punkte".
+## Gezählt werden effektive Essenzen (nach Multiplikator); Element-Essenz ist
+## bereits mit dem Element-Faktor gewichtet (1 Feuer-Essenz = 5 Punkte), daher float.
 
 enum Source {
-	BASE,         ## neutrale Essenzen (N-E)
-	ELEMENT,      ## Essenzen eines bestimmten Elements (`element_id`)
-	ANY_ELEMENT,  ## alle Element-Essenzen zusammen (E)
+	BASE,         ## nur neutrale Essenz
+	ELEMENT,      ## nur Essenz eines bestimmten Elements (`element_id`)
+	ANY_ELEMENT,  ## nur Element-Essenz, alle Elemente zusammen
+	POINTS,       ## neutrale Essenz + Element-Essenz (die übliche Quelle)
 }
 
 @export var source: Source = Source.BASE
@@ -26,8 +28,8 @@ func count_from(base_count: float, element_counts: Dictionary) -> float:
 			return base_count
 		Source.ELEMENT:
 			return float(element_counts.get(element_id, 0.0))
-		Source.ANY_ELEMENT:
-			var total := 0.0
+		Source.ANY_ELEMENT, Source.POINTS:
+			var total := base_count if source == Source.POINTS else 0.0
 			for count in element_counts.values():
 				total += float(count)
 			return total

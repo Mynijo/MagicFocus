@@ -6,13 +6,14 @@
 
 [sub_resource type="Resource" id="Resource_1hnay"]
 script = ExtResource("2_7xwyw")
-source = 1
-element_id = &"water"
+source = 3
+per_n = 2
 stat = &"mana_reduction"
 
 [resource]
 script = ExtResource("3_uwiwa")
 id = &"mana_reduktion"
 display_name = "Mana-Reduktion"
-description = "-1 Mana pro Wasser-Essenz"
+element_ids = Array[StringName]([&"water"])
+description = "-1 Mana pro 2 Punkte. Punkte: neutrale Essenz 1, Wasser-Essenz 5, andere Essenz 0"
 rules = Array[ExtResource("2_7xwyw")]([SubResource("Resource_1hnay")])

@@ -6,13 +6,14 @@
 
 [sub_resource type="Resource" id="Resource_4yb2p"]
 script = ExtResource("2_o810k")
+source = 3
 stat = &"damage"
 
 [sub_resource type="Resource" id="Resource_1galj"]
 script = ExtResource("2_o810k")
 source = 1
 element_id = &"fire"
-per_n = 2
+per_n = 10
 stat = &"burn"
 
 [resource]
@@ -20,5 +21,6 @@ script = ExtResource("3_ca5hn")
 id = &"feuerball"
 display_name = "Feuerball"
 role = 0
-description = "+1 Schaden pro neutraler Essenz, 1 Burn pro 2 Feuer-Essenzen"
+element_ids = Array[StringName]([&"fire"])
+description = "+1 Schaden pro Punkt, 1 Burn pro 10 Punkte aus Feuer-Essenz. Punkte: neutrale Essenz 1, Feuer-Essenz 5, andere Essenz 0"
 rules = Array[ExtResource("2_o810k")]([SubResource("Resource_4yb2p"), SubResource("Resource_1galj")])

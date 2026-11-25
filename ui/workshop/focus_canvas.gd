@@ -3,7 +3,8 @@ extends Control
 ## Zeichenfläche der Werkstatt: zeigt einen Fokus und verarbeitet die Bedienung.
 ##   In beiden Modi:   Gem gedrückt halten und ziehen = verschieben
 ##   Modus SETZEN:     Linksklick = gewählte Gem setzen (mit Live-Vorschau),
-##                     Rechtsklick auf Gem = entfernen
+##                     Klick auf ein Gem = übernimmt Gravur und Form der Auswahl
+##                     (Vorschau beim Darüberfahren), Rechtsklick auf Gem = entfernen
 ##   Modus VERBINDEN:  Klick auf Gems = verbinden (Start bei dem Hauptgem,
 ##                     Klick auf das Hauptgem schließt den Kreis),
 ##                     Rechtsklick = letzte Verbindung zurücknehmen
@@ -24,6 +25,7 @@ const DRAG_THRESHOLD := 5.0      # Bildschirm-Pixel, ab denen ein Klick zum Zieh
 const MIN_GEM_DISTANCE := 25.0  # Fokus-Einheiten
 const MAIN_GEM_SIZE := 13.0     # Bildschirm-Pixel
 const MINOR_GEM_SIZE := 9.0
+const ELEMENT_DOT_SCALE := 1.6  # Essenz-Punkte größer als neutrale
 
 const COLOR_BACKGROUND := Color(0.07, 0.07, 0.11)
 const COLOR_FOCUS := Color(0.11, 0.11, 0.18)
@@ -63,6 +65,8 @@ var _mouse_focus := Vector2.ZERO
 var _preview: SpellResult
 var _preview_index := -1
 var _preview_error := ""
+## Index des Gems, das die Vorschau ersetzt (Maus darüber), sonst -1.
+var _replace_index := -1
 
 
 func _notification(what: int) -> void:
@@ -139,8 +143,11 @@ func _gui_input(event: InputEvent) -> void:
 				_try_place(placing_gem, to_focus(button.position))
 		else:
 			# Loslassen ohne Ziehen = Klick auf das Gem
-			if _pressed >= 0 and not _dragging and mode == Mode.CONNECT:
-				_try_connect(_pressed)
+			if _pressed >= 0 and not _dragging:
+				if mode == Mode.CONNECT:
+					_try_connect(_pressed)
+				elif placing_gem != null:
+					_try_replace(_pressed)
 			var was_dragging := _dragging
 			_pressed = -1
 			_dragging = false
@@ -212,6 +219,31 @@ func _insert_gem(target: FocusInstance, gem: GemDef, pos: Vector2) -> void:
 		target.loop.append(idx)
 	target.loop_closed = target.loop.size() >= SpellEvaluator.MIN_GEMS \
 		and target.loop.size() == target.gems.size()
+
+
+## Leer = das Gem `idx` darf die gewählte Gravur und Form übernehmen, sonst der Grund.
+func replace_error(idx: int) -> String:
+	var placed := focus.gems[idx]
+	if placing_gem.role != placed.gem.role:
+		return "Ein Hauptgem braucht eine Hauptgravur." if placed.gem.role == GemDef.Role.MAIN \
+			else "Ein Nebengem braucht eine Nebengravur."
+	if placing_gem == placed.gem and placing_engraving == placed.engraving:
+		return "Das Gem hat schon diese Gravur und Form."
+	return ""
+
+
+## Ersetzt Gravur und Form des Gems `idx`; Position und Verbindungen bleiben.
+func _replace_gem(target: FocusInstance, idx: int) -> void:
+	target.gems[idx] = PlacedGem.create(placing_gem, placing_engraving, target.gems[idx].position)
+
+
+func _try_replace(idx: int) -> void:
+	var error := replace_error(idx)
+	if error != "":
+		message.emit(error)
+		return
+	_replace_gem(focus, idx)
+	focus_changed.emit()
 
 
 func _move_gem(idx: int, pos: Vector2) -> void:
@@ -348,9 +380,16 @@ func _clear_preview() -> void:
 	_preview = null
 	_preview_index = -1
 	_preview_error = ""
+	_replace_index = -1
 
 
-## Berechnet, was die gewählte Gem an der Mausposition einsammeln würde,
+## true, wenn die Vorschau ein vorhandenes Gem ersetzt (Maus über einem Gem).
+func is_replace_preview() -> bool:
+	return _replace_index >= 0
+
+
+## Berechnet, was die gewählte Gem an der Mausposition einsammeln würde
+## (bzw. was sich ändert, wenn das Gem unter der Maus sie übernimmt),
 ## und meldet das Ergebnis über `preview_changed`.
 func update_preview() -> void:
 	_compute_preview()
@@ -361,11 +400,18 @@ func _compute_preview() -> void:
 	_clear_preview()
 	if focus == null or mode != Mode.PLACE or placing_gem == null:
 		return
-	if not _mouse_inside or _hovered >= 0 or _pressed >= 0:
+	if not _mouse_inside or _pressed >= 0 or not evaluate_preview.is_valid():
 		return
-	_preview_error = place_error(placing_gem, _mouse_focus)
-	if _preview_error != "" or not evaluate_preview.is_valid():
-		return
+	if _hovered >= 0:
+		# Nur zeigen, wenn ein Klick wirklich etwas ändern würde (kein Hinweis beim
+		# bloßen Darüberfahren, etwa vor dem Verschieben).
+		if replace_error(_hovered) != "":
+			return
+		_replace_index = _hovered
+	else:
+		_preview_error = place_error(placing_gem, _mouse_focus)
+		if _preview_error != "":
+			return
 
 	var copy := FocusInstance.new()
 	copy.focus_def = focus.focus_def
@@ -374,9 +420,18 @@ func _compute_preview() -> void:
 	copy.gems = focus.gems.duplicate()
 	copy.loop = focus.loop.duplicate()
 	copy.loop_closed = focus.loop_closed
-	_insert_gem(copy, placing_gem, _mouse_focus)
-	_preview_index = copy.gems.size() - 1
+	if _replace_index >= 0:
+		_replace_gem(copy, _replace_index)
+		_preview_index = _replace_index
+	else:
+		_insert_gem(copy, placing_gem, _mouse_focus)
+		_preview_index = copy.gems.size() - 1
 	_preview = evaluate_preview.call(copy)
+
+
+## Position der Vorschau: das ersetzte Gem oder die Maus.
+func _preview_position() -> Vector2:
+	return focus.gems[_replace_index].position if _replace_index >= 0 else _mouse_focus
 
 
 ## Punkte, die die Vorschau-Gem einsammeln würde. Ist der Spell mit ihr noch
@@ -386,8 +441,9 @@ func _preview_dots(claimed: Dictionary) -> Array[EnergyDot]:
 	if _preview != null and _preview.valid:
 		dots.assign(_preview.gem_results[_preview_index].collected)
 		return dots
+	var center := _preview_position()
 	for dot in result.dots:
-		if not claimed.has(dot) and dot.position.distance_to(_mouse_focus) <= placing_gem.radius:
+		if not claimed.has(dot) and dot.position.distance_to(center) <= placing_gem.radius:
 			dots.append(dot)
 	return dots
 
@@ -507,28 +563,33 @@ func _draw() -> void:
 	# Vorschau beim Setzen: Bereich und neue Verbindungen
 	var show_ghost := mode == Mode.PLACE and placing_gem != null and _mouse_inside \
 		and _hovered < 0 and _pressed < 0
+	var show_replace := is_replace_preview()
 	var preview_dots: Array[EnergyDot] = []
-	if show_ghost and _preview_error == "":
+	if (show_ghost and _preview_error == "") or show_replace:
 		if _preview != null and _preview.valid:
 			var preview_gem := _preview.gem_results[_preview_index]
 			_draw_sector(preview_gem, 0.22, COLOR_PREVIEW, px)
 		else:
-			draw_arc(_mouse_focus, placing_gem.radius, 0.0, TAU, 64, Color(COLOR_PREVIEW, 0.7), 1.0 * px, true)
-		_draw_preview_edges(px)
+			draw_arc(_preview_position(), placing_gem.radius, 0.0, TAU, 64, Color(COLOR_PREVIEW, 0.7), 1.0 * px, true)
+		if show_ghost:
+			_draw_preview_edges(px)
 		preview_dots = _preview_dots(claimed)
 
 	# Energiepunkte
+	# Essenz-Punkte sind größer als neutrale (sie zählen mehr)
 	if result != null:
 		for dot in result.dots:
 			var color := _element_color(dot.element_id, COLOR_BASE_DOT)
+			var scale := 1.0 if dot.is_base() else ELEMENT_DOT_SCALE
 			if claimed.has(dot):
-				draw_circle(dot.position, 3.2 * px, color, true, -1.0, true)
+				draw_circle(dot.position, 3.2 * scale * px, color, true, -1.0, true)
 			elif show_free_dots:
-				draw_circle(dot.position, 2.2 * px, Color(color, 0.4), true, -1.0, true)
+				draw_circle(dot.position, 2.2 * scale * px, Color(color, 0.4), true, -1.0, true)
 	for dot in preview_dots:
 		var color := _element_color(dot.element_id, COLOR_BASE_DOT)
-		draw_circle(dot.position, 3.2 * px, color, true, -1.0, true)
-		draw_arc(dot.position, 6.0 * px, 0.0, TAU, 16, COLOR_PREVIEW, 1.5 * px, true)
+		var scale := 1.0 if dot.is_base() else ELEMENT_DOT_SCALE
+		draw_circle(dot.position, 3.2 * scale * px, color, true, -1.0, true)
+		draw_arc(dot.position, 6.0 * scale * px, 0.0, TAU, 16, COLOR_PREVIEW, 1.5 * px, true)
 
 	# Geist der zu setzenden Gem
 	if show_ghost:
@@ -565,10 +626,20 @@ func _draw() -> void:
 		var text := _preview_error if _preview_error != "" else _preview_summary(preview_dots)
 		if _preview_error == "":
 			text = _gem_label(placing_gem, placing_engraving) + "  ·  " + text
-		var text_color := COLOR_BAD if _preview_error != "" else COLOR_PREVIEW
-		var text_pos := to_screen(_mouse_focus) + Vector2(16, 22)
-		draw_string_outline(font, text_pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, 4, Color(0, 0, 0, 0.8))
-		draw_string(font, text_pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, text_color)
+		_draw_hint(font, to_screen(_mouse_focus), text, COLOR_BAD if _preview_error != "" else COLOR_PREVIEW)
+	elif show_replace:
+		var text := "Klick: wird zu %s  ·  %s" % [_gem_label(placing_gem, placing_engraving), _preview_summary(preview_dots)]
+		_draw_hint(font, to_screen(_preview_position()), text, COLOR_PREVIEW)
+
+
+## Hinweistext unter einem Punkt; passt er rechts nicht mehr hin, steht er links davon.
+func _draw_hint(font: Font, anchor: Vector2, text: String, color: Color) -> void:
+	var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
+	var pos := anchor + Vector2(16, 22)
+	if pos.x + width > size.x - 8.0:
+		pos.x = maxf(8.0, anchor.x - 16.0 - width)
+	draw_string_outline(font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, 4, Color(0, 0, 0, 0.8))
+	draw_string(font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, color)
 
 
 ## Gestrichelte Linien zu den Gems, mit denen die neue Gem verbunden würde.

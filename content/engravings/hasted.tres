@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="EngravingDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_qha5f"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="2_iq02w"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="3_bd6o7"]
+
+[sub_resource type="Resource" id="Resource_toegy"]
+script = ExtResource("2_iq02w")
+source = 3
+per_n = 20
+stat = &"hasted"
+
+[resource]
+script = ExtResource("3_bd6o7")
+id = &"hasted"
+display_name = "Hasted"
+role = 0
+element_ids = Array[StringName]([&"air"])
+description = "1 Hasted pro 20 Punkte. Punkte: neutrale Essenz 1, Luft-Essenz 5, andere Essenz 0"
+rules = Array[ExtResource("2_iq02w")]([SubResource("Resource_toegy")])

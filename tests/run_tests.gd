@@ -34,15 +34,23 @@ func _init() -> void:
 		test_transfer_to_main,
 		test_main_multiplier,
 		test_magic_bolt,
-		test_heal_and_protection_add_up,
+		test_heal_and_protection_count_own_element,
 		test_status_attack_counts_own_element,
 		test_status_minor_per_element,
+		test_engraving_without_element,
 		test_minor_engravings,
+		test_neutral_essence_rules,
+		test_save_roundtrip,
 		test_cast_time_and_mana,
 		test_dot_field_reproducible,
 		test_example_focus_evaluates,
 		test_canvas_editing,
 		test_canvas_auto_connect_and_preview,
+		test_canvas_replace_engraving,
+		test_new_main_engravings,
+		test_mana_burn_minor,
+		test_element_factor_per_element,
+		test_freeze_counts_water_and_air,
 		test_focus_shapes,
 		test_allowed_elements,
 		test_edges_must_stay_inside_shape,
@@ -173,8 +181,8 @@ func test_content_loads() -> void:
 	check(content.find_gem(MINOR, GemDef.Size.KLEIN, GROB).radius < content.find_gem(MINOR, GemDef.Size.GROSS, GROB).radius,
 		"Größere Gems haben einen größeren Radius")
 	check(content.foci.size() == 8, "8 Fokus-Typen erwartet")
-	check(content.get_engravings_for(MAIN).size() == 10, "10 Hauptgravuren erwartet")
-	check(content.get_engravings_for(MINOR).size() == 6, "6 Nebengravuren erwartet")
+	check(content.get_engravings_for(MAIN).size() == 13, "13 Hauptgravuren erwartet")
+	check(content.get_engravings_for(MINOR).size() == 11, "11 Nebengravuren erwartet")
 	for e in content.engravings:
 		check(e.description != "" and not e.description.contains("N-E"), "%s braucht eine Beschreibung ohne Abkürzung" % e.id)
 		for rule in e.rules:
@@ -341,7 +349,7 @@ func test_engraving_validation() -> void:
 func test_effective_counts() -> void:
 	# Spitzes Nebengem: x2
 	var focus := lab(make_gem(MAIN, GROB, 10), engraving(&"magischer_bolzen"),
-		make_gem(MINOR, SPITZ, 80), engraving(&"status"))
+		make_gem(MINOR, SPITZ, 80), engraving(&"status_burn"))
 	var dots := dots_line(MINOR_POS, MINOR_INNER, 4, &"fire") + dots_line(MINOR_POS + Vector2(0, 2), MINOR_INNER, 2)
 	var r := evaluate(focus, dots)
 	check(r.valid, "sollte gültig sein: %s" % [r.errors])
@@ -362,8 +370,7 @@ func test_transfer_to_main() -> void:
 	var main := r.gem_results[0]
 	check(is_equal_approx(main.received_elements.get(&"fire", 0.0), 8.0), "Hauptgem erhält 4 Feuer x2 = 8")
 	check(is_equal_approx(main.total_base(), 3.0), "Hauptgem hat 3 eigene N-E")
-	# 3 N-E x1 + 8 E x2
-	check_stat(r, &"damage", 19.0)
+	check_stat(r, &"damage", 43.0)  # 3 neutral + 8 Feuer x Faktor 5
 
 
 func test_main_multiplier() -> void:
@@ -374,8 +381,7 @@ func test_main_multiplier() -> void:
 	var r := evaluate(focus, dots)
 	check(is_equal_approx(r.gem_results[0].effective_base, 8.0), "4 N-E x2 = 8")
 	check(is_equal_approx(r.gem_results[0].received_elements.get(&"water", 0.0), 2.0), "Übertragenes bleibt x1")
-	# 8 N-E x1 + 2 Wasser x2
-	check_stat(r, &"damage", 12.0)
+	check_stat(r, &"damage", 18.0)  # 8 neutral + 2 Wasser x Faktor 5
 
 
 func test_magic_bolt() -> void:
@@ -383,17 +389,17 @@ func test_magic_bolt() -> void:
 	var dots := dots_line(MAIN_POS, MAIN_OUTER, 5) + dots_line(MAIN_POS + Vector2(-2, 0), MAIN_OUTER, 3, &"air")
 	var r := evaluate(focus, dots)
 	check(r.engraving.id == &"magischer_bolzen", "Spell = Gravur des Hauptgems")
-	check_stat(r, &"damage", 11.0)  # 5 x1 + 3 x2
+	check_stat(r, &"damage", 20.0)  # ohne Element: 5 neutral + 3 Luft x 5
 
 
-func test_heal_and_protection_add_up() -> void:
+func test_heal_and_protection_count_own_element() -> void:
 	var dots := dots_line(MAIN_POS, MAIN_OUTER, 2, &"water") + dots_line(MAIN_POS + Vector2(-2, 0), MAIN_OUTER, 1, &"fire")
 	var r := evaluate(lab(make_gem(MAIN, GROB, 80), engraving(&"heal"), make_gem(MINOR, GROB, 80), null), dots)
-	check_stat(r, &"heal", 70.0)  # 3 E x10 + 2 Wasser x20
+	check_stat(r, &"heal", 50.0)  # 2 Wasser x 5 Punkte x 5 Heilung, Feuer zählt nicht
 
 	dots = dots_line(MAIN_POS, MAIN_OUTER, 2, &"earth") + dots_line(MAIN_POS + Vector2(-2, 0), MAIN_OUTER, 1, &"fire")
 	r = evaluate(lab(make_gem(MAIN, GROB, 80), engraving(&"schutz"), make_gem(MINOR, GROB, 80), null), dots)
-	check_stat(r, &"armor", 70.0)  # 3 E x10 + 2 Erde x20
+	check_stat(r, &"armor", 50.0)  # 2 Erde x 5 x 5, Feuer zählt nicht
 
 
 func test_status_attack_counts_own_element() -> void:
@@ -401,8 +407,8 @@ func test_status_attack_counts_own_element() -> void:
 		+ dots_line(MAIN_POS + Vector2(-2, 0), MAIN_OUTER, 4, &"water") \
 		+ dots_line(MAIN_POS + Vector2(0, -2), MAIN_OUTER, 3)
 	var r := evaluate(lab(make_gem(MAIN, GROB, 80), engraving(&"feuerball"), make_gem(MINOR, GROB, 80), null), dots)
-	check_stat(r, &"damage", 3.0)
-	check_stat(r, &"burn", 2.0)  # 5 Feuer / 2
+	check_stat(r, &"damage", 28.0)  # 3 neutral + 5 Feuer x 5, Wasser zählt nicht
+	check_stat(r, &"burn", 2.0)  # 25 Feuer-Punkte / 10
 	check(not r.stats.has(&"wet"), "Feuerball macht kein Nass")
 
 	r = evaluate(lab(make_gem(MAIN, GROB, 80), engraving(&"wasser_detonation"), make_gem(MINOR, GROB, 80), null), dots)
@@ -415,15 +421,34 @@ func test_status_minor_per_element() -> void:
 		+ dots_line(MINOR_POS + Vector2(2, 0), MINOR_OUTER, 3, &"water") \
 		+ dots_line(MINOR_POS + Vector2(4, 0), MINOR_OUTER, 1, &"air") \
 		+ dots_line(MINOR_POS + Vector2(6, 0), MINOR_OUTER, 1, &"earth") \
-		+ dots_line(MINOR_POS + Vector2(8, 0), MINOR_OUTER, 2, &"lightning")
-	var r := evaluate(lab(make_gem(MAIN, GROB, 10), engraving(&"magischer_bolzen"),
-		make_gem(MINOR, GROB, 80), engraving(&"status")), dots)
-	check_stat(r, &"burn", 2.0)
-	check_stat(r, &"wet", 3.0)
-	check_stat(r, &"bleed", 1.0)
-	check_stat(r, &"armor_break", 1.0)
-	check_stat(r, &"shock", 2.0)
-	check(not r.stats.has(&"damage") or is_zero_approx(r.get_stat(&"damage")), "Status-Nebengem gibt nichts an das Hauptgem")
+		+ dots_line(MINOR_POS + Vector2(8, 0), MINOR_OUTER, 2, &"lightning") \
+		+ dots_line(MINOR_POS + Vector2(10, 0), MINOR_OUTER, 6)
+	# je Status eine Gravur; sie zählt nur Essenz ihres Elements (1 pro Essenz), nie neutrale
+	var expected := { &"status_burn": [&"burn", 2.0], &"status_nass": [&"wet", 3.0], &"status_bleed": [&"bleed", 1.0],
+		&"status_armor_break": [&"armor_break", 1.0], &"status_schock": [&"shock", 2.0] }
+	for id: StringName in expected:
+		var r := evaluate(lab(make_gem(MAIN, GROB, 10), engraving(&"magischer_bolzen"),
+			make_gem(MINOR, GROB, 80), engraving(id)), dots)
+		check_stat(r, expected[id][0], expected[id][1])
+		var others := 0.0
+		for stat: StringName in r.stats:
+			if stat != expected[id][0]:
+				others += r.stats[stat]
+		check(is_zero_approx(others), "%s erzeugt nur seinen Status, war %s" % [id, r.stats])
+
+
+## Gravuren ohne Element zählen keine Essenz; der Bolzen zählt alle Elemente.
+func test_engraving_without_element() -> void:
+	var no_element := EngravingDef.new()
+	no_element.role = MAIN
+	var rule := ScalingRule.new()
+	rule.source = ScalingRule.Source.POINTS
+	rule.stat = &"damage"
+	no_element.rules.append(rule)
+	var dots := dots_line(MAIN_POS, MAIN_OUTER, 3) + dots_line(MAIN_POS + Vector2(-2, 0), MAIN_OUTER, 2, &"fire")
+	var r := evaluate(lab(make_gem(MAIN, GROB, 80), no_element, make_gem(MINOR, GROB, 80), null), dots)
+	check_stat(r, &"damage", 3.0)  # nur neutrale Essenz
+	check(engraving(&"magischer_bolzen").element_ids.size() == 5, "Magischer Bolzen hat alle Elemente")
 
 
 func test_minor_engravings() -> void:
@@ -433,9 +458,78 @@ func test_minor_engravings() -> void:
 	var mixed := dots_line(MINOR_POS, MINOR_OUTER, 3, &"fire") + dots_line(MINOR_POS + Vector2(2, 0), MINOR_OUTER, 2, &"earth")
 
 	var r := evaluate(lab(main, bolt, minor, engraving(&"crit")), mixed)
-	check_stat(r, &"crit", 3.0)
+	check_stat(r, &"crit", 7.0)  # 3 Feuer x 5 / 2, Erde zählt nicht
 	r = evaluate(lab(main, bolt, minor, engraving(&"armor")), mixed)
-	check_stat(r, &"armor", 15.0)  # 5 E x1 + 2 Erde x5
+	check_stat(r, &"armor", 5.0)  # 2 Erde x 5 / 2, Feuer zählt nicht
+
+
+## Neutrale Essenz wirkt nur über "N"-Regeln, etwa halb so stark wie Essenz.
+func test_neutral_essence_rules() -> void:
+	var main := make_gem(MAIN, GROB, 10)
+	var bolt := engraving(&"magischer_bolzen")
+	var minor := make_gem(MINOR, GROB, 80)
+	var neutral := dots_line(MINOR_POS, MINOR_OUTER, 4)
+
+	var r := evaluate(lab(main, bolt, minor, engraving(&"crit")), neutral)
+	check_stat(r, &"crit", 2.0)  # 4 / 2
+	r = evaluate(lab(main, bolt, minor, engraving(&"armor")), neutral)
+	check_stat(r, &"armor", 2.0)
+	r = evaluate(lab(main, bolt, minor, engraving(&"mana_reduktion")), neutral)
+	check(is_equal_approx(r.mana_cost, 118.0), "4 neutrale Essenz = -2 Mana, war %s" % r.mana_cost)
+	r = evaluate(lab(main, bolt, minor, engraving(&"status_burn")), neutral)
+	check(not r.stats.has(&"burn") or is_zero_approx(r.get_stat(&"burn")), "Burn: neutrale Essenz bewirkt nichts")
+
+	var main_dots := dots_line(MAIN_POS, MAIN_OUTER, 2)
+	r = evaluate(lab(make_gem(MAIN, GROB, 80), engraving(&"heal"), minor, null), main_dots)
+	check_stat(r, &"heal", 10.0)  # 2 x5
+	r = evaluate(lab(make_gem(MAIN, GROB, 80), engraving(&"schutz"), minor, null), main_dots)
+	check_stat(r, &"armor", 10.0)
+
+
+func test_save_roundtrip() -> void:
+	var focus := FocusInstance.new()
+	focus.focus_def = content.get_focus(&"mittlerer_fokus")
+	focus.element_fill = {&"fire": 10, &"water": 5}
+	focus.dot_seed = 3_000_000_123  # größer als int32
+	focus.gems = [
+		PlacedGem.create(content.get_gem(&"hauptgem_mittel_grob"), engraving(&"heal"), Vector2(-110.5, 70)),
+		PlacedGem.create(content.get_gem(&"nebengem_klein_spitz"), engraving(&"crit"), Vector2(130, 50)),
+		PlacedGem.create(content.get_gem(&"nebengem_gross_grob"), engraving(&"standard"), Vector2(0, -140)),
+	]
+	focus.loop = PackedInt32Array([0, 1, 2])
+	focus.loop_closed = true
+
+	# über JSON wie in der Werkstatt
+	var data: Dictionary = JSON.parse_string(JSON.stringify(focus.to_dict()))
+	var warnings: Array[String] = []
+	var loaded := FocusInstance.from_dict(data, content, warnings)
+	check(loaded != null and warnings.is_empty(), "Laden ohne Warnungen: %s" % [warnings])
+	check(loaded.focus_def == focus.focus_def, "Fokus-Typ")
+	check(loaded.dot_seed == focus.dot_seed, "Seed %d, war %d" % [focus.dot_seed, loaded.dot_seed])
+	check(loaded.element_fill == {&"fire": 10, &"water": 5}, "Essenzen: %s" % [loaded.element_fill])
+	check(loaded.gems.size() == 3, "3 Gems")
+	check(loaded.gems[1].gem.id == &"nebengem_klein_spitz" and loaded.gems[1].engraving.id == &"crit", "Gem und Gravur über IDs")
+	check(loaded.gems[0].position == Vector2(-110.5, 70), "Position")
+	check(loaded.loop == focus.loop and loaded.loop_closed, "Kreis")
+	var before := evaluate_real(focus)
+	var after := evaluate_real(loaded)
+	check(before.valid == after.valid and before.stats == after.stats, "Gleicher Spell nach dem Laden")
+
+	# unbekanntes Gem: wird entfernt, der Kreis gelöst
+	data.gems[1].gem = "gibt_es_nicht"
+	warnings.clear()
+	loaded = FocusInstance.from_dict(data, content, warnings)
+	check(loaded.gems.size() == 2, "Unbekanntes Gem entfernt")
+	check(loaded.loop.is_empty() and not loaded.loop_closed, "Kreis gelöst")
+	check(warnings.size() == 2, "Warnungen für Gem und Kreis: %s" % [warnings])
+
+	# nicht erlaubte Essenz und unbekannter Fokus
+	data.focus = "feuer_fokus"
+	warnings.clear()
+	loaded = FocusInstance.from_dict(data, content, warnings)
+	check(not loaded.element_fill.has(&"water"), "Wasser im Feuer-Fokus entfernt")
+	data.focus = "gibt_es_nicht"
+	check(FocusInstance.from_dict(data, content, warnings) == null, "Unbekannter Fokus-Typ = null")
 
 
 func test_cast_time_and_mana() -> void:
@@ -447,13 +541,13 @@ func test_cast_time_and_mana() -> void:
 	check(is_equal_approx(r.cast_time, 3.0), "3 Gems = 3 s, war %s" % r.cast_time)
 	check(is_equal_approx(r.mana_cost, 120.0), "Umfang 1200 x 0.1 = 120 Mana, war %s" % r.mana_cost)
 
-	r = evaluate(lab(main, bolt, minor, engraving(&"cast_speed")), dots_line(MINOR_POS, MINOR_OUTER, 10, &"air"))
-	check(is_equal_approx(r.cast_time, 1.0), "10 Luft = -2 s, war %s" % r.cast_time)
+	r = evaluate(lab(main, bolt, minor, engraving(&"cast_speed")), dots_line(MINOR_POS, MINOR_OUTER, 4, &"air"))
+	check(is_equal_approx(r.cast_time, 1.0), "4 Luft = 20 Punkte = -2 s, war %s" % r.cast_time)
 	r = evaluate(lab(main, bolt, minor, engraving(&"cast_speed")), dots_line(MINOR_POS, MINOR_OUTER, 17, &"air"))
 	check(is_equal_approx(r.cast_time, SpellEvaluator.MIN_CAST_TIME), "Cast-Zeit hat eine Untergrenze, war %s" % r.cast_time)
 
 	r = evaluate(lab(main, bolt, minor, engraving(&"mana_reduktion")), dots_line(MINOR_POS, MINOR_OUTER, 5, &"water"))
-	check(is_equal_approx(r.mana_cost, 115.0), "5 Wasser = -5 Mana, war %s" % r.mana_cost)
+	check(is_equal_approx(r.mana_cost, 108.0), "5 Wasser = 25 Punkte = -12 Mana, war %s" % r.mana_cost)
 
 
 func test_dot_field_reproducible() -> void:
@@ -611,6 +705,71 @@ func test_canvas_auto_connect_and_preview() -> void:
 	canvas.free()
 
 
+func test_canvas_replace_engraving() -> void:
+	var main := content.get_gem(&"hauptgem_mittel_grob")
+	var minor := content.get_gem(&"nebengem_mittel_grob")
+	var focus := FocusInstance.new()
+	focus.focus_def = content.get_focus(&"mittlerer_fokus")
+	focus.element_fill = {&"fire": 60}
+	focus.dot_seed = 7
+	var canvas := FocusCanvas.new()
+	canvas.focus = focus
+	canvas.evaluate_preview = evaluate_real
+	var messages: Array[String] = []
+	canvas.message.connect(func(text: String) -> void: messages.append(text))
+	place_on(canvas, main, Vector2(-120, 60))
+	place_on(canvas, minor, Vector2(120, 60))
+	place_on(canvas, minor, Vector2(0, -150))
+	var loop_before := focus.loop.duplicate()
+
+	# Vorschau beim Darüberfahren: ändert den Fokus nicht
+	var spitz_klein := content.get_gem(&"nebengem_klein_spitz")
+	canvas.placing_gem = spitz_klein
+	canvas.placing_engraving = engraving(&"crit")
+	canvas._mouse_inside = true
+	canvas._hovered = 1
+	canvas.update_preview()
+	check(canvas.is_replace_preview() and canvas._preview != null and canvas._preview.valid, "Vorschau beim Ersetzen")
+	check(canvas._preview.gem_results[1].placed.engraving.id == &"crit", "Vorschau zeigt die neue Gravur")
+	check(focus.gems[1].engraving.id == &"standard", "Vorschau darf den Fokus nicht verändern")
+
+	# Klick übernimmt Gravur und Form, Position und Kreis bleiben
+	canvas._try_replace(1)
+	check(focus.gems[1].engraving.id == &"crit" and focus.gems[1].gem == spitz_klein, "Gravur und Form übernommen")
+	check(focus.gems[1].position == Vector2(120, 60), "Position bleibt")
+	check(focus.loop == loop_before and focus.loop_closed, "Kreis bleibt")
+	canvas._hovered = 1
+	canvas.update_preview()
+	check(not canvas.is_replace_preview(), "Keine Vorschau, wenn sich nichts ändern würde")
+
+	# Rolle muss passen
+	canvas._try_replace(0)
+	check(focus.gems[0].engraving.id == &"magischer_bolzen" and messages.back().contains("Hauptgravur"),
+		"Hauptgem darf keine Nebengravur bekommen")
+	canvas.placing_gem = content.get_gem(&"hauptgem_gross_spitz")
+	canvas.placing_engraving = engraving(&"heal")
+	canvas._try_replace(0)
+	check(focus.gems[0].engraving.id == &"heal" and focus.gems[0].gem.size == GemDef.Size.GROSS, "Hauptgem geändert")
+	canvas._try_replace(2)
+	check(focus.gems[2].engraving.id == &"standard" and messages.back().contains("Nebengravur"),
+		"Nebengem darf keine Hauptgravur bekommen")
+	canvas.free()
+
+
+func test_new_main_engravings() -> void:
+	var minor := make_gem(MINOR, GROB, 80)
+	var main_gem := make_gem(MAIN, GROB, 120)
+	var r := evaluate(lab(main_gem, engraving(&"hasted"), minor, null),
+		dots_line(MAIN_POS, MAIN_OUTER, 10, &"air") + dots_line(MAIN_POS + Vector2(-2, 0), MAIN_OUTER, 20))
+	check_stat(r, &"hasted", 3.0)  # (10 Luft x 5 + 20 neutral) / 20
+	r = evaluate(lab(main_gem, engraving(&"leben_reg"), minor, null),
+		dots_line(MAIN_POS, MAIN_OUTER, 3, &"water") + dots_line(MAIN_POS + Vector2(-2, 0), MAIN_OUTER, 4))
+	check_stat(r, &"life_regen", 9.0)  # (3 Wasser x 5 + 4 neutral) / 2
+	r = evaluate(lab(main_gem, engraving(&"mana_reg"), minor, null),
+		dots_line(MAIN_POS, MAIN_OUTER, 3, &"lightning") + dots_line(MAIN_POS + Vector2(-2, 0), MAIN_OUTER, 2, &"water"))
+	check_stat(r, &"mana_regen", 7.0)  # 3 Blitz x 5 / 2, Wasser zählt nicht
+
+
 func test_focus_shapes() -> void:
 	var star := StarFocusShape.new()
 	star.points = 5
@@ -761,3 +920,34 @@ func _has_error(result: SpellResult, fragment: String) -> bool:
 		if error.contains(fragment):
 			return true
 	return false
+
+
+func test_mana_burn_minor() -> void:
+	var r := evaluate(lab(make_gem(MAIN, GROB, 10), engraving(&"magischer_bolzen"), make_gem(MINOR, GROB, 80), engraving(&"mana_burn")),
+		dots_line(MINOR_POS, MINOR_OUTER, 3, &"lightning") + dots_line(MINOR_POS + Vector2(2, 0), MINOR_OUTER, 4))
+	check_stat(r, &"mana_burn", 3.0)  # 3 Blitz x 5 / 5, neutrale Essenz zählt nicht
+
+
+## Der Faktor ist pro Element einstellbar.
+func test_element_factor_per_element() -> void:
+	for element in content.elements:
+		check(is_equal_approx(element.factor, 5.0), "%s: Faktor 5 erwartet" % element.id)
+	var elements: Array[ElementDef] = []
+	for element in content.elements:
+		var copy := element.duplicate() as ElementDef
+		if copy.id == &"fire":
+			copy.factor = 3.0
+		elements.append(copy)
+	var focus := lab(make_gem(MAIN, GROB, 80), engraving(&"magischer_bolzen"), make_gem(MINOR, GROB, 80), null)
+	var dots := dots_line(MAIN_POS, MAIN_OUTER, 2, &"fire") + dots_line(MAIN_POS + Vector2(-2, 0), MAIN_OUTER, 2, &"water")
+	var r := SpellEvaluator.evaluate(focus, elements, dots)
+	check_stat(r, &"damage", 16.0)  # 2 Feuer x 3 + 2 Wasser x 5
+	check(is_equal_approx(r.gem_results[0].points, 16.0), "Punkte des Hauptgems, war %s" % r.gem_results[0].points)
+
+
+func test_freeze_counts_water_and_air() -> void:
+	var dots := dots_line(MAIN_POS, MAIN_OUTER, 2, &"water") + dots_line(MAIN_POS + Vector2(-2, 0), MAIN_OUTER, 1, &"air") \
+		+ dots_line(MAIN_POS + Vector2(0, -2), MAIN_OUTER, 3, &"fire") + dots_line(MAIN_POS + Vector2(2, 2), MAIN_OUTER, 4)
+	var r := evaluate(lab(make_gem(MAIN, GROB, 80), engraving(&"freeze"), make_gem(MINOR, GROB, 80), null), dots)
+	check_stat(r, &"damage", 19.0)  # 4 neutral + (2 Wasser + 1 Luft) x 5, Feuer zählt nicht
+	check_stat(r, &"freeze_conversion", 100.0)

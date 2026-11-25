@@ -6,13 +6,14 @@
 
 [sub_resource type="Resource" id="Resource_o8b4v"]
 script = ExtResource("2_ltv6k")
+source = 3
 stat = &"damage"
 
 [sub_resource type="Resource" id="Resource_pf0tv"]
 script = ExtResource("2_ltv6k")
 source = 1
 element_id = &"lightning"
-per_n = 2
+per_n = 10
 stat = &"shock"
 
 [resource]
@@ -20,5 +21,6 @@ script = ExtResource("3_loysd")
 id = &"blitzschlag"
 display_name = "Blitzschlag"
 role = 0
-description = "+1 Schaden pro neutraler Essenz, 1 Schock pro 2 Blitz-Essenzen"
+element_ids = Array[StringName]([&"lightning"])
+description = "+1 Schaden pro Punkt, 1 Schock pro 10 Punkte aus Blitz-Essenz. Punkte: neutrale Essenz 1, Blitz-Essenz 5, andere Essenz 0"
 rules = Array[ExtResource("2_ltv6k")]([SubResource("Resource_o8b4v"), SubResource("Resource_pf0tv")])

@@ -8,5 +8,5 @@
 script = ExtResource("3_q67jo")
 id = &"standard"
 display_name = "Standard"
-description = "Gibt seine neutrale Essenz und Essenzen an das Hauptgem weiter"
+description = "Gibt seine neutrale Essenz und Essenzen an das Hauptgem weiter. Dort zählen sie nach den Regeln des Hauptgems"
 transfer_to_main = true

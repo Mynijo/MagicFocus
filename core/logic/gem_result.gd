@@ -22,6 +22,10 @@ var effective_base: float = 0.0
 ## Element-ID -> effektive Anzahl
 var effective_elements: Dictionary = {}
 
+## Punkte für die Gravur: neutrale Essenz + Essenz × Element-Faktor
+## (nur die Essenz, die die Gravur zählt). Wird in Phase 6 gesetzt.
+var points: float = 0.0
+
 ## Nur Hauptgem: von Standard-Gems übertragene effektive Essenzen
 var received_base: float = 0.0
 var received_elements: Dictionary = {}

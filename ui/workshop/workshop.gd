@@ -5,13 +5,18 @@ extends Control
 
 const CONTENT := preload("res://content/crafting_content.tres")
 const SAVE_DIR := "user://foci/"
+const SAVE_EXTENSION := ".json"
 
 const STAT_NAMES := {
 	&"damage": "Schaden",
 	&"heal": "Heilung",
 	&"armor": "Armor",
-	&"crit": "Crit",
+	&"crit": "Crit-Chance (%)",
 	&"slow": "Slow (Stacks)",
+	&"hasted": "Hasted (Stacks)",
+	&"life_regen": "Leben-Reg (Stacks)",
+	&"mana_regen": "Mana-Reg (Stacks)",
+	&"mana_burn": "Mana Burn (Stacks)",
 	&"burn": "Burn (Stacks)",
 	&"wet": "Nass (Stacks)",
 	&"bleed": "Bleed (Stacks)",
@@ -45,6 +50,7 @@ var _status: Label
 var _result_text: RichTextLabel
 var _save_name: LineEdit
 var _save_select: OptionButton
+var _delete_dialog: ConfirmationDialog
 ## Gem-Liste im Ergebnis aufgeklappt?
 var _show_gem_details := false
 
@@ -185,7 +191,7 @@ func _build_left_panel() -> Control:
 
 	# Gem-Bibliothek
 	_header(box, "3. Gems setzen")
-	_small_label(box, "Gravur, Größe und Spitz wählen, dann in den Fokus klicken – die Vorschau zeigt, welche Punkte das Gem einsammeln würde. Die Gravur bestimmt, ob es ein Hauptgem oder Nebengem ist. Gems ziehen = verschieben, Rechtsklick = entfernen.")
+	_small_label(box, "Gravur, Größe und Spitz wählen, dann in den Fokus klicken – die Vorschau zeigt, welche Punkte das Gem einsammeln würde. Die Gravur bestimmt, ob es ein Hauptgem oder Nebengem ist. Klick auf ein gesetztes Gem = übernimmt Gravur, Größe und Spitz. Gems ziehen = verschieben, Rechtsklick = entfernen.")
 	_check(box, "Automatisch verbinden", true, _set_auto_connect)
 
 	var engraving_row := HBoxContainer.new()
@@ -251,8 +257,17 @@ func _build_left_panel() -> Control:
 	_button(save_row, "Neu", _reset_focus)
 	_save_select = OptionButton.new()
 	box.add_child(_save_select)
-	_button(box, "Laden", _load_focus)
+	var load_row := HBoxContainer.new()
+	box.add_child(load_row)
+	_button(load_row, "Laden", _load_focus)
+	_button(load_row, "Löschen", _delete_focus)
 	_button(box, "Beispiel laden", _on_example_pressed)
+	_delete_dialog = ConfirmationDialog.new()
+	_delete_dialog.title = "Fokus löschen"
+	_delete_dialog.ok_button_text = "Löschen"
+	_delete_dialog.cancel_button_text = "Abbrechen"
+	_delete_dialog.confirmed.connect(_on_delete_confirmed)
+	add_child(_delete_dialog)
 
 	return scroll
 
@@ -571,7 +586,8 @@ func _diff_line(label: String, old_value: float, new_value: float, higher_is_bet
 func _update_result_text() -> void:
 	var t := ""
 	if _preview_result != null:
-		t += "[font_size=18][b][color=#fff2a0]Vorschau: mit neuem Gem[/color][/b][/font_size]\n"
+		var title := "Vorschau: Gem ändern" if _canvas.is_replace_preview() else "Vorschau: mit neuem Gem"
+		t += "[font_size=18][b][color=#fff2a0]%s[/color][/b][/font_size]\n" % title
 		t += _diff_text(result, _preview_result) + "\n[color=#555555]────────────[/color]\n\n"
 	elif _drag_baseline != null:
 		t += "[font_size=18][b][color=#fff2a0]Änderung durch Verschieben[/color][/b][/font_size]\n"
@@ -615,6 +631,8 @@ func _gem_details_text() -> String:
 			details += "\nzählt: %s" % _essence_text(gr.effective_base, gr.effective_elements)
 		if gr.is_main() and (gr.received_base > 0.0 or not gr.received_elements.is_empty()):
 			details += "\nübertragen: %s" % _essence_text(gr.received_base, gr.received_elements)
+		if not gr.placed.engraving.transfer_to_main:
+			details += "\nPunkte für die Gravur: %s" % _format_number(gr.points)
 		t += "[indent][color=#bbbbbb]%s[/color][/indent]\n" % details
 	return t
 
@@ -639,13 +657,20 @@ func _format_number(value: float) -> String:
 
 # --- Speichern / Laden ------------------------------------------------------
 
+## Speicherstände liegen als JSON mit IDs in user://foci/ (siehe FocusInstance.to_dict).
 func _refresh_save_list() -> void:
 	_save_select.clear()
 	if not DirAccess.dir_exists_absolute(SAVE_DIR):
 		return
 	for file in DirAccess.get_files_at(SAVE_DIR):
-		if file.ends_with(".tres"):
+		if file.ends_with(SAVE_EXTENSION):
 			_save_select.add_item(file.get_basename())
+
+
+func _selected_save_path() -> String:
+	if _save_select.selected < 0:
+		return ""
+	return SAVE_DIR + _save_select.get_item_text(_save_select.selected) + SAVE_EXTENSION
 
 
 func _save_focus() -> void:
@@ -654,28 +679,63 @@ func _save_focus() -> void:
 		_show_status("Bitte einen Namen eingeben.")
 		return
 	DirAccess.make_dir_recursive_absolute(SAVE_DIR)
-	var error := ResourceSaver.save(focus, SAVE_DIR + file_name + ".tres")
-	if error != OK:
-		_show_status("Speichern fehlgeschlagen (Fehler %d)." % error)
+	var file := FileAccess.open(SAVE_DIR + file_name + SAVE_EXTENSION, FileAccess.WRITE)
+	if file == null:
+		_show_status("Speichern fehlgeschlagen (Fehler %d)." % FileAccess.get_open_error())
 		return
+	file.store_string(JSON.stringify(focus.to_dict(), "\t"))
+	file.close()
 	_show_status("Gespeichert: %s" % file_name)
 	_refresh_save_list()
+	for i in _save_select.item_count:
+		if _save_select.get_item_text(i) == file_name:
+			_save_select.select(i)
 
 
 func _load_focus() -> void:
-	if _save_select.selected < 0:
+	var path := _selected_save_path()
+	if path == "":
 		_show_status("Kein gespeicherter Fokus ausgewählt.")
 		return
-	var file_name := _save_select.get_item_text(_save_select.selected)
-	var loaded := ResourceLoader.load(SAVE_DIR + file_name + ".tres", "", ResourceLoader.CACHE_MODE_IGNORE) as FocusInstance
-	if loaded == null or loaded.focus_def == null:
-		_show_status("Laden fehlgeschlagen.")
+	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if not data is Dictionary:
+		_show_status("Laden fehlgeschlagen: Die Datei ist beschädigt.")
+		return
+	var warnings: Array[String] = []
+	var loaded := FocusInstance.from_dict(data, CONTENT, warnings)
+	if loaded == null:
+		_show_status("Laden fehlgeschlagen: %s" % " ".join(warnings))
 		return
 	focus = loaded
+	var file_name := path.get_file().get_basename()
 	_save_name.text = file_name
 	_sync_fill_ui()
 	_refresh()
-	_show_status("Geladen: %s" % file_name)
+	var text := "Geladen: %s" % file_name
+	if not warnings.is_empty():
+		text += "\n" + "\n".join(warnings)
+	_show_status(text)
+
+
+func _delete_focus() -> void:
+	var path := _selected_save_path()
+	if path == "":
+		_show_status("Kein gespeicherter Fokus ausgewählt.")
+		return
+	_delete_dialog.dialog_text = "„%s“ wirklich löschen?" % path.get_file().get_basename()
+	_delete_dialog.popup_centered()
+
+
+func _on_delete_confirmed() -> void:
+	var path := _selected_save_path()
+	if path == "":
+		return
+	var error := DirAccess.remove_absolute(path)
+	if error != OK:
+		_show_status("Löschen fehlgeschlagen (Fehler %d)." % error)
+		return
+	_show_status("Gelöscht: %s" % path.get_file().get_basename())
+	_refresh_save_list()
 
 
 func _reset_focus() -> void:

@@ -43,7 +43,7 @@ static func evaluate(focus: FocusInstance, elements: Array[ElementDef],
 		gr.apply_multiplier(gr.placed.gem.get_multiplier())
 	var main := result.gem_results[focus.get_main_gem_index()]
 	_transfer(main, result)
-	_compute_spell(main, order, points, result)
+	_compute_spell(main, order, points, result, elements)
 
 	result.valid = true
 	return result
@@ -199,18 +199,37 @@ static func _transfer(main: GemResult, result: SpellResult) -> void:
 
 # --- Phase 6 ---------------------------------------------------------------
 
+## Element-Essenz für eine Gravur: mit dem Faktor des Elements gewichtet.
+## Nur Essenz der Elemente der Gravur zählt, andere fällt weg.
+static func _weighted_counts(counts: Dictionary, engraving: EngravingDef, factors: Dictionary) -> Dictionary:
+	var weighted := {}
+	for id: StringName in counts:
+		if not engraving.counts_element(id):
+			continue
+		weighted[id] = float(counts[id]) * float(factors.get(id, 1.0))
+	return weighted
+
+
 static func _compute_spell(main: GemResult, order: Array[GemResult],
-		points: PackedVector2Array, result: SpellResult) -> void:
+		points: PackedVector2Array, result: SpellResult, elements: Array[ElementDef]) -> void:
 	var main_engraving := main.placed.engraving
 	result.engraving = main_engraving
 	for stat: StringName in main_engraving.base_stats:
 		result.add_stat(stat, float(main_engraving.base_stats[stat]))
 
+	var factors := {}
+	for element in elements:
+		factors[element.id] = element.factor
+
 	# Hauptgem: eigene und übertragene Essenzen; Nebengems: nur eigene
 	for gr in order:
 		var engraving := gr.placed.engraving
 		var base := gr.total_base() if gr.is_main() else gr.effective_base
-		var counts := gr.total_elements() if gr.is_main() else gr.effective_elements
+		var counts := _weighted_counts(
+			gr.total_elements() if gr.is_main() else gr.effective_elements, engraving, factors)
+		gr.points = base
+		for count: float in counts.values():
+			gr.points += count
 		for rule in engraving.rules:
 			result.add_stat(rule.stat, rule.evaluate(base, counts))
 

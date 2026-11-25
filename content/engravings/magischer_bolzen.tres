@@ -6,18 +6,14 @@
 
 [sub_resource type="Resource" id="Resource_1q4ag"]
 script = ExtResource("2_rfysr")
+source = 3
 stat = &"damage"
-
-[sub_resource type="Resource" id="Resource_3soph"]
-script = ExtResource("2_rfysr")
-source = 2
-stat = &"damage"
-amount = 2.0
 
 [resource]
 script = ExtResource("3_f26u3")
 id = &"magischer_bolzen"
 display_name = "Magischer Bolzen"
 role = 0
-description = "+1 Schaden pro neutraler Essenz, +2 Schaden pro Essenz"
-rules = Array[ExtResource("2_rfysr")]([SubResource("Resource_1q4ag"), SubResource("Resource_3soph")])
+element_ids = Array[StringName]([&"fire", &"water", &"earth", &"air", &"lightning"])
+description = "+1 Schaden pro Punkt. Punkte: neutrale Essenz 1, Feuer-Essenz 5, Wasser-Essenz 5, Erde-Essenz 5, Luft-Essenz 5, Blitz-Essenz 5"
+rules = Array[ExtResource("2_rfysr")]([SubResource("Resource_1q4ag")])

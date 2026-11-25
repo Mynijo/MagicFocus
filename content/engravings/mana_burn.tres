@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="EngravingDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_g8jio"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="2_k13xg"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="3_ggi3s"]
+
+[sub_resource type="Resource" id="Resource_pryro"]
+script = ExtResource("2_k13xg")
+source = 1
+element_id = &"lightning"
+per_n = 5
+stat = &"mana_burn"
+
+[resource]
+script = ExtResource("3_ggi3s")
+id = &"mana_burn"
+display_name = "Mana Burn"
+element_ids = Array[StringName]([&"lightning"])
+description = "1 Mana Burn pro 5 Punkte. Punkte: Blitz-Essenz 5, andere Essenz 0, neutrale Essenz 0"
+rules = Array[ExtResource("2_k13xg")]([SubResource("Resource_pryro")])

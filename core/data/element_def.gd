@@ -8,3 +8,5 @@ extends Resource
 @export var id: StringName
 @export var display_name: String
 @export var color: Color = Color.WHITE
+## Eine Essenz dieses Elements zählt für Gravuren so viel wie `factor` neutrale Essenz.
+@export var factor: float = 5.0

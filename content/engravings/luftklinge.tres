@@ -6,13 +6,14 @@
 
 [sub_resource type="Resource" id="Resource_othq6"]
 script = ExtResource("2_3i6v0")
+source = 3
 stat = &"damage"
 
 [sub_resource type="Resource" id="Resource_qupra"]
 script = ExtResource("2_3i6v0")
 source = 1
 element_id = &"air"
-per_n = 2
+per_n = 10
 stat = &"bleed"
 
 [resource]
@@ -20,5 +21,6 @@ script = ExtResource("3_rh5ny")
 id = &"luftklinge"
 display_name = "Luftklinge"
 role = 0
-description = "+1 Schaden pro neutraler Essenz, 1 Bleed pro 2 Luft-Essenzen"
+element_ids = Array[StringName]([&"air"])
+description = "+1 Schaden pro Punkt, 1 Bleed pro 10 Punkte aus Luft-Essenz. Punkte: neutrale Essenz 1, Luft-Essenz 5, andere Essenz 0"
 rules = Array[ExtResource("2_3i6v0")]([SubResource("Resource_othq6"), SubResource("Resource_qupra")])

@@ -31,14 +31,19 @@ Kommunikation mit dem Nutzer auf **Deutsch**.
 ## Implementierte Spielregeln
 
 - Ein Spell braucht genau **1 Hauptgem** und mindestens **3 Gems** in einem **geschlossenen Kreis**, der beim Hauptgem beginnt. Kanten dürfen sich nicht kreuzen und müssen **innerhalb der Fokusform** verlaufen.
-- **Gem = Form + Gravur.** Die Form (`GemDef`) legt Radius, Winkel und Kapazität fest, die Gravur (`EngravingDef`) die Wirkung. Die Rolle (Haupt/Neben) muss übereinstimmen. In der Werkstatt wählt man **Gravur, Größe (klein/mittel/groß) und Spitz ja/nein**; die Gravur legt die Rolle fest, die Form ergibt sich über `CraftingContent.find_gem()`. Es gibt 12 Formen (2 Rollen × 3 Größen × Spitz/Grob), erzeugt aus `GEM_SIZES` im Generator.
+- **Gem = Form + Gravur.** Die Form (`GemDef`) legt Radius, Winkel und Kapazität fest, die Gravur (`EngravingDef`) die Wirkung. Die Rolle (Haupt/Neben) muss übereinstimmen. In der Werkstatt wählt man **Gravur, Größe (klein/mittel/groß) und Spitz ja/nein**; ein **Klick auf ein gesetztes Gem** übernimmt diese Auswahl (gleiche Rolle nötig, Position und Kreis bleiben, Vorschau beim Darüberfahren); die Gravur legt die Rolle fest, die Form ergibt sich über `CraftingContent.find_gem()`. Es gibt 12 Formen (2 Rollen × 3 Größen × Spitz/Grob), erzeugt aus `GEM_SIZES` im Generator.
 - **Winkel:** Spitz sammelt im Innenwinkel der Ecke, Grob im Außenwinkel („innen“ = zum Polygoninneren, auch bei konkaven Formen).
 - **Multiplikator:** Spitze Gems zählen eingesammelte Essenzen pauschal **×2** (`GemDef.SPITZ_MULTIPLIER`), grobe ×1. Das gilt auch für Hauptgems. Radius und Kapazität wirken nicht auf den Multiplikator.
 - **Einsammeln:** zuerst das Hauptgem, dann die Nebengems in **Platzierungsreihenfolge**. Jedes nimmt die nächstgelegenen freien Punkte bis zu seiner Kapazität (N-E und E getrennt). Jeder Punkt wird nur einmal eingesammelt. Danach: effektiv = eingesammelt × Multiplikator.
 - **Übertragen:** Gems mit der Gravur **Standard** geben ihre effektiven N-E und E an das Hauptgem. Der Multiplikator des Hauptgems wirkt nur auf das, was es selbst einsammelt.
-- **Gravur-Regeln** zählen „pro N-E“, „pro E“ (alle Elemente) oder „pro Element-E“. Überlappende Regeln **addieren** sich (Heal: Wasser-E = 10 + 20). Die Hauptgravur bestimmt die Art des Spells. Gems verfärben sich nicht; es gibt keine Resistenz und nur einen Schadenstyp.
-- **Hauptgravuren:** Magischer Bolzen, Freeze (100 Nass → 1 Eis), Slow, Heal, Schutz, Feuerball (Burn), Wasser-Detonation (Nass), Luftklinge (Bleed), Kanone (Armor Break), Blitzschlag (Schock). Die Status-Attacken zählen nur ihr eigenes Element.
-- **Nebengravuren:** Standard (Übertragen), Crit (Feuer), Mana-Reduktion (Wasser), Cast-Speed (Luft, −1 s pro 5), Armor (E, Erde extra), Status (jedes Element erzeugt seinen Status: Feuer → Burn, Wasser → Nass, Luft → Bleed, Erde → Armor Break, Blitz → Schock).
+- **Punkte und Element-Faktor:** Gravuren rechnen mit **Punkten** = N-E + E × Faktor des Elements (`ElementDef.factor`, zurzeit überall 5). Eine Gravur zählt **nur E ihrer Elemente** (`EngravingDef.element_ids`, z. B. Heal = Wasser), **fremde E zählen gar nicht**. **Gravuren ohne Element zählen keine E** (nur N-E). Der **Magische Bolzen hat alle Elemente**. Jede Gravur hat **eine Rate pro Wert** (z. B. Heal 5 pro Punkt); Regeln mit Quelle `POINTS`. Die Beschreibung bekommt im Generator automatisch den Zusatz „Punkte: …“.
+- **Status** (Burn, Nass, Bleed, Armor Break, Schock) entsteht **nur aus E des passenden Elements** (gewichtet), nie aus N-E. Pro Status gibt es eine eigene Nebengravur (Burn, Nass, Bleed, Armor Break, Schock) mit dem passenden Element.
+- Die Hauptgravur bestimmt die Art des Spells. Gems verfärben sich nicht; es gibt keine Resistenz und nur einen Schadenstyp. Standard überträgt rohe N-E und E; das Hauptgem wendet seine Regeln (und seinen Elementfilter) an.
+- In der Werkstatt werden E-Punkte größer gezeichnet als N-E (`FocusCanvas.ELEMENT_DOT_SCALE`), die Gem-Liste zeigt „Punkte für die Gravur“.
+- **Crit:** 1 Crit = 1 % Crit-Chance. Ein Crit macht 200 % Schaden (Auswirkung erst im Kampf, M6).
+- **Speicherstände** liegen als JSON in `user://foci/` und enthalten nur IDs (`FocusInstance.to_dict()` / `from_dict()`). Unbekannte IDs werden beim Laden entfernt und gemeldet; fehlt ein Gem, wird der Kreis gelöst. **IDs von Gems, Gravuren, Foki und Elementen nicht leichtfertig umbenennen**, sonst gehen gespeicherte Gems verloren.
+- **Hauptgravuren** (Element in Klammern): Magischer Bolzen (alle), Freeze (Wasser und Luft, 100 Nass → 1 Eis), Slow (Luft), Heal (Wasser), Schutz (Erde), Hasted (Luft), Leben-Reg (Wasser), Mana-Reg (Blitz), Feuerball (Feuer, Burn), Wasser-Detonation (Wasser, Nass), Luftklinge (Luft, Bleed), Kanone (Erde, Armor Break), Blitzschlag (Blitz, Schock).
+- **Nebengravuren:** Standard (Übertragen, keins), Crit (Feuer), Mana-Reduktion (Wasser), Cast-Speed (Luft), Armor (Erde), Mana Burn (Blitz), Burn (Feuer), Nass (Wasser), Bleed (Luft), Armor Break (Erde), Schock (Blitz). Die sechs Status-Nebengravuren (inkl. Mana Burn) zählen keine N-E, 1 Status pro 5 Punkte.
 - **Cast-Zeit** = 1 s pro Gem − `cast_time_reduction` (mind. 0,5 s). **Mana** = Kantenlänge × 0,1 − `mana_reduction` (mind. 1).
 - **Foki** sind feste Typen: Form (Kreis, Stern, Tropfen), Gem-Kapazität (klein 3, mittel 3–5, groß 5–7, sehr groß bis 10), **Gesamtkapazität** `max_dots` für N-E und E zusammen, ein **Limit für alle E zusammen** `max_element_dots` (nicht pro Element) und `allowed_elements` (z. B. Feuer-Fokus nur Feuer, neutraler Fokus 0 E). **N-E wird nicht eingestellt**, sondern füllt immer bis zur Gesamtkapazität auf (`FocusInstance.get_base_count()`). Upgrades durch den Spieler sind vorerst nicht vorgesehen.
 - Der Kampf ist ausschließlich 1-gegen-1, es gibt keinen Flächenschaden und keine Mehrfachziele.
@@ -59,6 +64,7 @@ Kommunikation mit dem Nutzer auf **Deutsch**.
 | Leben-Reg | 1 Leben pro s pro Stack, −1 Stack pro s |
 | Mana-Reg | 1 Mana pro s pro Stack, −1 Stack pro s |
 | Armor Break | hebt Armor 1 : 5 auf |
+| Crit | 1 Crit = 1 % Chance, ein Crit macht 200 % Schaden |
 
 ## Befehle
 
@@ -72,7 +78,7 @@ godot --headless --path . -s res://tools/generate_content.gd
 # Tests (Exit-Code 0 = grün)
 godot --headless --path . -s res://tests/run_tests.gd
 # Render-Check der Werkstatt (PNG-Frames)
-godot --path . res://tests/preview_snapshot.tscn --write-movie out.png --quit-after 4 --fixed-fps 30 -- [--focus=<id>] [--place] [--details]
+godot --path . res://tests/preview_snapshot.tscn --write-movie out.png --quit-after 4 --fixed-fps 30 -- [--focus=<id>] [--place] [--details] [--scroll] [--replace]
 godot --path . --write-movie out.png --quit-after 3 --fixed-fps 30 -- --example
 ```
 
@@ -85,11 +91,7 @@ godot --path . --write-movie out.png --quit-after 3 --fixed-fps 30 -- --example
 
 ## Offene Punkte
 
-- **Quellen fehlen** für Hasted, Mana Burn, Leben-Reg und Mana-Reg: Keine Gravur erzeugt sie bisher.
-- **Crit:** Bedeutung offen (Chance oder Multiplikator?). Bisher nur ein Zählwert.
-- **Freeze:** 100 Nass → 1 Eis ist mit 1 Nass pro 2 Wasser-E kaum erreichbar. Verhältnis im Balancing prüfen; Stun-Lock durch Eis vermeiden.
-- **N-E auf Nebengems:** Außer bei Standard bewirken eingesammelte N-E auf Nebengems nichts. Ist das gewollt?
-- **Gravur nachträglich ändern:** Bisher entfernen und neu setzen. Komfort-Funktion später.
+- **Freeze:** 100 Nass → 1 Eis ist mit 1 Nass pro 10 Wasser-Punkte (= 2 Wasser-E) kaum erreichbar. Verhältnis im Balancing prüfen; Stun-Lock durch Eis vermeiden.
 - **Kampfsystem (M6):** Status-Mechaniken siehe oben; headless und deterministisch geplant.
 - **Grafik (M4):** Stil, Referenzbilder und Assets vom Nutzer stehen noch aus. Ideen: HDR-2D-Glow, Shader für Linien und Sektoren, Partikel beim Einsammeln.
 - **Ressourcen und Dungeons** über den Auto-Battler: erst später.

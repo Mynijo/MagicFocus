@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="EngravingDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_did41"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="2_ukgit"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="3_kyidi"]
+
+[sub_resource type="Resource" id="Resource_c3ghu"]
+script = ExtResource("2_ukgit")
+source = 1
+element_id = &"earth"
+per_n = 5
+stat = &"armor_break"
+
+[resource]
+script = ExtResource("3_kyidi")
+id = &"status_armor_break"
+display_name = "Armor Break"
+element_ids = Array[StringName]([&"earth"])
+description = "1 Armor Break pro 5 Punkte. Punkte: Erde-Essenz 5, andere Essenz 0, neutrale Essenz 0"
+rules = Array[ExtResource("2_ukgit")]([SubResource("Resource_c3ghu")])

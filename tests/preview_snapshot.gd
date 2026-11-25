@@ -15,6 +15,11 @@ func _ready() -> void:
 	# Optional: --details klappt die Gem-Liste im Ergebnis auf
 	if OS.get_cmdline_user_args().has("--details"):
 		workshop._on_result_meta_clicked("toggle_gems")
+	# Optional: --scroll zeigt das Ende der linken Spalte (Speichern & Laden)
+	if OS.get_cmdline_user_args().has("--scroll"):
+		var scroll := workshop.find_children("*", "ScrollContainer", true, false)[0] as ScrollContainer
+		await get_tree().process_frame
+		scroll.scroll_vertical = int(scroll.get_v_scroll_bar().max_value)
 
 	# Optional: --focus=<id> zeigt einen bestimmten Fokus-Typ mit einem Dreieck
 	for arg in OS.get_cmdline_user_args():
@@ -34,7 +39,7 @@ func _ready() -> void:
 			# Optional: --place zeigt die Vorschau eines vierten Gems
 			if OS.get_cmdline_user_args().has("--place"):
 				canvas.placing_gem = content.get_gem(&"nebengem_klein_spitz")
-				canvas.placing_engraving = content.get_engraving(&"status")
+				canvas.placing_engraving = content.get_engraving(&"status_burn")
 				canvas._mouse_inside = true
 				canvas._mouse_focus = Vector2(150, 40)
 				canvas.update_preview()
@@ -42,6 +47,16 @@ func _ready() -> void:
 			return
 
 	workshop._on_example_pressed()
+	# Optional: --replace zeigt die Vorschau beim Ändern eines gesetzten Gems
+	if OS.get_cmdline_user_args().has("--replace"):
+		canvas.placing_gem = content.get_gem(&"nebengem_klein_spitz")
+		canvas.placing_engraving = content.get_engraving(&"crit")
+		canvas._mouse_inside = true
+		canvas._hovered = 1
+		canvas._mouse_focus = workshop.focus.gems[1].position
+		canvas.update_preview()
+		canvas.queue_redraw()
+		return
 	# Beispiel ohne drittes Gem, damit die Vorschau den Kreis schließt
 	workshop.focus.gems.remove_at(2)
 	workshop.focus.loop = PackedInt32Array([0, 1])

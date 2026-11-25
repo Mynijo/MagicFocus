@@ -6,21 +6,15 @@
 
 [sub_resource type="Resource" id="Resource_bshoe"]
 script = ExtResource("2_86u6v")
-source = 2
+source = 3
 stat = &"armor"
-amount = 10.0
-
-[sub_resource type="Resource" id="Resource_k7m5v"]
-script = ExtResource("2_86u6v")
-source = 1
-element_id = &"earth"
-stat = &"armor"
-amount = 20.0
+amount = 5.0
 
 [resource]
 script = ExtResource("3_40nqo")
 id = &"schutz"
 display_name = "Schutz"
 role = 0
-description = "10 Armor pro Essenz, zusätzlich 20 pro Erd-Essenz"
-rules = Array[ExtResource("2_86u6v")]([SubResource("Resource_bshoe"), SubResource("Resource_k7m5v")])
+element_ids = Array[StringName]([&"earth"])
+description = "5 Armor pro Punkt. Punkte: neutrale Essenz 1, Erde-Essenz 5, andere Essenz 0"
+rules = Array[ExtResource("2_86u6v")]([SubResource("Resource_bshoe")])

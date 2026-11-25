@@ -6,13 +6,14 @@
 
 [sub_resource type="Resource" id="Resource_ra3xh"]
 script = ExtResource("2_1simr")
-source = 1
-element_id = &"fire"
+source = 3
+per_n = 2
 stat = &"crit"
 
 [resource]
 script = ExtResource("3_h82ll")
 id = &"crit"
 display_name = "Crit"
-description = "+1 Crit pro Feuer-Essenz"
+element_ids = Array[StringName]([&"fire"])
+description = "+1 % Crit-Chance pro 2 Punkte. Ein Crit macht 200 % Schaden. Punkte: neutrale Essenz 1, Feuer-Essenz 5, andere Essenz 0"
 rules = Array[ExtResource("2_1simr")]([SubResource("Resource_ra3xh")])
