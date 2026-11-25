@@ -79,7 +79,8 @@ func _update_view() -> void:
 	if focus != null and focus.focus_def != null and focus.focus_def.shape != null:
 		for p in focus.focus_def.shape.get_outline():
 			extent = maxf(extent, p.length())
-	_view_scale = minf(size.x, size.y) / (2.0 * extent + 40.0)
+	# Untergrenze verhindert Division durch 0, solange die Fläche noch keine Größe hat
+	_view_scale = maxf(minf(size.x, size.y) / (2.0 * extent + 40.0), 0.001)
 
 
 func to_focus(screen_pos: Vector2) -> Vector2:
@@ -255,8 +256,12 @@ func connect_error(idx: int) -> String:
 			return "Zum Schließen braucht der Kreis mindestens %d Runen." % SpellEvaluator.MIN_RUNES
 	elif focus.loop.has(idx):
 		return "Diese Rune ist bereits verbunden."
-	if _edge_crosses(focus.runes[last].position, focus.runes[idx].position, last, idx):
+	var from := focus.runes[last].position
+	var to := focus.runes[idx].position
+	if _edge_crosses(from, to, last, idx):
 		return "Verbindungen dürfen sich nicht kreuzen."
+	if not focus.focus_def.shape.contains_segment(from, to):
+		return "Die Verbindung muss innerhalb des Fokus verlaufen."
 	return ""
 
 
@@ -382,7 +387,7 @@ func _preview_summary(dots: Array[EnergyDot]) -> String:
 			base += 1
 		else:
 			counts[dot.element_id] = counts.get(dot.element_id, 0) + 1
-	var parts := PackedStringArray(["Basis %d" % base])
+	var parts := PackedStringArray(["Energie %d" % base])
 	if content != null:
 		for element in content.elements:
 			if counts.has(element.id):
@@ -416,6 +421,8 @@ func _draw_sector(rr: RuneResult, fill_alpha: float, border: Color, px: float) -
 
 
 func _draw() -> void:
+	if size.x < 1.0 or size.y < 1.0:
+		return
 	draw_rect(Rect2(Vector2.ZERO, size), COLOR_BACKGROUND)
 	if focus == null or focus.focus_def == null or focus.focus_def.shape == null:
 		return
@@ -447,12 +454,15 @@ func _draw() -> void:
 		for placed in focus.runes:
 			draw_arc(placed.position, placed.rune.radius, 0.0, TAU, 64, Color(1, 1, 1, 0.18), 1.0 * px, true)
 
-	# Verbindungen (kreuzende rot)
+	# Verbindungen (kreuzende oder aus dem Fokus führende rot)
 	var edges := _loop_edges()
 	var crossing := _crossing_edges(edges)
+	var shape := focus.focus_def.shape
 	for i in edges.size():
-		var edge_color := COLOR_BAD if crossing.has(i) else COLOR_EDGE
-		draw_line(focus.runes[edges[i].x].position, focus.runes[edges[i].y].position, edge_color, 3.0 * px, true)
+		var a := focus.runes[edges[i].x].position
+		var b := focus.runes[edges[i].y].position
+		var bad := crossing.has(i) or not shape.contains_segment(a, b)
+		draw_line(a, b, COLOR_BAD if bad else COLOR_EDGE, 3.0 * px, true)
 
 	# Gummiband beim Verbinden
 	var n := focus.loop.size()
@@ -463,7 +473,7 @@ func _draw() -> void:
 		if _hovered >= 0:
 			to = focus.runes[_hovered].position
 			band_color = COLOR_OK if connect_error(_hovered) == "" else COLOR_BAD
-		elif _edge_crosses(from, to, _last_in_loop(), -1):
+		elif _edge_crosses(from, to, _last_in_loop(), -1) or not shape.contains_segment(from, to):
 			band_color = COLOR_BAD
 		draw_line(from, to, band_color, 2.0 * px, true)
 
@@ -541,9 +551,13 @@ func _draw() -> void:
 func _draw_preview_edges(px: float) -> void:
 	if not auto_connect or placing_rune.role == RuneDef.Role.MAIN or focus.loop.is_empty():
 		return
-	var color := Color(COLOR_PREVIEW, 0.7)
-	draw_dashed_line(focus.runes[_last_in_loop()].position, _mouse_focus, color, 2.0 * px, 8.0 * px, true, true)
+	var shape := focus.focus_def.shape
+	var from := focus.runes[_last_in_loop()].position
+	var color := Color(COLOR_PREVIEW if shape.contains_segment(from, _mouse_focus) else COLOR_BAD, 0.7)
+	draw_dashed_line(from, _mouse_focus, color, 2.0 * px, 8.0 * px, true, true)
 	var will_close := focus.loop_closed or \
 		(focus.loop.size() + 1 >= SpellEvaluator.MIN_RUNES and focus.loop.size() + 1 == focus.runes.size() + 1)
 	if will_close:
-		draw_dashed_line(_mouse_focus, focus.runes[focus.loop[0]].position, color, 2.0 * px, 8.0 * px, true, true)
+		var main_pos := focus.runes[focus.loop[0]].position
+		color = Color(COLOR_PREVIEW if shape.contains_segment(_mouse_focus, main_pos) else COLOR_BAD, 0.7)
+		draw_dashed_line(_mouse_focus, main_pos, color, 2.0 * px, 8.0 * px, true, true)

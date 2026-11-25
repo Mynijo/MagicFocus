@@ -49,7 +49,7 @@ func describe() -> String:
 	for rr in rune_results:
 		var role_text := "Hauptrune" if rr.is_main() else "Rune"
 		var rune_element := String(rr.element_id) if rr.element_id != &"" else "neutral"
-		lines.append("%s %d (%s): %d Basis, %s -> %s" % [
+		lines.append("%s %d (%s): %d Energie, %s -> %s" % [
 			role_text, rr.index, rr.placed.rune.display_name,
 			rr.base_count, str(rr.element_counts), rune_element])
 	return "\n".join(lines)

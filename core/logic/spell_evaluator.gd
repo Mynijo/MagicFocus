@@ -63,12 +63,12 @@ static func _validate(focus: FocusInstance, result: SpellResult, elements: Array
 			for element in elements:
 				if element.id == element_id:
 					element_name = element.display_name
-			result.errors.append("%s nimmt kein %s auf." % [def.display_name, element_name])
+			result.errors.append("%s nimmt keine %s-Essenz auf." % [def.display_name, element_name])
 
 	if focus.base_count > def.max_base_dots:
-		result.errors.append("Zu viele Basispunkte (%d / %d)." % [focus.base_count, def.max_base_dots])
+		result.errors.append("Zu viele Energiepunkte (%d / %d)." % [focus.base_count, def.max_base_dots])
 	if focus.get_element_total() > def.max_element_dots:
-		result.errors.append("Zu viele farbige Punkte (%d / %d)." % [focus.get_element_total(), def.max_element_dots])
+		result.errors.append("Zu viele Essenzen (%d / %d)." % [focus.get_element_total(), def.max_element_dots])
 
 	var rune_count := focus.runes.size()
 	if rune_count < MIN_RUNES:
@@ -111,6 +111,11 @@ static func _validate(focus: FocusInstance, result: SpellResult, elements: Array
 		result.errors.append("Verbindungen dürfen sich nicht kreuzen.")
 	elif absf(FocusGeometry.signed_area(points)) < 1.0:
 		result.errors.append("Die Runen liegen auf einer Linie.")
+	if def.shape != null:
+		for k in points.size():
+			if not def.shape.contains_segment(points[k], points[(k + 1) % points.size()]):
+				result.errors.append("Verbindungen müssen innerhalb des Fokus verlaufen.")
+				break
 
 
 static func _loop_points(focus: FocusInstance) -> PackedVector2Array:
@@ -239,7 +244,7 @@ static func _compute_spell(focus: FocusInstance, elements: Array[ElementDef],
 		for rule in rune.extra_rules:
 			result.add_stat(rule.stat, rule.evaluate(rr.base_count, rr.element_counts, rr.element_id) * rune.strength)
 		# Kleine Runen verbessern den Spell über ihr Element
-		if rr.is_main() or rr.element_id == &"":
+		if rr.is_main() or rr.element_id == &"" or not rune.use_element_rules:
 			continue
 		var element: ElementDef = elements_by_id.get(rr.element_id)
 		if element == null:

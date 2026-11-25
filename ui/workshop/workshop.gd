@@ -11,9 +11,10 @@ const STAT_NAMES := {
 	&"shield": "Schild",
 	&"resistance": "Resistenz",
 	&"heal": "Heilung",
-	&"burning": "Burning-Stacks",
-	&"wet": "Wet-Stacks",
-	&"lightning": "Blitz-Stacks",
+	&"burn": "Burn (Stacks)",
+	&"wet": "Wet (Stacks)",
+	&"shock": "Shock (Stacks)",
+	&"slow": "Slow (Stacks, verlangsamt Gegner-Casts)",
 	&"cast_time_reduction": "Cast-Zeit-Verkürzung (s)",
 }
 const AREA_NAMES := ["innen", "außen", "innen + außen"]
@@ -134,13 +135,14 @@ func _build_left_panel() -> Control:
 	var base_row := HBoxContainer.new()
 	box.add_child(base_row)
 	var base_label := Label.new()
-	base_label.text = "Basispunkte"
+	base_label.text = "Energiepunkte"
 	base_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	base_row.add_child(base_label)
 	_base_spin = SpinBox.new()
 	_base_spin.value_changed.connect(_on_base_changed)
 	base_row.add_child(_base_spin)
 
+	_small_label(box, "Essenzen")
 	for element in CONTENT.elements:
 		var row := HBoxContainer.new()
 		box.add_child(row)
@@ -206,7 +208,7 @@ func _build_left_panel() -> Control:
 	box.add_child(threshold_row)
 	var threshold_label := Label.new()
 	threshold_label.text = "Element-Schwelle"
-	threshold_label.tooltip_text = "Ab so vielen Punkten eines Elements nimmt eine Rune dieses Element an."
+	threshold_label.tooltip_text = "Ab so vielen Essenzen eines Elements nimmt eine Rune dieses Element an."
 	threshold_label.mouse_filter = Control.MOUSE_FILTER_PASS
 	threshold_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	threshold_row.add_child(threshold_label)
@@ -316,8 +318,8 @@ func _rune_tooltip(rune: RuneDef) -> String:
 	lines.append(rune.display_name + (" (Hauptrune)" if rune.role == RuneDef.Role.MAIN else " (Zusatzrune)"))
 	lines.append("Radius: %d" % int(rune.radius))
 	lines.append("Bereich: %s" % AREA_NAMES[rune.area])
-	lines.append("Max. Basispunkte: %d" % rune.max_base)
-	lines.append("Max. farbige Punkte: %d" % rune.max_element)
+	lines.append("Max. Energiepunkte: %d" % rune.max_base)
+	lines.append("Max. Essenzen: %d" % rune.max_element)
 	lines.append("Stärke: x%.2f" % rune.strength)
 	if rune.spell_form != null:
 		lines.append("Spell-Form: %s" % rune.spell_form.display_name)
@@ -463,7 +465,7 @@ func _sync_fill_ui() -> void:
 
 func _allowed_text(def: FocusDef) -> String:
 	if def.max_element_dots <= 0:
-		return "keine (nur Basispunkte)"
+		return "keine (nur Energiepunkte)"
 	if def.allowed_elements.is_empty():
 		return "alle"
 	var names := PackedStringArray()
@@ -475,10 +477,10 @@ func _allowed_text(def: FocusDef) -> String:
 
 func _update_fill_labels() -> void:
 	var def := focus.focus_def
-	_focus_info.text = "Form: %s   ·   Runen: %d / %d\nBasispunkte max. %d   ·   farbige max. %d\nErlaubte Elemente: %s" % [
+	_focus_info.text = "Form: %s   ·   Runen: %d / %d\nEnergiepunkte max. %d   ·   Essenzen max. %d\nErlaubte Essenzen: %s" % [
 		def.shape.get_shape_name(), focus.runes.size(), def.max_runes,
 		def.max_base_dots, def.max_element_dots, _allowed_text(def)]
-	_element_total.text = "Farbige Punkte: %d / %d" % [focus.get_element_total(), def.max_element_dots]
+	_element_total.text = "Essenzen: %d / %d" % [focus.get_element_total(), def.max_element_dots]
 
 
 # --- Ergebnis ---------------------------------------------------------------
@@ -516,7 +518,7 @@ func _update_result_text() -> void:
 			var rune := rr.placed.rune
 			var title := "★ Hauptrune" if rr.is_main() else "Zusatzrune"
 			t += "%s – %s → %s\n" % [title, rune.display_name, _element_bbcode(rr.element_id)]
-			t += "    Basis %d/%d · farbig %d/%d: %s\n" % [
+			t += "    Energie %d/%d · Essenzen %d/%d: %s\n" % [
 				rr.base_count, rune.max_base, rr.get_element_total(), rune.max_element, _counts_text(rr.element_counts)]
 	else:
 		t += "[font_size=18][b]Noch kein gültiger Spell[/b][/font_size]\n\n"

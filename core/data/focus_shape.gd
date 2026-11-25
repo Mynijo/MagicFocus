@@ -8,6 +8,12 @@ func contains(_point: Vector2) -> bool:
 	return false
 
 
+## true, wenn die Strecke a-b vollständig innerhalb der Form verläuft.
+## Standard für konvexe Formen: beide Endpunkte innerhalb genügen.
+func contains_segment(a: Vector2, b: Vector2) -> bool:
+	return contains(a) and contains(b)
+
+
 ## Gleichmäßig verteilter Zufallspunkt innerhalb der Form.
 func random_point(_rng: RandomNumberGenerator) -> Vector2:
 	return Vector2.ZERO

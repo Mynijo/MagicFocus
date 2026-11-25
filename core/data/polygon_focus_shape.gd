@@ -28,6 +28,19 @@ func contains(point: Vector2) -> bool:
 	return Geometry2D.is_point_in_polygon(point, get_polygon())
 
 
+## Polygone können konkav sein (Stern, Tropfen-Spitze): Die Strecke darf
+## zusätzlich keinen Rand schneiden.
+func contains_segment(a: Vector2, b: Vector2) -> bool:
+	if not contains(a) or not contains(b):
+		return false
+	var polygon := get_polygon()
+	var n := polygon.size()
+	for i in n:
+		if Geometry2D.segment_intersects_segment(a, b, polygon[i], polygon[(i + 1) % n]) != null:
+			return false
+	return true
+
+
 func random_point(rng: RandomNumberGenerator) -> Vector2:
 	# Gleichmäßig verteilt durch Verwerfen von Punkten außerhalb der Form
 	var bounds := _bounds()

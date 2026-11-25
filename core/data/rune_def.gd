@@ -21,5 +21,8 @@ enum Area { INNER, OUTER, BOTH }
 @export var spell_form: SpellFormDef
 ## Zusätzliche Regeln dieser Rune, unabhängig von ihrem Element.
 @export var extra_rules: Array[ScalingRule] = []
+## Nur Zusatzrunen: Wendet die Regeln des angenommenen Elements an (ElementDef.minor_rules).
+## Aus bei Runen, die Elemente über `extra_rules` selbst auswerten (z. B. Statuseffekt-Rune).
+@export var use_element_rules := true
 ## Spezial-Effekte (noch ungenutzt).
 @export var effects: Array[RuneEffect] = []
