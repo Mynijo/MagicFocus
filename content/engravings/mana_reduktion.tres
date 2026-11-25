@@ -1,19 +1,21 @@
 [gd_resource type="Resource" script_class="EngravingDef" format=3]
 
-[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_e5bjq"]
-[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="2_7xwyw"]
-[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="3_uwiwa"]
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_7xwyw"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_mana_reduktion.png" id="2_uwiwa"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="3_1hnay"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="4_ca0ut"]
 
-[sub_resource type="Resource" id="Resource_1hnay"]
-script = ExtResource("2_7xwyw")
+[sub_resource type="Resource" id="Resource_rmxee"]
+script = ExtResource("3_1hnay")
 source = 3
 per_n = 2
 stat = &"mana_reduction"
 
 [resource]
-script = ExtResource("3_uwiwa")
+script = ExtResource("4_ca0ut")
 id = &"mana_reduktion"
 display_name = "Mana-Reduktion"
 element_ids = Array[StringName]([&"water"])
+icon = ExtResource("2_uwiwa")
 description = "-1 Mana pro 2 Punkte. Punkte: neutrale Essenz 1, Wasser-Essenz 5, andere Essenz 0"
-rules = Array[ExtResource("2_7xwyw")]([SubResource("Resource_1hnay")])
+rules = Array[ExtResource("3_1hnay")]([SubResource("Resource_rmxee")])

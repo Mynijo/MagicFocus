@@ -1,20 +1,22 @@
 [gd_resource type="Resource" script_class="EngravingDef" format=3]
 
-[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_4smk0"]
-[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="2_uda7c"]
-[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="3_1ushk"]
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_uda7c"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_heal.png" id="2_1ushk"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="3_mnchd"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="4_lt7ti"]
 
-[sub_resource type="Resource" id="Resource_mnchd"]
-script = ExtResource("2_uda7c")
+[sub_resource type="Resource" id="Resource_pk654"]
+script = ExtResource("3_mnchd")
 source = 3
 stat = &"heal"
 amount = 5.0
 
 [resource]
-script = ExtResource("3_1ushk")
+script = ExtResource("4_lt7ti")
 id = &"heal"
 display_name = "Heal"
 role = 0
 element_ids = Array[StringName]([&"water"])
+icon = ExtResource("2_1ushk")
 description = "5 Heilung pro Punkt. Punkte: neutrale Essenz 1, Wasser-Essenz 5, andere Essenz 0"
-rules = Array[ExtResource("2_uda7c")]([SubResource("Resource_mnchd")])
+rules = Array[ExtResource("3_mnchd")]([SubResource("Resource_pk654")])

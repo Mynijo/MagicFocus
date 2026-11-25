@@ -7,6 +7,15 @@ extends Resource
 @export var gems: Array[GemDef] = []
 @export var engravings: Array[EngravingDef] = []
 @export var foci: Array[FocusDef] = []
+## Begriffe für die Tooltips (Elemente, Status).
+@export var glossary: Array[GlossaryTerm] = []
+
+
+func get_term(id: StringName) -> GlossaryTerm:
+	for term in glossary:
+		if term.id == id:
+			return term
+	return null
 
 
 func get_element(id: StringName) -> ElementDef:

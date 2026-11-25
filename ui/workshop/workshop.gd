@@ -42,7 +42,9 @@ var _element_spins := {}  # Element-ID -> SpinBox
 var _element_total: Label
 var _engraving_select: OptionButton
 var _spitz_check: CheckBox
-var _gem_info: Label
+var _gem_info: RichTextLabel
+## Verschachtelte Tooltips für Elemente und Status in den Texten.
+var tooltips: TermTooltips
 var _selected_size: GemDef.Size = GemDef.Size.MITTEL
 var _mode_place: Button
 var _mode_connect: Button
@@ -104,6 +106,10 @@ func _refresh() -> void:
 # --- Aufbau der Oberfläche --------------------------------------------------
 
 func _build_ui() -> void:
+	tooltips = TermTooltips.new()
+	tooltips.setup(CONTENT)
+	add_child(tooltips)
+
 	var background := ColorRect.new()
 	background.color = Color(0.12, 0.12, 0.15)
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -169,15 +175,25 @@ func _build_left_panel() -> Control:
 	for element in CONTENT.elements:
 		var row := HBoxContainer.new()
 		box.add_child(row)
-		var swatch := ColorRect.new()
-		swatch.color = element.color
-		swatch.custom_minimum_size = Vector2(14, 14)
+		# Symbol des Elements in Elementfarbe (sonst ein Farbquadrat)
+		var swatch: Control
+		if element.icon != null:
+			var icon := TextureRect.new()
+			icon.texture = element.icon
+			icon.modulate = element.color
+			icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			swatch = icon
+		else:
+			var rect := ColorRect.new()
+			rect.color = element.color
+			swatch = rect
+		swatch.custom_minimum_size = Vector2(22, 22)
 		swatch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		row.add_child(swatch)
-		var name_label := Label.new()
-		name_label.text = element.display_name
+		var name_label := _rich_label(row, tooltips.linkify(element.display_name), 16)
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(name_label)
+		name_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		var spin := SpinBox.new()
 		spin.value_changed.connect(_on_element_changed.bind(element.id))
 		row.add_child(spin)
@@ -221,7 +237,7 @@ func _build_left_panel() -> Control:
 	_spitz_check.text = "Spitz (Innenwinkel, Essenzen zählen ×2)"
 	_spitz_check.toggled.connect(_on_gem_selection_changed.unbind(1))
 	box.add_child(_spitz_check)
-	_gem_info = _small_label(box, "")
+	_gem_info = _rich_label(box, "", 12)
 
 	# Verbinden
 	_header(box, "4. Verbinden")
@@ -289,6 +305,7 @@ func _build_right_panel() -> Control:
 	_result_text.bbcode_enabled = true
 	_result_text.meta_underlined = false
 	_result_text.meta_clicked.connect(_on_result_meta_clicked)
+	tooltips.register(_result_text)
 	_result_text.fit_content = false
 	_result_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_child(_result_text)
@@ -320,6 +337,21 @@ func _small_label(parent: Control, text: String) -> Label:
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_font_size_override("font_size", 12)
 	label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.75))
+	parent.add_child(label)
+	return label
+
+
+## Text mit Begriffs-Tooltips (BBCode), Höhe passt sich dem Inhalt an.
+func _rich_label(parent: Control, bbcode: String, font_size: int) -> RichTextLabel:
+	var label := RichTextLabel.new()
+	label.bbcode_enabled = true
+	label.fit_content = true
+	label.scroll_active = false
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.add_theme_font_size_override("normal_font_size", font_size)
+	label.add_theme_font_size_override("bold_font_size", font_size)
+	label.text = bbcode
+	tooltips.register(label)
 	parent.add_child(label)
 	return label
 
@@ -363,7 +395,7 @@ func _update_placing() -> void:
 		lines.append("%s: Radius %d, %s, Essenzen zählen ×%s, max. %d neutrale Essenz und %d Essenzen" % [
 			gem.display_name, int(gem.radius), "Innenwinkel" if gem.is_inner() else "Außenwinkel",
 			_format_number(gem.get_multiplier()), gem.max_base, gem.max_element])
-	_gem_info.text = "\n".join(lines)
+	_gem_info.text = "[color=#b3b3bf]%s[/color]" % tooltips.linkify("\n".join(lines))
 	_canvas.update_preview()
 	_canvas.queue_redraw()
 
@@ -614,7 +646,7 @@ func _update_result_text() -> void:
 	t += "\n[color=#888888][font_size=12]Gems ziehen = verschieben (in beiden Modi). "
 	t += "Tasten: 1 = Setzen, 2 = Verbinden, R = neu würfeln, "
 	t += "Rücktaste = Verbindung zurück[/font_size][/color]"
-	_result_text.text = t
+	_result_text.text = tooltips.linkify(t)
 
 
 func _gem_details_text() -> String:

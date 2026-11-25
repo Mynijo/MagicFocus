@@ -1,26 +1,28 @@
 [gd_resource type="Resource" script_class="EngravingDef" format=3]
 
-[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_du45e"]
-[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="2_3i6v0"]
-[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="3_rh5ny"]
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_3i6v0"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_luftklinge.png" id="2_rh5ny"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="3_othq6"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="4_qupra"]
 
-[sub_resource type="Resource" id="Resource_othq6"]
-script = ExtResource("2_3i6v0")
+[sub_resource type="Resource" id="Resource_qygsn"]
+script = ExtResource("3_othq6")
 source = 3
 stat = &"damage"
 
-[sub_resource type="Resource" id="Resource_qupra"]
-script = ExtResource("2_3i6v0")
+[sub_resource type="Resource" id="Resource_7fcpb"]
+script = ExtResource("3_othq6")
 source = 1
 element_id = &"air"
 per_n = 10
 stat = &"bleed"
 
 [resource]
-script = ExtResource("3_rh5ny")
+script = ExtResource("4_qupra")
 id = &"luftklinge"
 display_name = "Luftklinge"
 role = 0
 element_ids = Array[StringName]([&"air"])
+icon = ExtResource("2_rh5ny")
 description = "+1 Schaden pro Punkt, 1 Bleed pro 10 Punkte aus Luft-Essenz. Punkte: neutrale Essenz 1, Luft-Essenz 5, andere Essenz 0"
-rules = Array[ExtResource("2_3i6v0")]([SubResource("Resource_othq6"), SubResource("Resource_qupra")])
+rules = Array[ExtResource("3_othq6")]([SubResource("Resource_qygsn"), SubResource("Resource_7fcpb")])

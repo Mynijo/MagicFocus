@@ -1,20 +1,22 @@
 [gd_resource type="Resource" script_class="EngravingDef" format=3]
 
-[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_mpdw2"]
-[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="2_7h3is"]
-[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="3_f6nuq"]
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_7h3is"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_slow.png" id="2_f6nuq"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="3_8u311"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="4_r6l78"]
 
-[sub_resource type="Resource" id="Resource_8u311"]
-script = ExtResource("2_7h3is")
+[sub_resource type="Resource" id="Resource_nk2la"]
+script = ExtResource("3_8u311")
 source = 3
 per_n = 20
 stat = &"slow"
 
 [resource]
-script = ExtResource("3_f6nuq")
+script = ExtResource("4_r6l78")
 id = &"slow"
 display_name = "Slow"
 role = 0
 element_ids = Array[StringName]([&"air"])
+icon = ExtResource("2_f6nuq")
 description = "1 Slow pro 20 Punkte. Punkte: neutrale Essenz 1, Luft-Essenz 5, andere Essenz 0"
-rules = Array[ExtResource("2_7h3is")]([SubResource("Resource_8u311")])
+rules = Array[ExtResource("3_8u311")]([SubResource("Resource_nk2la")])

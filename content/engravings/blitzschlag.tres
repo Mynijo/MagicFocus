@@ -1,26 +1,28 @@
 [gd_resource type="Resource" script_class="EngravingDef" format=3]
 
-[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_0sxaa"]
-[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="2_ltv6k"]
-[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="3_loysd"]
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_ltv6k"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_blitzschlag.png" id="2_loysd"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="3_o8b4v"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="4_pf0tv"]
 
-[sub_resource type="Resource" id="Resource_o8b4v"]
-script = ExtResource("2_ltv6k")
+[sub_resource type="Resource" id="Resource_k8ysf"]
+script = ExtResource("3_o8b4v")
 source = 3
 stat = &"damage"
 
-[sub_resource type="Resource" id="Resource_pf0tv"]
-script = ExtResource("2_ltv6k")
+[sub_resource type="Resource" id="Resource_bdq28"]
+script = ExtResource("3_o8b4v")
 source = 1
 element_id = &"lightning"
 per_n = 10
 stat = &"shock"
 
 [resource]
-script = ExtResource("3_loysd")
+script = ExtResource("4_pf0tv")
 id = &"blitzschlag"
 display_name = "Blitzschlag"
 role = 0
 element_ids = Array[StringName]([&"lightning"])
+icon = ExtResource("2_loysd")
 description = "+1 Schaden pro Punkt, 1 Schock pro 10 Punkte aus Blitz-Essenz. Punkte: neutrale Essenz 1, Blitz-Essenz 5, andere Essenz 0"
-rules = Array[ExtResource("2_ltv6k")]([SubResource("Resource_o8b4v"), SubResource("Resource_pf0tv")])
+rules = Array[ExtResource("3_o8b4v")]([SubResource("Resource_k8ysf"), SubResource("Resource_bdq28")])

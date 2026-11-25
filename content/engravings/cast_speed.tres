@@ -1,19 +1,21 @@
 [gd_resource type="Resource" script_class="EngravingDef" format=3]
 
-[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_s4fcd"]
-[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="2_8oruk"]
-[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="3_goesq"]
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_8oruk"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_cast_speed.png" id="2_goesq"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="3_es58b"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="4_upclm"]
 
-[sub_resource type="Resource" id="Resource_es58b"]
-script = ExtResource("2_8oruk")
+[sub_resource type="Resource" id="Resource_eljyr"]
+script = ExtResource("3_es58b")
 source = 3
 per_n = 10
 stat = &"cast_time_reduction"
 
 [resource]
-script = ExtResource("3_goesq")
+script = ExtResource("4_upclm")
 id = &"cast_speed"
 display_name = "Cast-Speed"
 element_ids = Array[StringName]([&"air"])
+icon = ExtResource("2_goesq")
 description = "-1 s Cast-Zeit pro 10 Punkte. Punkte: neutrale Essenz 1, Luft-Essenz 5, andere Essenz 0"
-rules = Array[ExtResource("2_8oruk")]([SubResource("Resource_es58b")])
+rules = Array[ExtResource("3_es58b")]([SubResource("Resource_eljyr")])

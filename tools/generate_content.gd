@@ -114,6 +114,51 @@ const ENGRAVINGS := [
 ]
 
 
+## Status-Begriffe für die Tooltips (Kampfregeln aus der Tabelle des Nutzers, M6).
+## [id, Titel, Wörter im Text, Erklärung]. Begriffe in der Erklärung werden selbst
+## wieder zu Tooltips. X = Wert kommt mit dem Kampfsystem.
+const STATUS_TERMS := [
+	[&"bleed", "Bleed", ["Bleed"],
+		"Verursacht pro Stack X Schaden pro Sekunde. Verliert 1 Stack pro Sekunde. Entsteht aus Luft-Essenz."],
+	[&"slowed", "Slowed", ["Slowed", "Slow"],
+		"Verlängert die Cast-Zeit des Gegners um X Sekunden. Verliert 1 Stack pro Sekunde, höchstens 10 Stacks. Slowed und Hasted heben sich 1 : 1 auf."],
+	[&"hasted", "Hasted", ["Hasted"],
+		"Verkürzt die eigene Cast-Zeit um X Sekunden. Verliert 1 Stack pro Sekunde, höchstens 10 Stacks. Hasted und Slowed heben sich 1 : 1 auf."],
+	[&"mana_burn", "Mana Burn", ["Mana Burn"],
+		"Senkt die Mana-Reg des Gegners um X pro Sekunde. Verliert 1 Stack pro gesenkter Mana-Reg. Entsteht aus Blitz-Essenz."],
+	[&"armor", "Armor", ["Armor"],
+		"Verhindert X Schaden. Verliert 1 Stack pro verhindertem Schaden. Armor Break hebt Armor im Verhältnis 1 : 5 auf."],
+	[&"schock", "Schock", ["Schock"],
+		"Verursacht 1 Schaden pro Mana, das der Gegner verbraucht (höchstens so viel wie Stacks). Verliert 1 Stack pro verbrauchtem Mana. Nass verstärkt den Schaden. Entsteht aus Blitz-Essenz."],
+	[&"nass", "Nass", ["Nass"],
+		"Erhöht den Schaden von Schock um X. Nass und Burn heben sich 1 : 1 auf. Freeze wandelt 100 Nass in 1 Eis. Entsteht aus Wasser-Essenz."],
+	[&"eis", "Eis", ["Eis"],
+		"Betäubt X Sekunden: Der Gegner kann nicht zaubern. Verliert 1 Stack pro Sekunde. Entsteht, wenn Freeze Nass umwandelt."],
+	[&"burn", "Burn", ["Burn"],
+		"Verursacht X Schaden pro Sekunde. Verliert 1 Stack pro Sekunde. Nass und Burn heben sich 1 : 1 auf. Entsteht aus Feuer-Essenz."],
+	[&"leben_reg", "Leben-Reg", ["Leben-Reg"],
+		"Heilt 1 Leben pro Sekunde und Stack. Verliert 1 Stack pro Sekunde. Entsteht aus Wasser-Essenz."],
+	[&"mana_reg", "Mana-Reg", ["Mana-Reg"],
+		"Gibt 1 Mana pro Sekunde und Stack. Verliert 1 Stack pro Sekunde. Mana Burn senkt sie. Entsteht aus Blitz-Essenz."],
+	[&"armor_break", "Armor Break", ["Armor Break"],
+		"Hebt Armor im Verhältnis 1 : 5 auf. Entsteht aus Erd-Essenz."],
+	[&"crit", "Crit", ["Crit"],
+		"1 Crit = 1 % Chance auf einen kritischen Treffer. Ein kritischer Treffer macht 200 % Schaden. Entsteht aus Feuer-Essenz."],
+]
+## Symbol je Status: Gravur-Symbol, das ihn erzeugt (Dateiname ohne "engraving_").
+const STATUS_ICONS := {
+	&"bleed": "status_bleed", &"slowed": "slow", &"hasted": "hasted", &"mana_burn": "mana_burn",
+	&"armor": "armor", &"schock": "status_schock", &"nass": "status_nass", &"eis": "freeze",
+	&"burn": "status_burn", &"leben_reg": "leben_reg", &"mana_reg": "mana_reg",
+	&"armor_break": "status_armor_break", &"crit": "crit",
+}
+## Welche Status ein Element erzeugt (für die Element-Erklärung).
+const ELEMENT_STATUS := {
+	&"fire": ["Burn", "Crit"], &"water": ["Nass", "Leben-Reg"], &"earth": ["Armor", "Armor Break"],
+	&"air": ["Bleed", "Slowed", "Hasted"], &"lightning": ["Schock", "Mana Burn", "Mana-Reg"],
+}
+
+
 func _init() -> void:
 	DirAccess.make_dir_recursive_absolute(GEM_DIR)
 	DirAccess.make_dir_recursive_absolute(ENGRAVING_DIR)
@@ -122,6 +167,8 @@ func _init() -> void:
 	for id in [&"fire", &"water", &"earth", &"air", &"lightning"]:
 		var element: ElementDef = load("res://content/elements/%s.tres" % id)
 		element.factor = ELEMENT_FACTORS[id]
+		element.dot_texture = load("res://assets/sprites/essenz_%s.png" % id)
+		element.icon = load("res://assets/sprites/element_%s.png" % id)
 		# neu speichern, damit entfernte Felder aus der Datei verschwinden
 		_save(element, "res://content/elements/%s.tres" % id)
 		content.elements.append(load("res://content/elements/%s.tres" % id))
@@ -151,6 +198,10 @@ func _init() -> void:
 		engraving.display_name = data.name
 		engraving.role = data.role
 		engraving.element_ids = _element_ids(data)
+		# Symbol, falls vorhanden (aufbereitet mit tools/prepare_assets.gd)
+		var icon_path := "res://assets/sprites/engraving_%s.png" % data.id
+		if ResourceLoader.exists(icon_path):
+			engraving.icon = load(icon_path)
 		engraving.description = data.desc + _points_text(data, content.elements)
 		engraving.base_stats = data.get("stats", {})
 		engraving.transfer_to_main = data.get("transfer", false)
@@ -162,6 +213,7 @@ func _init() -> void:
 
 	for id in FOCI:
 		content.foci.append(load("res://content/foci/%s.tres" % id))
+	_build_glossary(content)
 	_save(content, "res://content/crafting_content.tres")
 	print("Inhalte erzeugt: %d Gems, %d Gravuren" % [content.gems.size(), content.engravings.size()])
 	quit()
@@ -229,3 +281,34 @@ func _element_ids(data: Dictionary) -> Array[StringName]:
 
 func _number(value: float) -> String:
 	return str(int(value)) if is_equal_approx(value, roundf(value)) else str(value)
+
+
+## Begriffe: Status aus STATUS_TERMS, Elemente aus Faktor und Gravuren erzeugt.
+func _build_glossary(content: CraftingContent) -> void:
+	for element in content.elements:
+		var term := GlossaryTerm.new()
+		term.id = element.id
+		term.title = element.display_name
+		term.icon = element.icon
+		term.icon_color = element.color
+		var words := PackedStringArray([element.display_name, element.display_name + "-Essenz"])
+		if not words.has(element.display_name.trim_suffix("e") + "-Essenz"):
+			words.append(element.display_name.trim_suffix("e") + "-Essenz")  # "Erd-Essenz"
+		term.words = words
+		var engravings := PackedStringArray()
+		for engraving in content.engravings:
+			if engraving.element_ids.has(element.id) and engraving.element_ids.size() < content.elements.size():
+				engravings.append(engraving.display_name)
+		term.text = "Ein Element. Eine %s-Essenz zählt %s Punkte für Gravuren mit diesem Element, für andere Gravuren nichts (außer Magischer Bolzen). Erzeugt: %s.\nGravuren: %s." % [
+			element.display_name, _number(element.factor), ", ".join(ELEMENT_STATUS.get(element.id, [])), ", ".join(engravings)]
+		content.glossary.append(term)
+	for row: Array in STATUS_TERMS:
+		var term := GlossaryTerm.new()
+		term.id = row[0]
+		term.title = row[1]
+		term.words = PackedStringArray(row[2])
+		var icon_path := "res://assets/sprites/engraving_%s.png" % STATUS_ICONS.get(row[0], "")
+		if ResourceLoader.exists(icon_path):
+			term.icon = load(icon_path)
+		term.text = row[3] + "\n(Kampfregel, wirkt ab dem Auto-Battler.)"
+		content.glossary.append(term)

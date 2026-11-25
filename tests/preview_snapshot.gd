@@ -35,6 +35,10 @@ func _ready() -> void:
 			workshop.focus.gems = gems
 			workshop.focus.loop = PackedInt32Array([0, 1, 2])
 			workshop.focus.loop_closed = true
+			# Optional: --all-elements füllt alle fünf Elemente (zum Ansehen der Essenz-Formen)
+			if OS.get_cmdline_user_args().has("--all-elements"):
+				workshop.focus.element_fill = {&"fire": 8, &"water": 8, &"earth": 8, &"air": 8, &"lightning": 8}
+				workshop._sync_fill_ui()
 			workshop._refresh()
 			# Optional: --place zeigt die Vorschau eines vierten Gems
 			if OS.get_cmdline_user_args().has("--place"):
@@ -52,6 +56,21 @@ func _ready() -> void:
 			return
 
 	workshop._on_example_pressed()
+	# Optional: --tooltip zeigt einen festgepinnten Tooltip (Burn) und darin einen weiteren (Nass)
+	if OS.get_cmdline_user_args().has("--tooltip"):
+		var tips: TermTooltips = workshop.tooltips
+		tips._open("fire", 0)
+		tips._pin(tips._stack[0])
+		tips._stack[0].panel.position = Vector2(1200, 300)
+		tips._open("burn", 1)
+		tips._stack[1].panel.position = Vector2(1150, 500)
+		(tips._stack[1].bar as ProgressBar).value = 0.6
+		# Hover auf Ebene 1 halten, damit beide offen bleiben
+		tips._hover_term = "burn"
+		tips._hover_level = 1
+		tips._hover_time = 0.0
+		tips.set_process(false)
+		return
 	# Optional: --hover zeigt, welche Punkte das Hauptgem einsammelt (Maus darüber)
 	if OS.get_cmdline_user_args().has("--hover"):
 		canvas.placing_gem = workshop.focus.gems[0].gem

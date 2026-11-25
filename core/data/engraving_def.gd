@@ -15,6 +15,9 @@ extends Resource
 
 func counts_element(element_id: StringName) -> bool:
 	return element_ids.has(element_id)
+## Symbol auf dem Gem (weiße Linienzeichnung, wird eingefärbt). Nur Darstellung;
+## ohne Symbol zeigt die Werkstatt die Form des Elements (bei genau einem Element).
+@export var icon: Texture2D
 ## Kurze Regelbeschreibung für die Oberfläche.
 @export_multiline var description: String
 ## Feste Werte des Spells, z. B. {&"freeze_conversion": 100.0}.

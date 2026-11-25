@@ -1,12 +1,14 @@
 [gd_resource type="Resource" script_class="EngravingDef" format=3]
 
-[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_xfnq5"]
-[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="2_qrk1s"]
-[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="3_q67jo"]
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_qrk1s"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_standard.png" id="2_q67jo"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="3_tpv1x"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="4_m3355"]
 
 [resource]
-script = ExtResource("3_q67jo")
+script = ExtResource("4_m3355")
 id = &"standard"
 display_name = "Standard"
+icon = ExtResource("2_q67jo")
 description = "Gibt seine neutrale Essenz und Essenzen an das Hauptgem weiter. Dort zählen sie nach den Regeln des Hauptgems"
 transfer_to_main = true

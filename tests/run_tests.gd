@@ -51,6 +51,8 @@ func _init() -> void:
 		test_new_main_engravings,
 		test_mana_burn_minor,
 		test_element_factor_per_element,
+		test_glossary_and_linkify,
+		test_tooltip_pinning,
 		test_freeze_counts_water_and_air,
 		test_focus_shapes,
 		test_allowed_elements,
@@ -994,3 +996,48 @@ func test_gems_outside_other_radius() -> void:
 	canvas._try_replace(0)
 	check(focus.gems[0].gem == main and messages.back().contains("Reichweite"), "Vergrößern über ein anderes Gem verhindert")
 	canvas.free()
+
+
+func test_glossary_and_linkify() -> void:
+	check(content.glossary.size() == 5 + 13, "5 Elemente + 13 Status als Begriffe, waren %d" % content.glossary.size())
+	for term in content.glossary:
+		check(term.text != "" and not term.words.is_empty(), "Begriff %s braucht Text und Wörter" % term.id)
+	var tips := TermTooltips.new()
+	tips.setup(content)
+	var text := tips.linkify("Mana Burn und Burn, Feuerball, Feuer-Essenz, [url=toggle_gems]Burn[/url] [color=#fff]Nass[/color]")
+	check(text.contains("[url=term:mana_burn]") and text.contains("[url=term:burn]"), "Mana Burn und Burn verlinkt: %s" % text)
+	check(text.count("term:burn") == 1, "Burn in Mana Burn und im vorhandenen Link nicht doppelt verlinkt: %s" % text)
+	check(not text.contains("Feuerball[/color][/url]") and text.contains("Feuerball"), "Feuerball bleibt Text")
+	check(text.contains("[url=term:fire]") and text.contains("Feuer-Essenz[/color][/url]"), "Feuer-Essenz verlinkt")
+	check(text.contains("[url=toggle_gems]Burn[/url]"), "Vorhandene Links bleiben unberührt")
+	check(text.contains("[color=#fff][url=term:nass]"), "Begriffe in Formatierung werden verlinkt")
+	check(not tips.linkify("Burn", "burn").contains("[url"), "Ausgeschlossener Begriff (eigener Tooltip) bleibt Text")
+	tips.free()
+
+
+## Ablauf: erscheint nach Verzögerung, verschwindet ohne Pinnen, bleibt nach langem Hovern.
+func test_tooltip_pinning() -> void:
+	var tips := TermTooltips.new()
+	tips.setup(content)
+	root.add_child(tips)
+	tips._on_hover_started("term:burn", 0)
+	tips._process(TermTooltips.SHOW_DELAY * 0.5)
+	check(tips.open_count() == 0, "Vor der Verzögerung kein Tooltip")
+	tips._process(TermTooltips.SHOW_DELAY)
+	check(tips.open_count() == 1 and not tips._stack[0].pinned, "Tooltip erscheint, noch nicht gepinnt")
+	tips._on_hover_ended("term:burn", 0)
+	check(tips.open_count() == 0, "Ohne Pinnen verschwindet er beim Verlassen des Begriffs")
+
+	tips._on_hover_started("term:burn", 0)
+	tips._process(TermTooltips.SHOW_DELAY + 0.01)
+	tips._process(TermTooltips.PIN_DELAY)
+	check(tips.open_count() == 1 and tips._stack[0].pinned, "Nach langem Hovern festgepinnt")
+	tips._on_hover_ended("term:burn", 0)
+	check(tips.open_count() == 1, "Festgepinnt bleibt er beim Verlassen des Begriffs")
+	# verschachtelt: Begriff im Tooltip (Ebene 1)
+	tips._on_hover_started("term:nass", 1)
+	tips._process(TermTooltips.SHOW_DELAY + 0.01)
+	check(tips.open_count() == 2 and tips._stack[1].term == "nass", "Begriff im Tooltip öffnet einen weiteren")
+	tips._close_from(0)
+	check(tips.open_count() == 0, "Schließen einer Ebene schließt alle darüber")
+	tips.queue_free()

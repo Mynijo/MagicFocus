@@ -1,22 +1,24 @@
 [gd_resource type="Resource" script_class="EngravingDef" format=3]
 
-[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_i81w2"]
-[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="2_rrmx7"]
-[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="3_vrc83"]
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_rrmx7"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_freeze.png" id="2_vrc83"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="3_qrsfd"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="4_hlahb"]
 
-[sub_resource type="Resource" id="Resource_qrsfd"]
-script = ExtResource("2_rrmx7")
+[sub_resource type="Resource" id="Resource_rtmah"]
+script = ExtResource("3_qrsfd")
 source = 3
 stat = &"damage"
 
 [resource]
-script = ExtResource("3_vrc83")
+script = ExtResource("4_hlahb")
 id = &"freeze"
 display_name = "Freeze"
 role = 0
 element_ids = Array[StringName]([&"water", &"air"])
+icon = ExtResource("2_vrc83")
 description = "Wandelt 100 Nass in 1 Eis. +1 Schaden pro Punkt. Punkte: neutrale Essenz 1, Wasser-Essenz 5, Luft-Essenz 5, andere Essenz 0"
 base_stats = {
 &"freeze_conversion": 100.0
 }
-rules = Array[ExtResource("2_rrmx7")]([SubResource("Resource_qrsfd")])
+rules = Array[ExtResource("3_qrsfd")]([SubResource("Resource_rtmah")])

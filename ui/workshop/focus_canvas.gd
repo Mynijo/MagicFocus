@@ -20,13 +20,13 @@ signal drag_ended
 
 enum Mode { PLACE, CONNECT }
 
-const GEM_PICK_RADIUS := 16.0   # Bildschirm-Pixel
+const GEM_PICK_RADIUS := 20.0   # Bildschirm-Pixel
 const DRAG_THRESHOLD := 5.0      # Bildschirm-Pixel, ab denen ein Klick zum Ziehen wird
 const MIN_GEM_DISTANCE := 25.0  # Fokus-Einheiten
 const SLIDE_ATTEMPTS := 4       # Versuche, ein gezogenes Gem aus fremden Reichweiten zu schieben
-const MAIN_GEM_SIZE := 13.0     # Bildschirm-Pixel
-const MINOR_GEM_SIZE := 9.0
-const ELEMENT_DOT_SCALE := 1.6  # Essenz-Punkte größer als neutrale
+const MAIN_GEM_SIZE := 24.0     # Bildschirm-Pixel (halbe Bildgröße)
+const MINOR_GEM_SIZE := 17.0
+const ELEMENT_DOT_SCALE := 2.2  # Essenz-Punkte größer als neutrale
 
 const COLOR_BACKGROUND := Color(0.07, 0.07, 0.11)
 const COLOR_FOCUS := Color(0.11, 0.11, 0.18)
@@ -38,6 +38,24 @@ const COLOR_BASE_DOT := Color(0.8, 0.8, 0.88)
 const COLOR_OK := Color(0.4, 1.0, 0.5)
 const COLOR_BAD := Color(1.0, 0.35, 0.35)
 const COLOR_PREVIEW := Color(1.0, 0.95, 0.6)
+## Hauptgems werden leicht golden getönt, damit man sie von Nebengems unterscheidet.
+const MAIN_GEM_TINT := Color(1.0, 0.86, 0.55)
+## Gravur-Symbol auf dem Gem: Größe relativ zum Gem und Farbe eigener Symbole.
+const ENGRAVING_SCALE := 0.62
+const ENGRAVING_TINT := Color(0.12, 0.1, 0.2, 0.9)
+## Tönung der Fokus-Oberfläche (etwas abdunkeln, damit die Punkte gut sichtbar bleiben).
+const SURFACE_TINT := Color(0.8, 0.85, 1.0)
+## Kachelgröße der Fokus-Oberfläche in Fokus-Einheiten.
+const SURFACE_TILE := 500.0
+
+# Bilder (aufbereitet mit tools/prepare_assets.gd)
+const TEX_MAIN_GROB := preload("res://assets/sprites/gem_haupt_grob.png")
+const TEX_MAIN_SPITZ := preload("res://assets/sprites/gem_haupt_spitz.png")
+const TEX_MINOR_GROB := preload("res://assets/sprites/gem_neben_grob.png")
+const TEX_MINOR_SPITZ := preload("res://assets/sprites/gem_neben_spitz.png")
+const TEX_DOT_BASE := preload("res://assets/sprites/essenz_neutral.png")
+const TEX_DOT_ELEMENT := preload("res://assets/sprites/essenz_element.png")
+const TEX_SURFACE := preload("res://assets/textures/fokus_oberflaeche.png")
 
 var focus: FocusInstance
 var result: SpellResult
@@ -68,6 +86,13 @@ var _preview_index := -1
 var _preview_error := ""
 ## Index des Gems, das die Vorschau ersetzt (Maus darüber), sonst -1.
 var _replace_index := -1
+
+
+func _init() -> void:
+	# Bilder werden stark verkleinert gezeichnet (Mipmaps gegen Flimmern),
+	# die Fokus-Oberfläche wird gekachelt.
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 
 
 func _notification(what: int) -> void:
@@ -492,14 +517,15 @@ func _preview_dots(claimed: Dictionary) -> Array[EnergyDot]:
 
 
 func _preview_summary(dots: Array[EnergyDot]) -> String:
-	var text := _dots_summary(dots)
+	# placing_gem: Spitz zählt doppelt, das steht direkt in der Zusammenfassung
+	var text := _dots_summary(dots, placing_gem.get_multiplier() if placing_gem != null else 1.0)
 	if not dots.is_empty() and (_preview == null or not _preview.valid):
 		text += "  (in Reichweite)"
 	return text
 
 
-## "neutrale Essenz 12 · Feuer 3"
-func _dots_summary(dots: Array[EnergyDot]) -> String:
+## "neutrale Essenz 12 · Feuer 3"; bei Multiplikator ≠ 1 "neutrale Essenz 4 ×2 = 8 · Feuer 1 ×2 = 2"
+func _dots_summary(dots: Array[EnergyDot], multiplier := 1.0) -> String:
 	if dots.is_empty():
 		return "keine Punkte"
 	var base := 0
@@ -509,11 +535,11 @@ func _dots_summary(dots: Array[EnergyDot]) -> String:
 			base += 1
 		else:
 			counts[dot.element_id] = counts.get(dot.element_id, 0) + 1
-	var parts := PackedStringArray(["neutrale Essenz %d" % base])
+	var parts := PackedStringArray(["neutrale Essenz " + _count_text(base, multiplier)])
 	if content != null:
 		for element in content.elements:
 			if counts.has(element.id):
-				parts.append("%s %d" % [element.display_name, counts[element.id]])
+				parts.append("%s %s" % [element.display_name, _count_text(counts[element.id], multiplier)])
 	return " · ".join(parts)
 
 
@@ -536,6 +562,52 @@ func _element_color(element_id: StringName, fallback: Color) -> Color:
 		if element != null:
 			return element.color
 	return fallback
+
+
+## Gem als Bild, `radius` = halbe Bildgröße (Fokus-Einheiten). Hauptgems golden getönt.
+func _draw_gem_sprite(gem: GemDef, pos: Vector2, radius: float, modulate_color: Color) -> void:
+	var texture: Texture2D
+	if gem.role == GemDef.Role.MAIN:
+		texture = TEX_MAIN_SPITZ if gem.is_inner() else TEX_MAIN_GROB
+		modulate_color *= MAIN_GEM_TINT
+	else:
+		texture = TEX_MINOR_SPITZ if gem.is_inner() else TEX_MINOR_GROB
+	draw_texture_rect(texture, Rect2(pos - Vector2(radius, radius), Vector2(radius, radius) * 2.0), false, modulate_color)
+
+
+## Gravur auf dem Gem: eigenes Symbol (dunkel „eingraviert“), sonst die Form ihres
+## Elements in Elementfarbe (nur bei genau einem Element).
+func _draw_engraving(engraving: EngravingDef, pos: Vector2, gem_radius: float) -> void:
+	if engraving == null:
+		return
+	var texture: Texture2D = engraving.icon
+	var color := ENGRAVING_TINT
+	if texture == null:
+		if engraving.element_ids.size() != 1 or content == null:
+			return
+		var element := content.get_element(engraving.element_ids[0])
+		if element == null or element.dot_texture == null:
+			return
+		texture = element.dot_texture
+		color = element.color
+	var half := gem_radius * ENGRAVING_SCALE
+	var rect := Rect2(pos - Vector2(half, half), Vector2(half, half) * 2.0)
+	# dunkler Schatten etwas versetzt, damit das Symbol auf dem hellen Stein lesbar ist
+	var shadow := Rect2(rect.position + Vector2(half, half) * 0.08, rect.size)
+	draw_texture_rect(texture, shadow, false, Color(0, 0, 0, 0.6))
+	draw_texture_rect(texture, rect, false, color)
+
+
+## Essenz-Punkt als Bild, eingefärbt mit `color` (neutral: Kugel, Element: eigene Form
+## aus ElementDef.dot_texture, sonst ein Kristall).
+func _draw_dot(dot: EnergyDot, radius: float, color: Color) -> void:
+	var texture: Texture2D = TEX_DOT_BASE
+	if not dot.is_base():
+		texture = TEX_DOT_ELEMENT
+		var element := content.get_element(dot.element_id) if content != null else null
+		if element != null and element.dot_texture != null:
+			texture = element.dot_texture
+	draw_texture_rect(texture, Rect2(dot.position - Vector2(radius, radius), Vector2(radius, radius) * 2.0), false, color)
 
 
 func _gem_color(gem: GemDef) -> Color:
@@ -576,7 +648,10 @@ func _draw() -> void:
 
 	# Fokus
 	var outline := focus.focus_def.shape.get_outline()
-	draw_colored_polygon(outline, COLOR_FOCUS)
+	var uvs := PackedVector2Array()
+	for p in outline:
+		uvs.append(p / SURFACE_TILE)
+	draw_colored_polygon(outline, SURFACE_TINT, uvs, TEX_SURFACE)
 	var closed_outline := outline.duplicate()
 	closed_outline.append(outline[0])
 	draw_polyline(closed_outline, COLOR_FOCUS_EDGE, 2.0 * px, true)
@@ -653,17 +728,17 @@ func _draw() -> void:
 			var color := _element_color(dot.element_id, COLOR_BASE_DOT)
 			var scale := 1.0 if dot.is_base() else ELEMENT_DOT_SCALE
 			if owned.has(dot):
-				draw_circle(dot.position, 3.6 * scale * px, color, true, -1.0, true)
-				draw_arc(dot.position, 5.5 * scale * px, 0.0, TAU, 16, Color(1, 1, 1, 0.85), 1.2 * px, true)
+				_draw_dot(dot, 4.0 * scale * px, color)
+				_draw_dot_rings(dot.position, 5.5 * scale * px, Color(1, 1, 1, 0.85), owner.multiplier, px)
 			elif claimed.has(dot):
-				draw_circle(dot.position, 3.2 * scale * px, Color(color, 0.35 if owner != null else 1.0), true, -1.0, true)
+				_draw_dot(dot, 3.6 * scale * px, Color(color, 0.35 if owner != null else 1.0))
 			elif show_free_dots:
-				draw_circle(dot.position, 2.2 * scale * px, Color(color, 0.4), true, -1.0, true)
+				_draw_dot(dot, 2.6 * scale * px, Color(color, 0.4))
 	for dot in preview_dots:
 		var color := _element_color(dot.element_id, COLOR_BASE_DOT)
 		var scale := 1.0 if dot.is_base() else ELEMENT_DOT_SCALE
-		draw_circle(dot.position, 3.2 * scale * px, color, true, -1.0, true)
-		draw_arc(dot.position, 6.0 * scale * px, 0.0, TAU, 16, COLOR_PREVIEW, 1.5 * px, true)
+		_draw_dot(dot, 3.6 * scale * px, color)
+		_draw_dot_rings(dot.position, 6.0 * scale * px, COLOR_PREVIEW, placing_gem.get_multiplier(), px)
 
 	# Geist der zu setzenden Gem
 	if show_ghost:
@@ -677,21 +752,18 @@ func _draw() -> void:
 				draw_arc(other.position, maxf(other.gem.radius, placing_gem.radius), 0.0, TAU, 64,
 					Color(COLOR_BAD, 0.8), 2.0 * px, true)
 		var ghost_size := MAIN_GEM_SIZE if placing_gem.role == GemDef.Role.MAIN else MINOR_GEM_SIZE
-		draw_circle(_mouse_focus, ghost_size * px, ghost_color, true, -1.0, true)
+		_draw_gem_sprite(placing_gem, _mouse_focus, ghost_size * px, ghost_color)
+		_draw_engraving(placing_engraving, _mouse_focus, ghost_size * px)
 
 	# Gems
 	for i in focus.gems.size():
 		var placed := focus.gems[i]
 		var is_main := placed.gem.role == GemDef.Role.MAIN
-		var fill := _gem_color(placed.gem)
 		var radius := (MAIN_GEM_SIZE if is_main else MINOR_GEM_SIZE) * px
-		draw_circle(placed.position, radius, fill, true, -1.0, true)
-		var ring := Color.BLACK
+		_draw_gem_sprite(placed.gem, placed.position, radius, Color.WHITE)
+		_draw_engraving(placed.engraving, placed.position, radius)
 		if i == _pressed or i == _hovered:
-			ring = Color(1, 0.9, 0.3)
-		elif focus.loop.has(i):
-			ring = COLOR_EDGE
-		draw_arc(placed.position, radius, 0.0, TAU, 32, ring, 2.5 * px, true)
+			draw_arc(placed.position, radius + 3.0 * px, 0.0, TAU, 32, Color(1, 0.9, 0.3), 2.0 * px, true)
 
 	# Beschriftungen in Bildschirm-Koordinaten
 	draw_set_transform_matrix(Transform2D.IDENTITY)
@@ -709,7 +781,7 @@ func _draw() -> void:
 		_draw_hint(font, to_screen(_mouse_focus), text, COLOR_BAD if _preview_error != "" else COLOR_PREVIEW)
 	elif owner != null:
 		var anchor := to_screen(owner.placed.position)
-		_draw_hint(font, anchor, "Sammelt: " + _dots_summary(owner.collected), Color(1, 1, 1, 0.95))
+		_draw_hint(font, anchor, "Sammelt: " + _dots_summary(owner.collected, owner.multiplier), Color(1, 1, 1, 0.95))
 		if show_replace:
 			var text := "Klick: wird zu %s  ·  %s" % [
 				_gem_label(placing_gem, placing_engraving), _preview_summary(_preview_dots(claimed))]
@@ -747,3 +819,20 @@ func _draw_preview_edges(px: float) -> void:
 		var main_pos := focus.gems[focus.loop[0]].position
 		color = Color(COLOR_PREVIEW if shape.contains_segment(_mouse_focus, main_pos) else COLOR_BAD, 0.7)
 		draw_dashed_line(_mouse_focus, main_pos, color, 2.0 * px, 8.0 * px, true, true)
+
+
+## "4" oder bei Multiplikator "4 ×2 = 8"
+static func _count_text(count: int, multiplier: float) -> String:
+	if is_equal_approx(multiplier, 1.0):
+		return str(count)
+	var m := str(int(multiplier)) if is_equal_approx(multiplier, roundf(multiplier)) else String.num(multiplier, 2)
+	var total := count * multiplier
+	var t := str(int(total)) if is_equal_approx(total, roundf(total)) else String.num(total, 2)
+	return "%d ×%s = %s" % [count, m, t]
+
+
+## Ring um einen hervorgehobenen Punkt; zählt er doppelt (Spitz), ein zweiter Ring.
+func _draw_dot_rings(pos: Vector2, radius: float, color: Color, multiplier: float, px: float) -> void:
+	draw_arc(pos, radius, 0.0, TAU, 16, color, 1.5 * px, true)
+	if multiplier > 1.0 + 0.001:
+		draw_arc(pos, radius + 3.0 * px, 0.0, TAU, 16, color, 1.5 * px, true)

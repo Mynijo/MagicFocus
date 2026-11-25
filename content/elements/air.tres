@@ -1,9 +1,13 @@
 [gd_resource type="Resource" script_class="ElementDef" format=3]
 
 [ext_resource type="Script" path="res://core/data/element_def.gd" id="1_element"]
+[ext_resource type="Texture2D" path="res://assets/sprites/essenz_air.png" id="1_w52c7"]
+[ext_resource type="Texture2D" path="res://assets/sprites/element_air.png" id="2_ercvk"]
 
 [resource]
 script = ExtResource("1_element")
 id = &"air"
 display_name = "Luft"
 color = Color(0.7, 0.95, 0.9, 1)
+icon = ExtResource("2_ercvk")
+dot_texture = ExtResource("1_w52c7")

@@ -1,19 +1,21 @@
 [gd_resource type="Resource" script_class="EngravingDef" format=3]
 
-[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_18k7l"]
-[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="2_rfysr"]
-[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="3_f26u3"]
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_rfysr"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_magischer_bolzen.png" id="2_f26u3"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="3_1q4ag"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="4_3soph"]
 
-[sub_resource type="Resource" id="Resource_1q4ag"]
-script = ExtResource("2_rfysr")
+[sub_resource type="Resource" id="Resource_qkgub"]
+script = ExtResource("3_1q4ag")
 source = 3
 stat = &"damage"
 
 [resource]
-script = ExtResource("3_f26u3")
+script = ExtResource("4_3soph")
 id = &"magischer_bolzen"
 display_name = "Magischer Bolzen"
 role = 0
 element_ids = Array[StringName]([&"fire", &"water", &"earth", &"air", &"lightning"])
+icon = ExtResource("2_f26u3")
 description = "+1 Schaden pro Punkt. Punkte: neutrale Essenz 1, Feuer-Essenz 5, Wasser-Essenz 5, Erde-Essenz 5, Luft-Essenz 5, Blitz-Essenz 5"
-rules = Array[ExtResource("2_rfysr")]([SubResource("Resource_1q4ag")])
+rules = Array[ExtResource("3_1q4ag")]([SubResource("Resource_qkgub")])

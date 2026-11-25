@@ -1,20 +1,22 @@
 [gd_resource type="Resource" script_class="EngravingDef" format=3]
 
-[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_i560o"]
-[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="2_2f62l"]
-[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="3_icu0k"]
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_2f62l"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_mana_reg.png" id="2_icu0k"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="3_2bwmm"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="4_vayik"]
 
-[sub_resource type="Resource" id="Resource_2bwmm"]
-script = ExtResource("2_2f62l")
+[sub_resource type="Resource" id="Resource_cf0af"]
+script = ExtResource("3_2bwmm")
 source = 3
 per_n = 2
 stat = &"mana_regen"
 
 [resource]
-script = ExtResource("3_icu0k")
+script = ExtResource("4_vayik")
 id = &"mana_reg"
 display_name = "Mana-Reg"
 role = 0
 element_ids = Array[StringName]([&"lightning"])
+icon = ExtResource("2_icu0k")
 description = "1 Mana-Reg pro 2 Punkte. Punkte: neutrale Essenz 1, Blitz-Essenz 5, andere Essenz 0"
-rules = Array[ExtResource("2_2f62l")]([SubResource("Resource_2bwmm")])
+rules = Array[ExtResource("3_2bwmm")]([SubResource("Resource_cf0af")])

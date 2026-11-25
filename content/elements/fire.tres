@@ -1,9 +1,13 @@
 [gd_resource type="Resource" script_class="ElementDef" format=3]
 
 [ext_resource type="Script" path="res://core/data/element_def.gd" id="1_element"]
+[ext_resource type="Texture2D" path="res://assets/sprites/essenz_fire.png" id="1_ifrmt"]
+[ext_resource type="Texture2D" path="res://assets/sprites/element_fire.png" id="2_doadg"]
 
 [resource]
 script = ExtResource("1_element")
 id = &"fire"
 display_name = "Feuer"
 color = Color(0.95, 0.35, 0.15, 1)
+icon = ExtResource("2_doadg")
+dot_texture = ExtResource("1_ifrmt")

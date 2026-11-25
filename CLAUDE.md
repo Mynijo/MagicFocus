@@ -14,7 +14,9 @@ Kommunikation mit dem Nutzer auf **Deutsch**.
 | `core/data/` | Ressourcen-Klassen: `ElementDef`, `GemDef` (Form), `EngravingDef` (Gravur), `ScalingRule`, `FocusDef`, `FocusShape` (+ `CircleFocusShape`, `PolygonFocusShape` → `StarFocusShape`, `DropFocusShape`), `FocusInstance`, `PlacedGem`, `GemEffect`, `CraftingContent` |
 | `core/logic/` | Reine Logik ohne Physik/Szenen: `SpellEvaluator` (Auswertung in 6 Phasen), `FocusGeometry`, `DotField` (Punkte aus Seed), `SpellResult`, `GemResult`, `EnergyDot` |
 | `content/` | Inhalte als `.tres`: `elements/`, `gems/`, `engravings/`, `foci/`. `crafting_content.tres` listet alles (Reihenfolge = Reihenfolge in der UI) |
-| `tools/` | `generate_content.gd`: erzeugt Gems, Gravuren und `crafting_content.tres` aus Tabellen. **Werte dort ändern und neu erzeugen**, nicht die `.tres` von Hand |
+| `tools/` | `generate_content.gd`: erzeugt Gems, Gravuren und `crafting_content.tres` aus Tabellen. **Werte dort ändern und neu erzeugen**, nicht die `.tres` von Hand. `prepare_assets.gd`: schneidet und verkleinert generierte Bilder nach `assets/sprites/` (Gravur-Symbole: alle PNGs aus `assets/engravings/<gravur-id>.png`, danach Generator neu laufen lassen) |
+| `assets/` | Bilder (vom Nutzer mit ChatGPT erzeugt): Originale in `gems/`, `essences/`, `textures/`, `engravings/<gravur-id>.png`, `elements/element_<id>.png`; Spiel nutzt `sprites/` (aufbereitet, Mipmaps an). Jedes Element hat eine eigene Punktform (`ElementDef.dot_texture`, im Generator gesetzt), neutrale Essenz ist eine Kugel. Gravuren zeigen auf dem Gem ihr Symbol (`EngravingDef.icon`); ohne Symbol die Form ihres Elements (nur bei genau einem Element). Elemente haben ein Symbol (`ElementDef.icon`) für Befüllen-Liste und Tooltips; Status-Tooltips nutzen das Symbol der erzeugenden Gravur (`STATUS_ICONS` im Generator). Elemente haben ein Symbol (`ElementDef.icon`) für Befüllen-Liste und Tooltips; Status-Tooltips nutzen das Symbol der erzeugenden Gravur (`STATUS_ICONS` im Generator). Neue Bilder kommen in `input/` und werden von Claude einsortiert |
+| `ui/common/` | `term_tooltips.gd`: verschachtelte Tooltips für Begriffe (Elemente, Status) in RichTextLabels: `linkify()` + `register()` |
 | `ui/workshop/` | Fokus-Werkstatt (Hauptszene): `workshop.gd` (Panels, im Code aufgebaut), `focus_canvas.gd` (Zeichnen und Mausbedienung) |
 | `tests/` | `run_tests.gd` (headless Testsuite), `preview_snapshot.tscn` (Render-Check der Werkstatt) |
 | `FocusCraft/`, `FocusLexicon/` | **Altcode** (Prototyp 2023/24, physikbasiert). Nicht weiterentwickeln, nur Referenz |
@@ -40,6 +42,7 @@ Kommunikation mit dem Nutzer auf **Deutsch**.
 - **Punkte und Element-Faktor:** Gravuren rechnen mit **Punkten** = N-E + E × Faktor des Elements (`ElementDef.factor`, zurzeit überall 5). Eine Gravur zählt **nur E ihrer Elemente** (`EngravingDef.element_ids`, z. B. Heal = Wasser), **fremde E zählen gar nicht**. **Gravuren ohne Element zählen keine E** (nur N-E). Der **Magische Bolzen hat alle Elemente**. Jede Gravur hat **eine Rate pro Wert** (z. B. Heal 5 pro Punkt); Regeln mit Quelle `POINTS`. Die Beschreibung bekommt im Generator automatisch den Zusatz „Punkte: …“.
 - **Status** (Burn, Nass, Bleed, Armor Break, Schock) entsteht **nur aus E des passenden Elements** (gewichtet), nie aus N-E. Pro Status gibt es eine eigene Nebengravur (Burn, Nass, Bleed, Armor Break, Schock) mit dem passenden Element.
 - Die Hauptgravur bestimmt die Art des Spells. Gems verfärben sich nicht; es gibt keine Resistenz und nur einen Schadenstyp. Standard überträgt rohe N-E und E; das Hauptgem wendet seine Regeln (und seinen Elementfilter) an.
+- **Tooltips:** Element- und Status-Wörter in Texten sind Begriffe (`CraftingContent.glossary`, Texte in `STATUS_TERMS` im Generator, Element-Texte automatisch). Hovern zeigt den Tooltip, nach ca. 1 s ist er festgepinnt; Begriffe darin öffnen weitere Tooltips. Neue UI-Texte mit Begriffen: `tooltips.linkify()` und Label mit `tooltips.register()` anmelden.
 - In der Werkstatt werden E-Punkte größer gezeichnet als N-E (`FocusCanvas.ELEMENT_DOT_SCALE`), die Gem-Liste zeigt „Punkte für die Gravur“. Beim Darüberfahren (und Ziehen) zeigt ein Gem seine eingesammelten Punkte mit Linien und „Sammelt: …“.
 - **Crit:** 1 Crit = 1 % Crit-Chance. Ein Crit macht 200 % Schaden (Auswirkung erst im Kampf, M6).
 - **Speicherstände** liegen als JSON in `user://foci/` und enthalten nur IDs (`FocusInstance.to_dict()` / `from_dict()`). Unbekannte IDs werden beim Laden entfernt und gemeldet; fehlt ein Gem, wird der Kreis gelöst. **IDs von Gems, Gravuren, Foki und Elementen nicht leichtfertig umbenennen**, sonst gehen gespeicherte Gems verloren.
@@ -76,10 +79,12 @@ Godot-Pfad und Git-Pfad sind maschinenspezifisch (siehe Notizen des Nutzers bzw.
 godot --headless --path . --import
 # Inhalte neu erzeugen (nach Änderungen in tools/generate_content.gd)
 godot --headless --path . -s res://tools/generate_content.gd
+# Bilder aufbereiten (nach neuen Assets), danach --import
+godot --headless --path . -s res://tools/prepare_assets.gd
 # Tests (Exit-Code 0 = grün)
 godot --headless --path . -s res://tests/run_tests.gd
 # Render-Check der Werkstatt (PNG-Frames)
-godot --path . res://tests/preview_snapshot.tscn --write-movie out.png --quit-after 4 --fixed-fps 30 -- [--focus=<id>] [--place] [--place-at=x,y] [--details] [--scroll] [--hover] [--replace]
+godot --path . res://tests/preview_snapshot.tscn --write-movie out.png --quit-after 4 --fixed-fps 30 -- [--focus=<id>] [--place] [--place-at=x,y] [--all-elements] [--tooltip] [--details] [--scroll] [--hover] [--replace]
 godot --path . --write-movie out.png --quit-after 3 --fixed-fps 30 -- --example
 ```
 

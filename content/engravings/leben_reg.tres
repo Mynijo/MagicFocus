@@ -1,20 +1,22 @@
 [gd_resource type="Resource" script_class="EngravingDef" format=3]
 
-[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_dypf5"]
-[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="2_vc6mi"]
-[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="3_od06i"]
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_vc6mi"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_leben_reg.png" id="2_od06i"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="3_ayyri"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="4_c7s77"]
 
-[sub_resource type="Resource" id="Resource_ayyri"]
-script = ExtResource("2_vc6mi")
+[sub_resource type="Resource" id="Resource_vq2r7"]
+script = ExtResource("3_ayyri")
 source = 3
 per_n = 2
 stat = &"life_regen"
 
 [resource]
-script = ExtResource("3_od06i")
+script = ExtResource("4_c7s77")
 id = &"leben_reg"
 display_name = "Leben-Reg"
 role = 0
 element_ids = Array[StringName]([&"water"])
+icon = ExtResource("2_od06i")
 description = "1 Leben-Reg pro 2 Punkte. Punkte: neutrale Essenz 1, Wasser-Essenz 5, andere Essenz 0"
-rules = Array[ExtResource("2_vc6mi")]([SubResource("Resource_ayyri")])
+rules = Array[ExtResource("3_ayyri")]([SubResource("Resource_vq2r7")])

@@ -1,9 +1,13 @@
 [gd_resource type="Resource" script_class="ElementDef" format=3]
 
+[ext_resource type="Texture2D" path="res://assets/sprites/essenz_earth.png" id="1_5kyiv"]
 [ext_resource type="Script" path="res://core/data/element_def.gd" id="1_element"]
+[ext_resource type="Texture2D" path="res://assets/sprites/element_earth.png" id="2_nnyfd"]
 
 [resource]
 script = ExtResource("1_element")
 id = &"earth"
 display_name = "Erde"
 color = Color(0.62, 0.45, 0.25, 1)
+icon = ExtResource("2_nnyfd")
+dot_texture = ExtResource("1_5kyiv")
