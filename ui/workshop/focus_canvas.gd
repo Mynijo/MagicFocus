@@ -1,12 +1,14 @@
 class_name FocusCanvas
 extends Control
 ## Zeichenfläche der Werkstatt: zeigt einen Fokus und verarbeitet die Bedienung.
-##   Modus SETZEN:     Linksklick = gewählte Rune setzen, Rune ziehen = verschieben,
+##   In beiden Modi:   Rune gedrückt halten und ziehen = verschieben
+##   Modus SETZEN:     Linksklick = gewählte Rune setzen (mit Live-Vorschau),
 ##                     Rechtsklick auf Rune = entfernen
-##   Modus VERBINDEN:  Linksklick auf Runen = verbinden (Start bei der Hauptrune,
+##   Modus VERBINDEN:  Klick auf Runen = verbinden (Start bei der Hauptrune,
 ##                     Klick auf die Hauptrune schließt den Kreis),
 ##                     Rechtsklick = letzte Verbindung zurücknehmen
-## Die Darstellung skaliert automatisch, sodass der ganze Fokus sichtbar ist.
+## Mit `auto_connect` wird jede neue Rune mit der zuvor gesetzten verbunden und
+## der Kreis ab MIN_RUNES Runen automatisch zur Hauptrune geschlossen.
 
 signal focus_changed
 signal message(text: String)
@@ -14,6 +16,7 @@ signal message(text: String)
 enum Mode { PLACE, CONNECT }
 
 const RUNE_PICK_RADIUS := 16.0   # Bildschirm-Pixel
+const DRAG_THRESHOLD := 5.0      # Bildschirm-Pixel, ab denen ein Klick zum Ziehen wird
 const MIN_RUNE_DISTANCE := 25.0  # Fokus-Einheiten
 const MAIN_RUNE_SIZE := 13.0     # Bildschirm-Pixel
 const MINOR_RUNE_SIZE := 9.0
@@ -26,6 +29,7 @@ const COLOR_NEUTRAL := Color(0.92, 0.92, 0.95)
 const COLOR_BASE_DOT := Color(0.8, 0.8, 0.88)
 const COLOR_OK := Color(0.4, 1.0, 0.5)
 const COLOR_BAD := Color(1.0, 0.35, 0.35)
+const COLOR_PREVIEW := Color(1.0, 0.95, 0.6)
 
 var focus: FocusInstance
 var result: SpellResult
@@ -33,15 +37,26 @@ var content: CraftingContent
 var mode: Mode = Mode.PLACE
 ## In der Bibliothek gewählte Rune (wird im Modus SETZEN platziert).
 var placing_rune: RuneDef
+var auto_connect := true
+## Wertet einen (hypothetischen) Fokus aus: func(FocusInstance) -> SpellResult.
+## Wird für die Vorschau beim Setzen benutzt.
+var evaluate_preview: Callable
 var show_sectors := true
 var show_radii := false
 var show_free_dots := true
 
 var _view_scale := 1.0
-var _dragged := -1
+var _pressed := -1          # Rune unter dem Mauszeiger beim Drücken
+var _press_screen := Vector2.ZERO
+var _dragging := false
 var _hovered := -1
 var _mouse_inside := false
 var _mouse_focus := Vector2.ZERO
+
+# Vorschau beim Setzen
+var _preview: SpellResult
+var _preview_index := -1
+var _preview_error := ""
 
 
 func _notification(what: int) -> void:
@@ -51,6 +66,7 @@ func _notification(what: int) -> void:
 		NOTIFICATION_MOUSE_EXIT:
 			_mouse_inside = false
 			_hovered = -1
+			_clear_preview()
 			queue_redraw()
 		NOTIFICATION_RESIZED:
 			queue_redraw()
@@ -90,10 +106,13 @@ func _gui_input(event: InputEvent) -> void:
 
 	if event is InputEventMouseMotion:
 		_mouse_focus = to_focus(event.position)
-		if _dragged >= 0:
-			_move_rune(_dragged, _mouse_focus)
+		if _pressed >= 0 and not _dragging and event.position.distance_to(_press_screen) > DRAG_THRESHOLD:
+			_dragging = true
+		if _dragging:
+			_move_rune(_pressed, _mouse_focus)
 		else:
 			_hovered = _rune_at(event.position)
+		update_preview()
 		queue_redraw()
 		return
 
@@ -101,22 +120,25 @@ func _gui_input(event: InputEvent) -> void:
 		return
 	var button := event as InputEventMouseButton
 
-	if not button.pressed:
-		if button.button_index == MOUSE_BUTTON_LEFT:
-			_dragged = -1
-		return
-
-	var idx := _rune_at(button.position)
 	if button.button_index == MOUSE_BUTTON_LEFT:
-		if mode == Mode.PLACE:
+		if button.pressed:
+			var idx := _rune_at(button.position)
 			if idx >= 0:
-				_dragged = idx
-			elif placing_rune != null:
+				_pressed = idx
+				_press_screen = button.position
+				_dragging = false
+			elif mode == Mode.PLACE and placing_rune != null:
 				_try_place(placing_rune, to_focus(button.position))
-		elif idx >= 0:
-			_try_connect(idx)
+		else:
+			# Loslassen ohne Ziehen = Klick auf die Rune
+			if _pressed >= 0 and not _dragging and mode == Mode.CONNECT:
+				_try_connect(_pressed)
+			_pressed = -1
+			_dragging = false
+			update_preview()
 		accept_event()
-	elif button.button_index == MOUSE_BUTTON_RIGHT:
+	elif button.button_index == MOUSE_BUTTON_RIGHT and button.pressed:
+		var idx := _rune_at(button.position)
 		if mode == Mode.PLACE and idx >= 0:
 			remove_rune(idx)
 		elif mode == Mode.CONNECT:
@@ -126,51 +148,82 @@ func _gui_input(event: InputEvent) -> void:
 
 # --- Runen setzen / verschieben / entfernen --------------------------------
 
-func _too_close(pos: Vector2, ignore: int) -> bool:
-	for i in focus.runes.size():
-		if i != ignore and focus.runes[i].position.distance_to(pos) < MIN_RUNE_DISTANCE:
+func _too_close(target: FocusInstance, pos: Vector2, ignore: int) -> bool:
+	for i in target.runes.size():
+		if i != ignore and target.runes[i].position.distance_to(pos) < MIN_RUNE_DISTANCE:
 			return true
 	return false
 
 
-func _try_place(rune: RuneDef, pos: Vector2) -> void:
+## Leer = Rune darf hier gesetzt werden, sonst der Grund.
+func place_error(rune: RuneDef, pos: Vector2) -> String:
 	var def := focus.focus_def
 	var has_main := focus.get_main_rune_index() >= 0
 	if not def.shape.contains(pos):
-		message.emit("Die Rune muss innerhalb des Fokus liegen.")
-	elif focus.runes.size() >= def.max_runes:
-		message.emit("Dieser Fokus fasst höchstens %d Runen." % def.max_runes)
-	elif rune.role == RuneDef.Role.MAIN and has_main:
-		message.emit("Es gibt bereits eine Hauptrune.")
-	elif rune.role == RuneDef.Role.MINOR and not has_main:
-		message.emit("Setze zuerst eine Hauptrune.")
-	elif _too_close(pos, -1):
-		message.emit("Zu nah an einer anderen Rune.")
-	else:
-		focus.runes.append(PlacedRune.create(rune, pos))
-		# Neue Rune ist noch nicht verbunden -> Kreis wieder öffnen.
-		focus.loop_closed = false
-		focus_changed.emit()
+		return "Die Rune muss innerhalb des Fokus liegen."
+	if focus.runes.size() >= def.max_runes:
+		return "Dieser Fokus fasst höchstens %d Runen." % def.max_runes
+	if rune.role == RuneDef.Role.MAIN and has_main:
+		return "Es gibt bereits eine Hauptrune."
+	if rune.role == RuneDef.Role.MINOR and not has_main:
+		return "Setze zuerst eine Hauptrune."
+	if _too_close(focus, pos, -1):
+		return "Zu nah an einer anderen Rune."
+	return ""
+
+
+func _try_place(rune: RuneDef, pos: Vector2) -> void:
+	var error := place_error(rune, pos)
+	if error != "":
+		message.emit(error)
+		return
+	_insert_rune(focus, rune, pos)
+	focus_changed.emit()
+
+
+## Fügt eine Rune hinzu und verbindet sie (bei `auto_connect`) mit der zuvor gesetzten.
+## Wird auch für die Vorschau auf einer Kopie des Fokus benutzt.
+func _insert_rune(target: FocusInstance, rune: RuneDef, pos: Vector2) -> void:
+	target.runes.append(PlacedRune.create(rune, pos))
+	var idx := target.runes.size() - 1
+	if not auto_connect:
+		target.loop_closed = false
+		return
+
+	if rune.role == RuneDef.Role.MAIN:
+		# Hauptrune vorne, vorhandene Zusatzrunen in Setz-Reihenfolge dahinter
+		var new_loop := PackedInt32Array([idx])
+		for i in idx:
+			new_loop.append(i)
+		target.loop = new_loop
+	elif not target.loop.is_empty():
+		# Bei geschlossenem Kreis landet die Rune vor der schließenden Kante.
+		target.loop.append(idx)
+	target.loop_closed = target.loop.size() >= SpellEvaluator.MIN_RUNES \
+		and target.loop.size() == target.runes.size()
 
 
 func _move_rune(idx: int, pos: Vector2) -> void:
-	if not focus.focus_def.shape.contains(pos) or _too_close(pos, idx):
+	if not focus.focus_def.shape.contains(pos) or _too_close(focus, pos, idx):
 		return
 	focus.runes[idx].position = pos
 	focus_changed.emit()
 
 
 func remove_rune(idx: int) -> void:
-	# Kreis bis vor die entfernte Rune behalten, Indizes nachrücken.
+	var removed_main := focus.runes[idx].rune.role == RuneDef.Role.MAIN
 	var new_loop := PackedInt32Array()
-	for loop_idx in focus.loop:
-		if loop_idx == idx:
-			break
-		new_loop.append(loop_idx - 1 if loop_idx > idx else loop_idx)
+	if not removed_main:
+		# Nachbarn der entfernten Rune werden direkt verbunden, Indizes rücken nach.
+		for loop_idx in focus.loop:
+			if loop_idx != idx:
+				new_loop.append(loop_idx - 1 if loop_idx > idx else loop_idx)
 	focus.loop = new_loop
-	focus.loop_closed = false
+	focus.loop_closed = focus.loop_closed and new_loop.size() >= SpellEvaluator.MIN_RUNES \
+		and new_loop.size() == focus.runes.size() - 1
 	focus.runes.remove_at(idx)
-	_dragged = -1
+	_pressed = -1
+	_dragging = false
 	_hovered = -1
 	focus_changed.emit()
 
@@ -246,6 +299,100 @@ func clear_loop() -> void:
 	focus_changed.emit()
 
 
+## Kanten des Kreises als Paare von Rune-Indizes.
+func _loop_edges() -> Array[Vector2i]:
+	var edges: Array[Vector2i] = []
+	var n := focus.loop.size()
+	for k in n:
+		if k == n - 1 and not focus.loop_closed:
+			break
+		edges.append(Vector2i(focus.loop[k], focus.loop[(k + 1) % n]))
+	return edges
+
+
+## Indizes der Kanten, die eine andere (nicht benachbarte) Kante schneiden.
+func _crossing_edges(edges: Array[Vector2i]) -> Dictionary:
+	var crossing := {}
+	for i in edges.size():
+		for j in range(i + 1, edges.size()):
+			var a := edges[i]
+			var b := edges[j]
+			if a.x == b.x or a.x == b.y or a.y == b.x or a.y == b.y:
+				continue
+			if Geometry2D.segment_intersects_segment(
+					focus.runes[a.x].position, focus.runes[a.y].position,
+					focus.runes[b.x].position, focus.runes[b.y].position) != null:
+				crossing[i] = true
+				crossing[j] = true
+	return crossing
+
+
+# --- Vorschau beim Setzen ---------------------------------------------------
+
+func _clear_preview() -> void:
+	_preview = null
+	_preview_index = -1
+	_preview_error = ""
+
+
+## Berechnet, was die gewählte Rune an der Mausposition einsammeln würde.
+func update_preview() -> void:
+	_clear_preview()
+	if focus == null or mode != Mode.PLACE or placing_rune == null:
+		return
+	if not _mouse_inside or _hovered >= 0 or _pressed >= 0:
+		return
+	_preview_error = place_error(placing_rune, _mouse_focus)
+	if _preview_error != "" or not evaluate_preview.is_valid():
+		return
+
+	var copy := FocusInstance.new()
+	copy.focus_def = focus.focus_def
+	copy.base_count = focus.base_count
+	copy.element_fill = focus.element_fill
+	copy.dot_seed = focus.dot_seed
+	copy.runes = focus.runes.duplicate()
+	copy.loop = focus.loop.duplicate()
+	copy.loop_closed = focus.loop_closed
+	_insert_rune(copy, placing_rune, _mouse_focus)
+	_preview_index = copy.runes.size() - 1
+	_preview = evaluate_preview.call(copy)
+
+
+## Punkte, die die Vorschau-Rune einsammeln würde. Ist der Spell mit ihr noch
+## nicht gültig, werden die aktuell freien Punkte in ihrer Reichweite gezeigt.
+func _preview_dots(claimed: Dictionary) -> Array[EnergyDot]:
+	var dots: Array[EnergyDot] = []
+	if _preview != null and _preview.valid:
+		dots.assign(_preview.rune_results[_preview_index].collected)
+		return dots
+	for dot in result.dots:
+		if not claimed.has(dot) and dot.position.distance_to(_mouse_focus) <= placing_rune.radius:
+			dots.append(dot)
+	return dots
+
+
+func _preview_summary(dots: Array[EnergyDot]) -> String:
+	if dots.is_empty():
+		return "keine Punkte"
+	var base := 0
+	var counts := {}
+	for dot in dots:
+		if dot.is_base():
+			base += 1
+		else:
+			counts[dot.element_id] = counts.get(dot.element_id, 0) + 1
+	var parts := PackedStringArray(["Basis %d" % base])
+	if content != null:
+		for element in content.elements:
+			if counts.has(element.id):
+				parts.append("%s %d" % [element.display_name, counts[element.id]])
+	var text := " · ".join(parts)
+	if _preview == null or not _preview.valid:
+		text += "  (in Reichweite)"
+	return text
+
+
 # --- Zeichnen ---------------------------------------------------------------
 
 func _element_color(element_id: StringName, fallback: Color) -> Color:
@@ -254,6 +401,18 @@ func _element_color(element_id: StringName, fallback: Color) -> Color:
 		if element != null:
 			return element.color
 	return fallback
+
+
+func _draw_sector(rr: RuneResult, fill_alpha: float, border: Color, px: float) -> void:
+	if rr.sector_sweep < 0.01:
+		return
+	var color := _element_color(rr.element_id, COLOR_NEUTRAL)
+	var polygon := FocusGeometry.sector_polygon(
+		rr.placed.position, rr.placed.rune.radius, rr.sector_start, rr.sector_sweep, 48)
+	draw_colored_polygon(polygon, Color(color, fill_alpha))
+	var outline := polygon.duplicate()
+	outline.append(polygon[0])
+	draw_polyline(outline, border, 1.0 * px, true)
 
 
 func _draw() -> void:
@@ -279,32 +438,25 @@ func _draw() -> void:
 		for rr in result.rune_results:
 			for dot in rr.collected:
 				claimed[dot] = true
-			if not show_sectors or rr.sector_sweep < 0.01:
-				continue
-			var color := _element_color(rr.element_id, COLOR_NEUTRAL)
-			var polygon := FocusGeometry.sector_polygon(
-				rr.placed.position, rr.placed.rune.radius, rr.sector_start, rr.sector_sweep, 48)
-			draw_colored_polygon(polygon, Color(color, 0.13))
-			var border := polygon.duplicate()
-			border.append(polygon[0])
-			draw_polyline(border, Color(color, 0.45), 1.0 * px, true)
+			if show_sectors:
+				var color := _element_color(rr.element_id, COLOR_NEUTRAL)
+				_draw_sector(rr, 0.13, Color(color, 0.45), px)
 
 	# Reichweite (immer, solange noch kein gültiger Spell besteht)
 	if show_radii or not valid:
 		for placed in focus.runes:
 			draw_arc(placed.position, placed.rune.radius, 0.0, TAU, 64, Color(1, 1, 1, 0.18), 1.0 * px, true)
 
-	# Verbindungen
-	var n := focus.loop.size()
-	for k in n:
-		if k == n - 1 and not focus.loop_closed:
-			break
-		var a := focus.runes[focus.loop[k]].position
-		var b := focus.runes[focus.loop[(k + 1) % n]].position
-		draw_line(a, b, COLOR_EDGE, 3.0 * px, true)
+	# Verbindungen (kreuzende rot)
+	var edges := _loop_edges()
+	var crossing := _crossing_edges(edges)
+	for i in edges.size():
+		var edge_color := COLOR_BAD if crossing.has(i) else COLOR_EDGE
+		draw_line(focus.runes[edges[i].x].position, focus.runes[edges[i].y].position, edge_color, 3.0 * px, true)
 
 	# Gummiband beim Verbinden
-	if mode == Mode.CONNECT and _mouse_inside and n > 0 and not focus.loop_closed:
+	var n := focus.loop.size()
+	if mode == Mode.CONNECT and _mouse_inside and n > 0 and not focus.loop_closed and not _dragging:
 		var from := focus.runes[_last_in_loop()].position
 		var to := _mouse_focus
 		var band_color := Color(1, 1, 1, 0.4)
@@ -315,6 +467,19 @@ func _draw() -> void:
 			band_color = COLOR_BAD
 		draw_line(from, to, band_color, 2.0 * px, true)
 
+	# Vorschau beim Setzen: Bereich und neue Verbindungen
+	var show_ghost := mode == Mode.PLACE and placing_rune != null and _mouse_inside \
+		and _hovered < 0 and _pressed < 0
+	var preview_dots: Array[EnergyDot] = []
+	if show_ghost and _preview_error == "":
+		if _preview != null and _preview.valid:
+			var preview_rune := _preview.rune_results[_preview_index]
+			_draw_sector(preview_rune, 0.22, COLOR_PREVIEW, px)
+		else:
+			draw_arc(_mouse_focus, placing_rune.radius, 0.0, TAU, 64, Color(COLOR_PREVIEW, 0.7), 1.0 * px, true)
+		_draw_preview_edges(px)
+		preview_dots = _preview_dots(claimed)
+
 	# Energiepunkte
 	if result != null:
 		for dot in result.dots:
@@ -323,12 +488,16 @@ func _draw() -> void:
 				draw_circle(dot.position, 3.2 * px, color, true, -1.0, true)
 			elif show_free_dots:
 				draw_circle(dot.position, 2.2 * px, Color(color, 0.4), true, -1.0, true)
+	for dot in preview_dots:
+		var color := _element_color(dot.element_id, COLOR_BASE_DOT)
+		draw_circle(dot.position, 3.2 * px, color, true, -1.0, true)
+		draw_arc(dot.position, 6.0 * px, 0.0, TAU, 16, COLOR_PREVIEW, 1.5 * px, true)
 
-	# Vorschau der gewählten Rune
-	if mode == Mode.PLACE and placing_rune != null and _mouse_inside and _dragged < 0 and _hovered < 0:
-		var ghost_ok := focus.focus_def.shape.contains(_mouse_focus) and not _too_close(_mouse_focus, -1)
-		var ghost_color := Color(COLOR_OK if ghost_ok else COLOR_BAD, 0.5)
-		draw_arc(_mouse_focus, placing_rune.radius, 0.0, TAU, 64, ghost_color, 1.0 * px, true)
+	# Geist der zu setzenden Rune
+	if show_ghost:
+		var ghost_color := Color(COLOR_OK if _preview_error == "" else COLOR_BAD, 0.6)
+		if _preview_error != "":
+			draw_arc(_mouse_focus, placing_rune.radius, 0.0, TAU, 64, Color(COLOR_BAD, 0.4), 1.0 * px, true)
 		var ghost_size := MAIN_RUNE_SIZE if placing_rune.role == RuneDef.Role.MAIN else MINOR_RUNE_SIZE
 		draw_circle(_mouse_focus, ghost_size * px, ghost_color, true, -1.0, true)
 
@@ -342,13 +511,13 @@ func _draw() -> void:
 		var radius := (MAIN_RUNE_SIZE if is_main else MINOR_RUNE_SIZE) * px
 		draw_circle(placed.position, radius, fill, true, -1.0, true)
 		var ring := Color.BLACK
-		if i == _dragged or i == _hovered:
+		if i == _pressed or i == _hovered:
 			ring = Color(1, 0.9, 0.3)
 		elif focus.loop.has(i):
 			ring = COLOR_EDGE
 		draw_arc(placed.position, radius, 0.0, TAU, 32, ring, 2.5 * px, true)
 
-	# Beschriftung in Bildschirm-Koordinaten (Platzierungsreihenfolge)
+	# Beschriftungen in Bildschirm-Koordinaten
 	draw_set_transform_matrix(Transform2D.IDENTITY)
 	var font := get_theme_default_font()
 	var minor_number := 0
@@ -359,3 +528,22 @@ func _draw() -> void:
 		var label := "H" if is_main else str(minor_number)
 		draw_string(font, to_screen(focus.runes[i].position) + Vector2(12, -10), label,
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(1, 1, 1, 0.85))
+
+	if show_ghost:
+		var text := _preview_error if _preview_error != "" else _preview_summary(preview_dots)
+		var text_color := COLOR_BAD if _preview_error != "" else COLOR_PREVIEW
+		var text_pos := to_screen(_mouse_focus) + Vector2(16, 22)
+		draw_string_outline(font, text_pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, 4, Color(0, 0, 0, 0.8))
+		draw_string(font, text_pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, text_color)
+
+
+## Gestrichelte Linien zu den Runen, mit denen die neue Rune verbunden würde.
+func _draw_preview_edges(px: float) -> void:
+	if not auto_connect or placing_rune.role == RuneDef.Role.MAIN or focus.loop.is_empty():
+		return
+	var color := Color(COLOR_PREVIEW, 0.7)
+	draw_dashed_line(focus.runes[_last_in_loop()].position, _mouse_focus, color, 2.0 * px, 8.0 * px, true, true)
+	var will_close := focus.loop_closed or \
+		(focus.loop.size() + 1 >= SpellEvaluator.MIN_RUNES and focus.loop.size() + 1 == focus.runes.size() + 1)
+	if will_close:
+		draw_dashed_line(_mouse_focus, focus.runes[focus.loop[0]].position, color, 2.0 * px, 8.0 * px, true, true)
