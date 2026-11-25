@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ElementDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/element_def.gd" id="1_element"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="2_rule"]
+
+[sub_resource type="Resource" id="Rule_burning"]
+script = ExtResource("2_rule")
+source = 1
+element_id = &"fire"
+per_n = 5
+stat = &"burning"
+amount = 1.0
+
+[resource]
+script = ExtResource("1_element")
+id = &"fire"
+display_name = "Feuer"
+color = Color(0.95, 0.35, 0.15, 1)
+minor_rules = Array[ExtResource("2_rule")]([SubResource("Rule_burning")])

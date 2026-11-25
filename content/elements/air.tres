@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ElementDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/element_def.gd" id="1_element"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="2_rule"]
+
+[sub_resource type="Resource" id="Rule_cast"]
+script = ExtResource("2_rule")
+source = 1
+element_id = &"air"
+per_n = 5
+stat = &"cast_time_reduction"
+amount = 0.25
+
+[resource]
+script = ExtResource("1_element")
+id = &"air"
+display_name = "Luft"
+color = Color(0.7, 0.95, 0.9, 1)
+minor_rules = Array[ExtResource("2_rule")]([SubResource("Rule_cast")])

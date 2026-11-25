@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="RuneDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/rune_def.gd" id="1_rune"]
+
+[resource]
+script = ExtResource("1_rune")
+id = &"zusatzrune_rund"
+display_name = "Rund-Zusatzrune"
+role = 1
+radius = 60.0
+area = 2
+max_base = 12
+max_element = 12
+strength = 1.0
