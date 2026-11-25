@@ -8,7 +8,7 @@ enum Source {
 	BASE,         ## Basis-Energiepunkte
 	ELEMENT,      ## Punkte eines bestimmten Elements (`element_id`)
 	ANY_ELEMENT,  ## alle farbigen Punkte zusammen
-	RUNE_ELEMENT, ## Punkte des Elements, das die Rune angenommen hat
+	GEM_ELEMENT, ## Punkte des Elements, das das Gem angenommen hat
 }
 
 @export var source: Source = Source.BASE
@@ -20,7 +20,7 @@ enum Source {
 @export var min_count: int = 0
 
 
-func count_from(base_count: int, element_counts: Dictionary, rune_element: StringName) -> int:
+func count_from(base_count: int, element_counts: Dictionary, gem_element: StringName) -> int:
 	match source:
 		Source.BASE:
 			return base_count
@@ -31,15 +31,15 @@ func count_from(base_count: int, element_counts: Dictionary, rune_element: Strin
 			for count: int in element_counts.values():
 				total += count
 			return total
-		Source.RUNE_ELEMENT:
-			if rune_element == &"":
+		Source.GEM_ELEMENT:
+			if gem_element == &"":
 				return 0
-			return element_counts.get(rune_element, 0)
+			return element_counts.get(gem_element, 0)
 	return 0
 
 
-func evaluate(base_count: int, element_counts: Dictionary, rune_element: StringName) -> float:
-	var count := count_from(base_count, element_counts, rune_element)
+func evaluate(base_count: int, element_counts: Dictionary, gem_element: StringName) -> float:
+	var count := count_from(base_count, element_counts, gem_element)
 	if count < min_count or per_n <= 0:
 		return 0.0
 	return floori(count / float(per_n)) * amount

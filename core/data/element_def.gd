@@ -7,6 +7,6 @@ extends Resource
 @export var id: StringName
 @export var display_name: String
 @export var color: Color = Color.WHITE
-## Regeln, die greifen, wenn eine kleine Rune dieses Element annimmt
+## Regeln, die greifen, wenn ein kleines Gem dieses Element annimmt
 ## (z. B. Feuer: pro 5 Feuerpunkte +1 Burning).
 @export var minor_rules: Array[ScalingRule] = []

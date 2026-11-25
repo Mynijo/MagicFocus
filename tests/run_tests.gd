@@ -16,9 +16,9 @@ func _init() -> void:
 		test_capacity_takes_nearest,
 		test_crossing_rejected,
 		test_not_closed_rejected,
-		test_too_few_runes_rejected,
+		test_too_few_gems_rejected,
 		test_loop_must_start_at_main,
-		test_rune_outside_focus_rejected,
+		test_gem_outside_focus_rejected,
 		test_element_threshold,
 		test_element_tie_uses_list_order,
 		test_cast_time_and_mana,
@@ -30,8 +30,8 @@ func _init() -> void:
 		test_focus_shapes,
 		test_allowed_elements,
 		test_edges_must_stay_inside_shape,
-		test_status_rune,
-		test_explosion_rune,
+		test_status_gem,
+		test_explosion_gem,
 		test_spell_change_preview,
 	]
 	for test: Callable in tests:
@@ -50,19 +50,19 @@ func check(condition: bool, message: String) -> void:
 
 # --- Hilfsfunktionen --------------------------------------------------------
 
-func make_rune(role: RuneDef.Role, area: RuneDef.Area, radius: float,
-		max_element := 100, max_base := 100) -> RuneDef:
-	var rune := RuneDef.new()
-	rune.id = &"test"
-	rune.display_name = "Testrune"
-	rune.role = role
-	rune.area = area
-	rune.radius = radius
-	rune.max_element = max_element
-	rune.max_base = max_base
-	if role == RuneDef.Role.MAIN:
-		rune.spell_form = make_form()
-	return rune
+func make_gem(role: GemDef.Role, area: GemDef.Area, radius: float,
+		max_element := 100, max_base := 100) -> GemDef:
+	var gem := GemDef.new()
+	gem.id = &"test"
+	gem.display_name = "Testgem"
+	gem.role = role
+	gem.area = area
+	gem.radius = radius
+	gem.max_element = max_element
+	gem.max_base = max_base
+	if role == GemDef.Role.MAIN:
+		gem.spell_form = make_form()
+	return gem
 
 
 func make_form() -> SpellFormDef:
@@ -78,17 +78,17 @@ func make_form() -> SpellFormDef:
 	return form
 
 
-func make_focus(placed: Array[PlacedRune], loop: Array[int], closed := true) -> FocusInstance:
+func make_focus(placed: Array[PlacedGem], loop: Array[int], closed := true) -> FocusInstance:
 	var def := FocusDef.new()
 	var shape := CircleFocusShape.new()
 	shape.radius = 1000.0
 	def.shape = shape
-	def.max_runes = 10
+	def.max_gems = 10
 	def.max_base_dots = 1000
 	def.max_element_dots = 1000
 	var focus := FocusInstance.new()
 	focus.focus_def = def
-	focus.runes = placed
+	focus.gems = placed
 	focus.loop = PackedInt32Array(loop)
 	focus.loop_closed = closed
 	return focus
@@ -116,12 +116,12 @@ func dots_around(center: Vector2, count: int, distance: float, element: StringNa
 	return dots
 
 
-## Standard-Dreieck: Hauptrune oben, zwei kleine Runen unten.
-func triangle(main_area: RuneDef.Area, main_radius: float) -> FocusInstance:
-	var placed: Array[PlacedRune] = [
-		PlacedRune.create(make_rune(RuneDef.Role.MAIN, main_area, main_radius), Vector2(0, -100)),
-		PlacedRune.create(make_rune(RuneDef.Role.MINOR, RuneDef.Area.OUTER, 50), Vector2(-100, 80)),
-		PlacedRune.create(make_rune(RuneDef.Role.MINOR, RuneDef.Area.OUTER, 50), Vector2(100, 80)),
+## Standard-Dreieck: Hauptgem oben, zwei kleine Gems unten.
+func triangle(main_area: GemDef.Area, main_radius: float) -> FocusInstance:
+	var placed: Array[PlacedGem] = [
+		PlacedGem.create(make_gem(GemDef.Role.MAIN, main_area, main_radius), Vector2(0, -100)),
+		PlacedGem.create(make_gem(GemDef.Role.MINOR, GemDef.Area.OUTER, 50), Vector2(-100, 80)),
+		PlacedGem.create(make_gem(GemDef.Role.MINOR, GemDef.Area.OUTER, 50), Vector2(100, 80)),
 	]
 	return make_focus(placed, [0, 1, 2])
 
@@ -134,57 +134,57 @@ func elements_fw() -> Array[ElementDef]:
 
 func test_inner_vs_outer() -> void:
 	var inside: Array[EnergyDot] = [EnergyDot.new(Vector2(0, 20), &"fire")]  # Schwerpunkt-Nähe
-	var outside: Array[EnergyDot] = [EnergyDot.new(Vector2(0, -150), &"fire")]  # über der Hauptrune
+	var outside: Array[EnergyDot] = [EnergyDot.new(Vector2(0, -150), &"fire")]  # über dem Hauptgem
 
-	var r := SpellEvaluator.evaluate(triangle(RuneDef.Area.INNER, 300), elements_fw(), inside)
+	var r := SpellEvaluator.evaluate(triangle(GemDef.Area.INNER, 300), elements_fw(), inside)
 	check(r.valid, "Dreieck sollte gültig sein: %s" % [r.errors])
-	check(r.rune_results[0].collected.size() == 1, "Innen-Hauptrune sollte den inneren Punkt einsammeln")
+	check(r.gem_results[0].collected.size() == 1, "Innen-Hauptgem sollte den inneren Punkt einsammeln")
 
-	r = SpellEvaluator.evaluate(triangle(RuneDef.Area.INNER, 300), elements_fw(), outside)
-	check(r.rune_results[0].collected.size() == 0, "Innen-Hauptrune darf den äußeren Punkt nicht einsammeln")
+	r = SpellEvaluator.evaluate(triangle(GemDef.Area.INNER, 300), elements_fw(), outside)
+	check(r.gem_results[0].collected.size() == 0, "Innen-Hauptgem darf den äußeren Punkt nicht einsammeln")
 
-	r = SpellEvaluator.evaluate(triangle(RuneDef.Area.OUTER, 300), elements_fw(), inside)
-	check(r.rune_results[0].collected.size() == 0, "Außen-Hauptrune darf den inneren Punkt nicht einsammeln")
+	r = SpellEvaluator.evaluate(triangle(GemDef.Area.OUTER, 300), elements_fw(), inside)
+	check(r.gem_results[0].collected.size() == 0, "Außen-Hauptgem darf den inneren Punkt nicht einsammeln")
 
-	r = SpellEvaluator.evaluate(triangle(RuneDef.Area.OUTER, 300), elements_fw(), outside)
-	check(r.rune_results[0].collected.size() == 1, "Außen-Hauptrune sollte den äußeren Punkt einsammeln")
+	r = SpellEvaluator.evaluate(triangle(GemDef.Area.OUTER, 300), elements_fw(), outside)
+	check(r.gem_results[0].collected.size() == 1, "Außen-Hauptgem sollte den äußeren Punkt einsammeln")
 
-	r = SpellEvaluator.evaluate(triangle(RuneDef.Area.BOTH, 300), elements_fw(), inside + outside)
-	check(r.rune_results[0].collected.size() == 2, "Hauptrune mit beiden Bereichen sollte beide Punkte einsammeln")
+	r = SpellEvaluator.evaluate(triangle(GemDef.Area.BOTH, 300), elements_fw(), inside + outside)
+	check(r.gem_results[0].collected.size() == 2, "Hauptgem mit beiden Bereichen sollte beide Punkte einsammeln")
 
 
 func test_overlap_main_first() -> void:
-	# Hauptrune wird als ZWEITE platziert, sammelt aber trotzdem zuerst.
-	var placed: Array[PlacedRune] = [
-		PlacedRune.create(make_rune(RuneDef.Role.MINOR, RuneDef.Area.BOTH, 200), Vector2(100, 80)),
-		PlacedRune.create(make_rune(RuneDef.Role.MAIN, RuneDef.Area.BOTH, 200), Vector2(0, -100)),
-		PlacedRune.create(make_rune(RuneDef.Role.MINOR, RuneDef.Area.BOTH, 200), Vector2(-100, 80)),
+	# Hauptgem wird als ZWEITE platziert, sammelt aber trotzdem zuerst.
+	var placed: Array[PlacedGem] = [
+		PlacedGem.create(make_gem(GemDef.Role.MINOR, GemDef.Area.BOTH, 200), Vector2(100, 80)),
+		PlacedGem.create(make_gem(GemDef.Role.MAIN, GemDef.Area.BOTH, 200), Vector2(0, -100)),
+		PlacedGem.create(make_gem(GemDef.Role.MINOR, GemDef.Area.BOTH, 200), Vector2(-100, 80)),
 	]
 	var dots: Array[EnergyDot] = [EnergyDot.new(Vector2(50, -10), &"fire")]
 	var r := SpellEvaluator.evaluate(make_focus(placed, [1, 0, 2]), elements_fw(), dots)
 	check(r.valid, "sollte gültig sein: %s" % [r.errors])
-	check(r.rune_results[1].collected.size() == 1, "Hauptrune sollte den überlappenden Punkt bekommen")
-	check(r.rune_results[0].collected.size() == 0, "Kleine Rune darf den Punkt der Hauptrune nicht bekommen")
+	check(r.gem_results[1].collected.size() == 1, "Hauptgem sollte den überlappenden Punkt bekommen")
+	check(r.gem_results[0].collected.size() == 0, "Kleine Gem darf den Punkt dem Hauptgem nicht bekommen")
 
 
 func test_overlap_minor_placement_order() -> void:
-	var placed: Array[PlacedRune] = [
-		PlacedRune.create(make_rune(RuneDef.Role.MAIN, RuneDef.Area.BOTH, 50), Vector2(0, -100)),
-		PlacedRune.create(make_rune(RuneDef.Role.MINOR, RuneDef.Area.BOTH, 250), Vector2(-100, 80)),
-		PlacedRune.create(make_rune(RuneDef.Role.MINOR, RuneDef.Area.BOTH, 250), Vector2(100, 80)),
+	var placed: Array[PlacedGem] = [
+		PlacedGem.create(make_gem(GemDef.Role.MAIN, GemDef.Area.BOTH, 50), Vector2(0, -100)),
+		PlacedGem.create(make_gem(GemDef.Role.MINOR, GemDef.Area.BOTH, 250), Vector2(-100, 80)),
+		PlacedGem.create(make_gem(GemDef.Role.MINOR, GemDef.Area.BOTH, 250), Vector2(100, 80)),
 	]
-	# Punkt liegt näher an Rune 2, aber Rune 1 wurde zuerst platziert.
+	# Punkt liegt näher an Gem 2, aber Gem 1 wurde zuerst platziert.
 	var dots: Array[EnergyDot] = [EnergyDot.new(Vector2(40, 180), &"fire")]
 	var r := SpellEvaluator.evaluate(make_focus(placed, [0, 2, 1]), elements_fw(), dots)
-	check(r.rune_results[1].collected.size() == 1, "Zuerst platzierte kleine Rune sollte den Punkt bekommen")
-	check(r.rune_results[2].collected.size() == 0, "Später platzierte kleine Rune darf den Punkt nicht bekommen")
+	check(r.gem_results[1].collected.size() == 1, "Zuerst platzierte kleine Gem sollte den Punkt bekommen")
+	check(r.gem_results[2].collected.size() == 0, "Später platzierte kleine Gem darf den Punkt nicht bekommen")
 
 
 func test_capacity_takes_nearest() -> void:
-	var placed: Array[PlacedRune] = [
-		PlacedRune.create(make_rune(RuneDef.Role.MAIN, RuneDef.Area.BOTH, 10), Vector2(0, 0)),
-		PlacedRune.create(make_rune(RuneDef.Role.MINOR, RuneDef.Area.BOTH, 100, 2, 1), Vector2(300, 0)),
-		PlacedRune.create(make_rune(RuneDef.Role.MINOR, RuneDef.Area.BOTH, 10), Vector2(0, 400)),
+	var placed: Array[PlacedGem] = [
+		PlacedGem.create(make_gem(GemDef.Role.MAIN, GemDef.Area.BOTH, 10), Vector2(0, 0)),
+		PlacedGem.create(make_gem(GemDef.Role.MINOR, GemDef.Area.BOTH, 100, 2, 1), Vector2(300, 0)),
+		PlacedGem.create(make_gem(GemDef.Role.MINOR, GemDef.Area.BOTH, 10), Vector2(0, 400)),
 	]
 	var dots: Array[EnergyDot] = []
 	for i in [5, 1, 4, 2, 3]:  # absichtlich ungeordnet
@@ -192,7 +192,7 @@ func test_capacity_takes_nearest() -> void:
 	dots.append(EnergyDot.new(Vector2(300, 30)))  # Basispunkte, Kapazität 1
 	dots.append(EnergyDot.new(Vector2(300, 15)))
 	var r := SpellEvaluator.evaluate(make_focus(placed, [0, 1, 2]), elements_fw(), dots)
-	var minor := r.rune_results[1]
+	var minor := r.gem_results[1]
 	check(minor.element_counts.get(&"fire", 0) == 2, "Kapazität 2 für farbige Punkte sollte gelten")
 	check(minor.base_count == 1, "Kapazität 1 für Basispunkte sollte gelten")
 	var xs := []
@@ -207,11 +207,11 @@ func test_capacity_takes_nearest() -> void:
 
 
 func test_crossing_rejected() -> void:
-	var placed: Array[PlacedRune] = [
-		PlacedRune.create(make_rune(RuneDef.Role.MAIN, RuneDef.Area.BOTH, 50), Vector2(0, 0)),
-		PlacedRune.create(make_rune(RuneDef.Role.MINOR, RuneDef.Area.BOTH, 50), Vector2(100, 0)),
-		PlacedRune.create(make_rune(RuneDef.Role.MINOR, RuneDef.Area.BOTH, 50), Vector2(100, 100)),
-		PlacedRune.create(make_rune(RuneDef.Role.MINOR, RuneDef.Area.BOTH, 50), Vector2(0, 100)),
+	var placed: Array[PlacedGem] = [
+		PlacedGem.create(make_gem(GemDef.Role.MAIN, GemDef.Area.BOTH, 50), Vector2(0, 0)),
+		PlacedGem.create(make_gem(GemDef.Role.MINOR, GemDef.Area.BOTH, 50), Vector2(100, 0)),
+		PlacedGem.create(make_gem(GemDef.Role.MINOR, GemDef.Area.BOTH, 50), Vector2(100, 100)),
+		PlacedGem.create(make_gem(GemDef.Role.MINOR, GemDef.Area.BOTH, 50), Vector2(0, 100)),
 	]
 	var r := SpellEvaluator.evaluate(make_focus(placed, [0, 2, 1, 3]), elements_fw(), [] as Array[EnergyDot])
 	check(not r.valid, "Sich kreuzende Verbindungen sollten ungültig sein")
@@ -222,84 +222,84 @@ func test_crossing_rejected() -> void:
 
 
 func test_not_closed_rejected() -> void:
-	var focus := triangle(RuneDef.Area.INNER, 100)
+	var focus := triangle(GemDef.Area.INNER, 100)
 	focus.loop_closed = false
 	var r := SpellEvaluator.evaluate(focus, elements_fw(), [] as Array[EnergyDot])
 	check(not r.valid and _has_error(r, "nicht geschlossen"), "Offener Kreis sollte ungültig sein: %s" % [r.errors])
 
 
-func test_too_few_runes_rejected() -> void:
-	var placed: Array[PlacedRune] = [
-		PlacedRune.create(make_rune(RuneDef.Role.MAIN, RuneDef.Area.BOTH, 50), Vector2(0, 0)),
-		PlacedRune.create(make_rune(RuneDef.Role.MINOR, RuneDef.Area.BOTH, 50), Vector2(100, 0)),
+func test_too_few_gems_rejected() -> void:
+	var placed: Array[PlacedGem] = [
+		PlacedGem.create(make_gem(GemDef.Role.MAIN, GemDef.Area.BOTH, 50), Vector2(0, 0)),
+		PlacedGem.create(make_gem(GemDef.Role.MINOR, GemDef.Area.BOTH, 50), Vector2(100, 0)),
 	]
 	var r := SpellEvaluator.evaluate(make_focus(placed, [0, 1]), elements_fw(), [] as Array[EnergyDot])
-	check(not r.valid and _has_error(r, "mindestens"), "Zwei Runen sollten nicht reichen: %s" % [r.errors])
+	check(not r.valid and _has_error(r, "mindestens"), "Zwei Gems sollten nicht reichen: %s" % [r.errors])
 
 
 func test_loop_must_start_at_main() -> void:
-	var focus := triangle(RuneDef.Area.INNER, 100)
+	var focus := triangle(GemDef.Area.INNER, 100)
 	focus.loop = PackedInt32Array([1, 2, 0])
 	var r := SpellEvaluator.evaluate(focus, elements_fw(), [] as Array[EnergyDot])
-	check(not r.valid and _has_error(r, "Hauptrune beginnen"), "Kreis muss bei Hauptrune starten: %s" % [r.errors])
+	check(not r.valid and _has_error(r, "Hauptgem beginnen"), "Kreis muss bei Hauptgem starten: %s" % [r.errors])
 
 
-func test_rune_outside_focus_rejected() -> void:
-	var focus := triangle(RuneDef.Area.INNER, 100)
-	focus.runes[2].position = Vector2(5000, 0)
+func test_gem_outside_focus_rejected() -> void:
+	var focus := triangle(GemDef.Area.INNER, 100)
+	focus.gems[2].position = Vector2(5000, 0)
 	var r := SpellEvaluator.evaluate(focus, elements_fw(), [] as Array[EnergyDot])
-	check(not r.valid and _has_error(r, "außerhalb"), "Rune außerhalb sollte ungültig sein: %s" % [r.errors])
+	check(not r.valid and _has_error(r, "außerhalb"), "Gem außerhalb sollte ungültig sein: %s" % [r.errors])
 
 
 func test_element_threshold() -> void:
 	var main_pos := Vector2(0, -100)
 	var dots := dots_around(main_pos, 10, 20, &"fire") + dots_around(main_pos, 9, 30, &"water")
-	var r := SpellEvaluator.evaluate(triangle(RuneDef.Area.BOTH, 40), elements_fw(), dots, 10)
-	check(r.rune_results[0].element_id == &"fire", "10 Feuerpunkte sollten Feuer ergeben")
+	var r := SpellEvaluator.evaluate(triangle(GemDef.Area.BOTH, 40), elements_fw(), dots, 10)
+	check(r.gem_results[0].element_id == &"fire", "10 Feuerpunkte sollten Feuer ergeben")
 	check(r.element_id == &"fire", "Spell-Element sollte Feuer sein")
 
 	dots = dots_around(main_pos, 9, 20, &"fire")
-	r = SpellEvaluator.evaluate(triangle(RuneDef.Area.BOTH, 40), elements_fw(), dots, 10)
-	check(r.rune_results[0].element_id == &"", "9 Feuerpunkte sollten bei Schwelle 10 neutral bleiben")
+	r = SpellEvaluator.evaluate(triangle(GemDef.Area.BOTH, 40), elements_fw(), dots, 10)
+	check(r.gem_results[0].element_id == &"", "9 Feuerpunkte sollten bei Schwelle 10 neutral bleiben")
 
 	dots = dots_around(main_pos, 4, 20, &"fire")
-	r = SpellEvaluator.evaluate(triangle(RuneDef.Area.BOTH, 40), elements_fw(), dots)
-	check(r.rune_results[0].element_id == &"fire", "4 Feuerpunkte sollten bei Standardschwelle 4 reichen")
+	r = SpellEvaluator.evaluate(triangle(GemDef.Area.BOTH, 40), elements_fw(), dots)
+	check(r.gem_results[0].element_id == &"fire", "4 Feuerpunkte sollten bei Standardschwelle 4 reichen")
 
 
 func test_element_tie_uses_list_order() -> void:
 	var main_pos := Vector2(0, -100)
 	var dots := dots_around(main_pos, 10, 20, &"fire") + dots_around(main_pos, 10, 30, &"water")
-	var r := SpellEvaluator.evaluate(triangle(RuneDef.Area.BOTH, 40), elements_fw(), dots)
+	var r := SpellEvaluator.evaluate(triangle(GemDef.Area.BOTH, 40), elements_fw(), dots)
 	check(r.element_id == &"fire", "Bei Gleichstand sollte das zuerst gelistete Element gewinnen")
 	var reversed: Array[ElementDef] = [make_element(&"water"), make_element(&"fire")]
-	r = SpellEvaluator.evaluate(triangle(RuneDef.Area.BOTH, 40), reversed, dots)
+	r = SpellEvaluator.evaluate(triangle(GemDef.Area.BOTH, 40), reversed, dots)
 	check(r.element_id == &"water", "Mit umgekehrter Liste sollte Wasser gewinnen")
 
 
 func test_cast_time_and_mana() -> void:
-	var placed: Array[PlacedRune] = [
-		PlacedRune.create(make_rune(RuneDef.Role.MAIN, RuneDef.Area.BOTH, 10), Vector2(0, 0)),
-		PlacedRune.create(make_rune(RuneDef.Role.MINOR, RuneDef.Area.BOTH, 50), Vector2(300, 0)),
-		PlacedRune.create(make_rune(RuneDef.Role.MINOR, RuneDef.Area.BOTH, 10), Vector2(0, 400)),
+	var placed: Array[PlacedGem] = [
+		PlacedGem.create(make_gem(GemDef.Role.MAIN, GemDef.Area.BOTH, 10), Vector2(0, 0)),
+		PlacedGem.create(make_gem(GemDef.Role.MINOR, GemDef.Area.BOTH, 50), Vector2(300, 0)),
+		PlacedGem.create(make_gem(GemDef.Role.MINOR, GemDef.Area.BOTH, 10), Vector2(0, 400)),
 	]
 	var focus := make_focus(placed, [0, 1, 2])
 	var elements: Array[ElementDef] = [make_element(&"air", &"cast_time_reduction", 5, 0.25)]
 
 	var r := SpellEvaluator.evaluate(focus, elements, [] as Array[EnergyDot])
-	check(is_equal_approx(r.cast_time, 3.0), "3 Runen = 3 s, war %s" % r.cast_time)
+	check(is_equal_approx(r.cast_time, 3.0), "3 Gems = 3 s, war %s" % r.cast_time)
 	check(is_equal_approx(r.mana_cost, 120.0), "Umfang 1200 * 0.1 = 120 Mana, war %s" % r.mana_cost)
 
 	r = SpellEvaluator.evaluate(focus, elements, dots_around(Vector2(300, 0), 10, 20, &"air"))
-	check(r.rune_results[1].element_id == &"air", "Kleine Rune sollte Luft annehmen")
+	check(r.gem_results[1].element_id == &"air", "Kleine Gem sollte Luft annehmen")
 	check(is_equal_approx(r.cast_time, 2.5), "10 Luft = -0.5 s, war %s" % r.cast_time)
 
 
 func test_spell_stats() -> void:
-	var placed: Array[PlacedRune] = [
-		PlacedRune.create(make_rune(RuneDef.Role.MAIN, RuneDef.Area.BOTH, 50), Vector2(0, 0)),
-		PlacedRune.create(make_rune(RuneDef.Role.MINOR, RuneDef.Area.BOTH, 50), Vector2(300, 0)),
-		PlacedRune.create(make_rune(RuneDef.Role.MINOR, RuneDef.Area.BOTH, 10), Vector2(0, 400)),
+	var placed: Array[PlacedGem] = [
+		PlacedGem.create(make_gem(GemDef.Role.MAIN, GemDef.Area.BOTH, 50), Vector2(0, 0)),
+		PlacedGem.create(make_gem(GemDef.Role.MINOR, GemDef.Area.BOTH, 50), Vector2(300, 0)),
+		PlacedGem.create(make_gem(GemDef.Role.MINOR, GemDef.Area.BOTH, 10), Vector2(0, 400)),
 	]
 	var elements: Array[ElementDef] = [make_element(&"fire", &"burning", 5, 1.0)]
 	var dots := dots_around(Vector2(0, 0), 12, 20, &"fire") + dots_around(Vector2(300, 0), 10, 20, &"fire")
@@ -307,7 +307,7 @@ func test_spell_stats() -> void:
 	check(r.valid, "sollte gültig sein: %s" % [r.errors])
 	check(r.element_id == &"fire", "Spell sollte Feuer sein")
 	check(is_equal_approx(r.get_stat(&"damage"), 17.0), "Schaden 5 + 12 = 17, war %s" % r.get_stat(&"damage"))
-	check(is_equal_approx(r.get_stat(&"burning"), 2.0), "10 Feuer in kleiner Rune = 2 Burning, war %s" % r.get_stat(&"burning"))
+	check(is_equal_approx(r.get_stat(&"burning"), 2.0), "10 Feuer in kleiner Gem = 2 Burning, war %s" % r.get_stat(&"burning"))
 
 
 func test_dot_field_reproducible() -> void:
@@ -343,20 +343,20 @@ func test_content_loads_and_evaluates() -> void:
 	if content == null:
 		return
 	check(content.elements.size() == 5, "5 Elemente erwartet")
-	check(content.runes.size() == 8, "8 Runen erwartet")
+	check(content.gems.size() == 8, "8 Gems erwartet")
 	check(content.foci.size() == 8, "8 Fokus-Typen erwartet")
 	check(content.get_element(&"fire").minor_rules.size() == 1, "Feuer sollte eine Regel haben")
-	check(content.get_rune(&"hauptrune_geschoss").spell_form != null, "Hauptrune braucht eine Spell-Form")
+	check(content.get_gem(&"hauptgem_geschoss").spell_form != null, "Hauptgem braucht eine Spell-Form")
 
 	var focus := FocusInstance.new()
 	focus.focus_def = content.get_focus(&"kleiner_fokus")
 	focus.base_count = 100
 	focus.element_fill = {&"fire": 25, &"air": 15}
 	focus.dot_seed = 1234
-	focus.runes = [
-		PlacedRune.create(content.get_rune(&"hauptrune_geschoss"), Vector2(-120, 80)),
-		PlacedRune.create(content.get_rune(&"zusatzrune_standard"), Vector2(130, 60)),
-		PlacedRune.create(content.get_rune(&"zusatzrune_standard"), Vector2(0, -150)),
+	focus.gems = [
+		PlacedGem.create(content.get_gem(&"hauptgem_geschoss"), Vector2(-120, 80)),
+		PlacedGem.create(content.get_gem(&"nebengem_standard"), Vector2(130, 60)),
+		PlacedGem.create(content.get_gem(&"nebengem_standard"), Vector2(0, -150)),
 	]
 	focus.loop = PackedInt32Array([0, 1, 2])
 	focus.loop_closed = true
@@ -367,8 +367,8 @@ func test_content_loads_and_evaluates() -> void:
 
 func test_canvas_editing() -> void:
 	var content := load("res://content/crafting_content.tres") as CraftingContent
-	var main := content.get_rune(&"hauptrune_geschoss")
-	var minor := content.get_rune(&"zusatzrune_standard")
+	var main := content.get_gem(&"hauptgem_geschoss")
+	var minor := content.get_gem(&"nebengem_standard")
 	var focus := FocusInstance.new()
 	focus.focus_def = content.get_focus(&"kleiner_fokus")
 	var canvas := FocusCanvas.new()
@@ -378,25 +378,25 @@ func test_canvas_editing() -> void:
 	canvas.message.connect(func(text: String) -> void: messages.append(text))
 
 	canvas._try_place(minor, Vector2(0, 0))
-	check(focus.runes.is_empty() and messages.back().contains("zuerst eine Hauptrune"), "Zusatzrune vor Hauptrune sollte abgelehnt werden")
+	check(focus.gems.is_empty() and messages.back().contains("zuerst ein Hauptgem"), "Nebengem vor Hauptgem sollte abgelehnt werden")
 	canvas._try_place(main, Vector2(-100, 50))
 	canvas._try_place(main, Vector2(100, 50))
-	check(focus.runes.size() == 1 and messages.back().contains("bereits eine Hauptrune"), "Zweite Hauptrune sollte abgelehnt werden")
+	check(focus.gems.size() == 1 and messages.back().contains("bereits ein Hauptgem"), "Zweite Hauptgem sollte abgelehnt werden")
 	canvas._try_place(minor, Vector2(-95, 50))
-	check(messages.back().contains("Zu nah"), "Zu nahe Rune sollte abgelehnt werden")
+	check(messages.back().contains("Zu nah"), "Zu nahe Gem sollte abgelehnt werden")
 	canvas._try_place(minor, Vector2(400, 0))
-	check(messages.back().contains("innerhalb"), "Rune außerhalb sollte abgelehnt werden")
+	check(messages.back().contains("innerhalb"), "Gem außerhalb sollte abgelehnt werden")
 	canvas._try_place(minor, Vector2(100, 50))
 	canvas._try_place(minor, Vector2(0, -120))
 	canvas._try_place(minor, Vector2(0, 150))
-	check(focus.runes.size() == 3 and messages.back().contains("höchstens 3"), "Runen-Kapazität sollte gelten")
+	check(focus.gems.size() == 3 and messages.back().contains("höchstens 3"), "Gem-Kapazität sollte gelten")
 
 	canvas._try_connect(1)
-	check(focus.loop.is_empty(), "Kreis darf nicht bei einer Zusatzrune beginnen")
+	check(focus.loop.is_empty(), "Kreis darf nicht bei einem Nebengem beginnen")
 	canvas._try_connect(0)
 	canvas._try_connect(1)
 	canvas._try_connect(0)
-	check(not focus.loop_closed and messages.back().contains("mindestens"), "Schließen mit 2 Runen sollte abgelehnt werden")
+	check(not focus.loop_closed and messages.back().contains("mindestens"), "Schließen mit 2 Gems sollte abgelehnt werden")
 	canvas._try_connect(2)
 	canvas._try_connect(0)
 	check(focus.loop_closed and focus.loop == PackedInt32Array([0, 1, 2]), "Kreis sollte geschlossen sein")
@@ -405,17 +405,17 @@ func test_canvas_editing() -> void:
 
 	canvas.undo_connection()
 	check(not focus.loop_closed and focus.loop.size() == 3, "Zurück sollte zuerst den Kreis öffnen")
-	canvas.remove_rune(1)
-	check(focus.runes.size() == 2 and focus.loop == PackedInt32Array([0, 1]),
+	canvas.remove_gem(1)
+	check(focus.gems.size() == 2 and focus.loop == PackedInt32Array([0, 1]),
 		"Entfernen sollte die Nachbarn verbinden, war %s" % [focus.loop])
-	check(not focus.loop_closed, "Mit 2 Runen darf der Kreis nicht geschlossen sein")
+	check(not focus.loop_closed, "Mit 2 Gems darf der Kreis nicht geschlossen sein")
 	canvas.free()
 
 
 func test_canvas_auto_connect_and_preview() -> void:
 	var content := load("res://content/crafting_content.tres") as CraftingContent
-	var main := content.get_rune(&"hauptrune_geschoss")
-	var minor := content.get_rune(&"zusatzrune_standard")
+	var main := content.get_gem(&"hauptgem_geschoss")
+	var minor := content.get_gem(&"nebengem_standard")
 	var focus := FocusInstance.new()
 	focus.focus_def = content.get_focus(&"mittlerer_fokus")
 	focus.base_count = 150
@@ -428,37 +428,37 @@ func test_canvas_auto_connect_and_preview() -> void:
 
 	canvas._try_place(main, Vector2(-120, 60))
 	canvas._try_place(minor, Vector2(120, 60))
-	check(focus.loop == PackedInt32Array([0, 1]) and not focus.loop_closed, "Zweite Rune sollte automatisch verbunden sein")
+	check(focus.loop == PackedInt32Array([0, 1]) and not focus.loop_closed, "Zweite Gem sollte automatisch verbunden sein")
 	canvas._try_place(minor, Vector2(0, -150))
-	check(focus.loop == PackedInt32Array([0, 1, 2]) and focus.loop_closed, "Ab 3 Runen sollte sich der Kreis schließen")
+	check(focus.loop == PackedInt32Array([0, 1, 2]) and focus.loop_closed, "Ab 3 Gems sollte sich der Kreis schließen")
 	canvas._try_place(minor, Vector2(0, 200))
 	check(focus.loop == PackedInt32Array([0, 1, 2, 3]) and focus.loop_closed,
-		"Neue Rune sollte vor der schließenden Kante eingefügt werden")
+		"Neue Gem sollte vor der schließenden Kante eingefügt werden")
 
-	canvas.remove_rune(2)
+	canvas.remove_gem(2)
 	check(focus.loop == PackedInt32Array([0, 1, 2]) and focus.loop_closed,
-		"Nach Entfernen sollte der Kreis mit 3 Runen geschlossen bleiben, war %s" % [focus.loop])
+		"Nach Entfernen sollte der Kreis mit 3 Gems geschlossen bleiben, war %s" % [focus.loop])
 
-	# Vorschau: verändert den Fokus nicht, liefert eine gültige Auswertung mit der neuen Rune
+	# Vorschau: verändert den Fokus nicht, liefert eine gültige Auswertung mit der neuen Gem
 	canvas.mode = FocusCanvas.Mode.PLACE
-	canvas.placing_rune = minor
+	canvas.placing_gem = minor
 	canvas._mouse_inside = true
-	canvas._mouse_focus = Vector2(-250, 180)  # zwischen letzter Zusatzrune und Hauptrune, ohne Kreuzung
+	canvas._mouse_focus = Vector2(-250, 180)  # zwischen letzter Nebengem und Hauptgem, ohne Kreuzung
 	canvas.update_preview()
-	check(focus.runes.size() == 3, "Vorschau darf den Fokus nicht verändern")
+	check(focus.gems.size() == 3, "Vorschau darf den Fokus nicht verändern")
 	check(canvas._preview != null and canvas._preview.valid, "Vorschau sollte einen gültigen Spell ergeben")
-	check(canvas._preview_index == 3, "Vorschau-Rune sollte die vierte sein")
+	check(canvas._preview_index == 3, "Vorschau-Gem sollte die vierte sein")
 
 	canvas._mouse_focus = Vector2(1000, 0)
 	canvas.update_preview()
 	check(canvas._preview == null and canvas._preview_error.contains("innerhalb"), "Vorschau außerhalb sollte den Grund nennen")
 
-	# Main entfernen löst den Kreis; neue Hauptrune verbindet die vorhandenen Zusatzrunen
-	canvas.remove_rune(0)
-	check(focus.loop.is_empty() and not focus.loop_closed, "Ohne Hauptrune gibt es keinen Kreis")
+	# Main entfernen löst den Kreis; neue Hauptgem verbindet die vorhandenen Nebengems
+	canvas.remove_gem(0)
+	check(focus.loop.is_empty() and not focus.loop_closed, "Ohne Hauptgem gibt es keinen Kreis")
 	canvas._try_place(main, Vector2(-150, 100))
 	check(focus.loop == PackedInt32Array([2, 0, 1]) and focus.loop_closed,
-		"Neue Hauptrune sollte die Zusatzrunen verbinden, war %s" % [focus.loop])
+		"Neue Hauptgem sollte die Nebengems verbinden, war %s" % [focus.loop])
 	canvas.free()
 
 
@@ -498,10 +498,10 @@ func test_allowed_elements() -> void:
 	var focus := FocusInstance.new()
 	focus.focus_def = fire_focus
 	focus.element_fill = {&"fire": 60, &"water": 5}
-	focus.runes = [
-		PlacedRune.create(content.get_rune(&"hauptrune_geschoss"), Vector2(-100, 60)),
-		PlacedRune.create(content.get_rune(&"zusatzrune_standard"), Vector2(100, 60)),
-		PlacedRune.create(content.get_rune(&"zusatzrune_standard"), Vector2(0, -120)),
+	focus.gems = [
+		PlacedGem.create(content.get_gem(&"hauptgem_geschoss"), Vector2(-100, 60)),
+		PlacedGem.create(content.get_gem(&"nebengem_standard"), Vector2(100, 60)),
+		PlacedGem.create(content.get_gem(&"nebengem_standard"), Vector2(0, -120)),
 	]
 	focus.loop = PackedInt32Array([0, 1, 2])
 	focus.loop_closed = true
@@ -534,10 +534,10 @@ func test_edges_must_stay_inside_shape() -> void:
 
 	var focus := FocusInstance.new()
 	focus.focus_def = star_def
-	focus.runes = [
-		PlacedRune.create(content.get_rune(&"hauptrune_geschoss"), top),
-		PlacedRune.create(content.get_rune(&"zusatzrune_standard"), right),
-		PlacedRune.create(content.get_rune(&"zusatzrune_standard"), Vector2(0, 50)),
+	focus.gems = [
+		PlacedGem.create(content.get_gem(&"hauptgem_geschoss"), top),
+		PlacedGem.create(content.get_gem(&"nebengem_standard"), right),
+		PlacedGem.create(content.get_gem(&"nebengem_standard"), Vector2(0, 50)),
 	]
 	focus.loop = PackedInt32Array([0, 1, 2])
 	focus.loop_closed = true
@@ -545,7 +545,7 @@ func test_edges_must_stay_inside_shape() -> void:
 	check(not r.valid and _has_error(r, "innerhalb des Fokus verlaufen"),
 		"Kante durch den leeren Bereich sollte abgelehnt werden: %s" % [r.errors])
 
-	focus.runes[1].position = Vector2(100, -40)
+	focus.gems[1].position = Vector2(100, -40)
 	r = SpellEvaluator.evaluate(focus, content.elements)
 	check(r.valid, "Kreis innerhalb des Sterns sollte gültig sein: %s" % [r.errors])
 
@@ -554,28 +554,28 @@ func test_edges_must_stay_inside_shape() -> void:
 	canvas.auto_connect = false
 	focus.loop = PackedInt32Array([0])
 	focus.loop_closed = false
-	focus.runes[1].position = right
+	focus.gems[1].position = right
 	check(canvas.connect_error(1).contains("innerhalb des Fokus"), "Werkstatt sollte die Verbindung ablehnen")
 	canvas.free()
 
 
-## Fokus mit kleiner Hauptrune bei (0,0), Test-Rune bei (300,0) und Füllrune bei (0,400).
-func _single_rune_focus(content: CraftingContent, main: RuneDef, minor: RuneDef) -> FocusInstance:
-	var placed: Array[PlacedRune] = [
-		PlacedRune.create(main, Vector2(0, 0)),
-		PlacedRune.create(minor, Vector2(300, 0)),
-		PlacedRune.create(make_rune(RuneDef.Role.MINOR, RuneDef.Area.BOTH, 10), Vector2(0, 400)),
+## Fokus mit kleiner Hauptgem bei (0,0), Test-Gem bei (300,0) und Füllgem bei (0,400).
+func _single_gem_focus(content: CraftingContent, main: GemDef, minor: GemDef) -> FocusInstance:
+	var placed: Array[PlacedGem] = [
+		PlacedGem.create(main, Vector2(0, 0)),
+		PlacedGem.create(minor, Vector2(300, 0)),
+		PlacedGem.create(make_gem(GemDef.Role.MINOR, GemDef.Area.BOTH, 10), Vector2(0, 400)),
 	]
 	return make_focus(placed, [0, 1, 2])
 
 
-func test_status_rune() -> void:
+func test_status_gem() -> void:
 	var content := load("res://content/crafting_content.tres") as CraftingContent
-	var status := content.get_rune(&"zusatzrune_status")
-	check(status != null and not status.use_element_rules, "Statuseffekt-Rune sollte existieren und keine Element-Boni nutzen")
-	var rune := status.duplicate() as RuneDef
-	rune.area = RuneDef.Area.BOTH  # Für den Test alle Punkte im Radius zählen
-	var focus := _single_rune_focus(content, make_rune(RuneDef.Role.MAIN, RuneDef.Area.BOTH, 10), rune)
+	var status := content.get_gem(&"nebengem_status")
+	check(status != null and not status.use_element_rules, "Statuseffekt-Gem sollte existieren und keine Element-Boni nutzen")
+	var gem := status.duplicate() as GemDef
+	gem.area = GemDef.Area.BOTH  # Für den Test alle Punkte im Radius zählen
+	var focus := _single_gem_focus(content, make_gem(GemDef.Role.MAIN, GemDef.Area.BOTH, 10), gem)
 
 	var center := Vector2(300, 0)
 	var dots := dots_around(center, 5, 20, &"fire") + dots_around(center, 4, 30, &"water") \
@@ -586,28 +586,28 @@ func test_status_rune() -> void:
 	check(is_equal_approx(r.get_stat(&"wet"), 0.0), "4 Wasser = kein Wet (unter 5), war %s" % r.get_stat(&"wet"))
 	check(is_equal_approx(r.get_stat(&"slow"), 10.0), "10 Luft = 10 Slow, war %s" % r.get_stat(&"slow"))
 	check(is_equal_approx(r.get_stat(&"shock"), 0.0), "1 Blitz = kein Shock")
-	check(r.rune_results[1].element_id == &"air", "Rune nimmt trotzdem Luft als Element an")
+	check(r.gem_results[1].element_id == &"air", "Gem nimmt trotzdem Luft als Element an")
 	check(is_equal_approx(r.get_stat(&"cast_time_reduction"), 0.0),
-		"Element-Bonus der Luft (Cast-Zeit) darf bei der Statuseffekt-Rune nicht greifen")
+		"Element-Bonus der Luft (Cast-Zeit) darf bei der Statuseffekt-Gem nicht greifen")
 
-	# Gegenprobe: Standard-Zusatzrune mit gleichen Punkten bekommt den Luft-Bonus
-	var standard := content.get_rune(&"zusatzrune_standard").duplicate() as RuneDef
-	standard.area = RuneDef.Area.BOTH
-	r = SpellEvaluator.evaluate(_single_rune_focus(content, make_rune(RuneDef.Role.MAIN, RuneDef.Area.BOTH, 10), standard),
+	# Gegenprobe: Standard-Nebengem mit gleichen Punkten bekommt den Luft-Bonus
+	var standard := content.get_gem(&"nebengem_standard").duplicate() as GemDef
+	standard.area = GemDef.Area.BOTH
+	r = SpellEvaluator.evaluate(_single_gem_focus(content, make_gem(GemDef.Role.MAIN, GemDef.Area.BOTH, 10), standard),
 		content.elements, dots)
-	check(r.get_stat(&"cast_time_reduction") > 0.0, "Standard-Zusatzrune sollte den Luft-Bonus bekommen")
+	check(r.get_stat(&"cast_time_reduction") > 0.0, "Standard-Nebengem sollte den Luft-Bonus bekommen")
 
 
-func test_explosion_rune() -> void:
+func test_explosion_gem() -> void:
 	var content := load("res://content/crafting_content.tres") as CraftingContent
-	var explosion := content.get_rune(&"hauptrune_explosion")
-	check(explosion.role == RuneDef.Role.MAIN and explosion.area == RuneDef.Area.OUTER, "Explosion ist eine Hauptrune mit Außenbereich")
-	check(explosion.radius > content.get_rune(&"hauptrune_geschoss").radius, "Explosion hat einen größeren Einflussbereich")
+	var explosion := content.get_gem(&"hauptgem_explosion")
+	check(explosion.role == GemDef.Role.MAIN and explosion.area == GemDef.Area.OUTER, "Explosion ist ein Hauptgem mit Außenbereich")
+	check(explosion.radius > content.get_gem(&"hauptgem_geschoss").radius, "Explosion hat einen größeren Einflussbereich")
 	check(explosion.strength < 1.0, "Explosion hat einen niedrigeren Multiplikator")
 
-	var rune := explosion.duplicate() as RuneDef
-	rune.area = RuneDef.Area.BOTH
-	var focus := _single_rune_focus(content, rune, make_rune(RuneDef.Role.MINOR, RuneDef.Area.BOTH, 10))
+	var gem := explosion.duplicate() as GemDef
+	gem.area = GemDef.Area.BOTH
+	var focus := _single_gem_focus(content, gem, make_gem(GemDef.Role.MINOR, GemDef.Area.BOTH, 10))
 	var r := SpellEvaluator.evaluate(focus, content.elements, dots_around(Vector2.ZERO, 20, 50, &"fire"))
 	check(r.valid and r.form.id == &"explosion", "Spell sollte eine Explosion sein")
 	# Grundschaden 8 + 20 Feuer * 1 * Stärke 0.6 = 20
@@ -620,7 +620,7 @@ func test_spell_change_preview() -> void:
 
 	var before := SpellResult.new()
 	before.valid = true
-	before.form = content.get_rune(&"hauptrune_geschoss").spell_form
+	before.form = content.get_gem(&"hauptgem_geschoss").spell_form
 	before.stats = {&"damage": 10.0}
 	before.cast_time = 3.0
 	before.mana_cost = 50.0
@@ -652,7 +652,7 @@ func test_spell_change_preview() -> void:
 	canvas.evaluate_preview = func(f: FocusInstance) -> SpellResult: return SpellEvaluator.evaluate(f, content.elements)
 	var received: Array = []
 	canvas.preview_changed.connect(func(p: SpellResult) -> void: received.append(p))
-	canvas.placing_rune = content.get_rune(&"hauptrune_geschoss")
+	canvas.placing_gem = content.get_gem(&"hauptgem_geschoss")
 	canvas._mouse_inside = true
 	canvas._mouse_focus = Vector2(0, 0)
 	canvas.update_preview()

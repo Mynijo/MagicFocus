@@ -1,6 +1,6 @@
 class_name FocusGeometry
 extends RefCounted
-## Reine Geometrie-Funktionen für Runenkreise. Ersetzt die bisherige
+## Reine Geometrie-Funktionen für Gem-Kreise. Ersetzt die bisherige
 ## Berechnung über RayCast2D, Area2D und CollisionPolygon2D.
 
 
@@ -40,12 +40,12 @@ static func has_crossing(points: PackedVector2Array) -> bool:
 	return false
 
 
-## Einflussbereich einer Rune als Vector2(startwinkel, öffnungswinkel).
+## Einflussbereich einem Gem als Vector2(startwinkel, öffnungswinkel).
 ## `ccw` = Umlaufrichtung des Kreises (signed_area > 0). "Innen" ist immer die
 ## Seite zum Inneren des Polygons, auch bei konkaven Formen.
 static func sector_for(prev: Vector2, current: Vector2, next: Vector2,
-		area: RuneDef.Area, ccw: bool) -> Vector2:
-	if area == RuneDef.Area.BOTH:
+		area: GemDef.Area, ccw: bool) -> Vector2:
+	if area == GemDef.Area.BOTH:
 		return Vector2(0.0, TAU)
 
 	var to_prev := (prev - current).angle()
@@ -59,7 +59,7 @@ static func sector_for(prev: Vector2, current: Vector2, next: Vector2,
 		inner_start = to_prev
 		inner_sweep = wrapf(to_next - to_prev, 0.0, TAU)
 
-	if area == RuneDef.Area.INNER:
+	if area == GemDef.Area.INNER:
 		return Vector2(inner_start, inner_sweep)
 	return Vector2(inner_start + inner_sweep, TAU - inner_sweep)
 

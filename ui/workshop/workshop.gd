@@ -1,5 +1,5 @@
 extends Control
-## Fokus-Werkstatt (M2): Fokus wählen und befüllen, Runen aus der Bibliothek setzen,
+## Fokus-Werkstatt (M2): Fokus wählen und befüllen, Gems aus der Bibliothek setzen,
 ## verschieben und zu einem Kreis verbinden. Der Spell wird live ausgewertet.
 ## Die Oberfläche wird im Code aufgebaut; die Grafik folgt in M4.
 
@@ -22,7 +22,7 @@ const AREA_NAMES := ["innen", "außen", "innen + außen"]
 var focus: FocusInstance
 var result: SpellResult
 var threshold := SpellEvaluator.ELEMENT_THRESHOLD
-## Auswertung mit der Rune unter dem Mauszeiger (beim Setzen), sonst null.
+## Auswertung mit dem Gem unter dem Mauszeiger (beim Setzen), sonst null.
 var _preview_result: SpellResult
 ## Auswertung vor Beginn des Verschiebens (während des Ziehens), sonst null.
 var _drag_baseline: SpellResult
@@ -68,10 +68,10 @@ func _new_focus(def: FocusDef) -> void:
 
 
 func _load_example() -> void:
-	focus.runes = [
-		PlacedRune.create(CONTENT.get_rune(&"hauptrune_geschoss"), Vector2(-110, 70)),
-		PlacedRune.create(CONTENT.get_rune(&"zusatzrune_standard"), Vector2(130, 50)),
-		PlacedRune.create(CONTENT.get_rune(&"zusatzrune_innen"), Vector2(0, -140)),
+	focus.gems = [
+		PlacedGem.create(CONTENT.get_gem(&"hauptgem_geschoss"), Vector2(-110, 70)),
+		PlacedGem.create(CONTENT.get_gem(&"nebengem_standard"), Vector2(130, 50)),
+		PlacedGem.create(CONTENT.get_gem(&"nebengem_innen"), Vector2(0, -140)),
 	]
 	focus.loop = PackedInt32Array([0, 1, 2])
 	focus.loop_closed = true
@@ -173,25 +173,25 @@ func _build_left_panel() -> Control:
 	reroll.pressed.connect(_reroll)
 	box.add_child(reroll)
 
-	# Runen-Bibliothek
-	_header(box, "3. Runen setzen")
-	_small_label(box, "Rune wählen und in den Fokus klicken – die Vorschau zeigt, welche Punkte sie einsammeln würde. Runen jederzeit ziehen = verschieben, Rechtsklick = entfernen.")
+	# Gem-Bibliothek
+	_header(box, "3. Gems setzen")
+	_small_label(box, "Gem wählen und in den Fokus klicken – die Vorschau zeigt, welche Punkte es einsammeln würde. Gems jederzeit ziehen = verschieben, Rechtsklick = entfernen.")
 	_check(box, "Automatisch verbinden", true, _set_auto_connect)
 	_library_group.allow_unpress = true
-	for rune in CONTENT.runes:
+	for gem in CONTENT.gems:
 		var button := Button.new()
 		button.toggle_mode = true
 		button.button_group = _library_group
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		var prefix := "★ " if rune.role == RuneDef.Role.MAIN else "• "
-		button.text = "%s%s  (r%d, %s)" % [prefix, rune.display_name, int(rune.radius), AREA_NAMES[rune.area]]
-		button.tooltip_text = _rune_tooltip(rune)
-		button.toggled.connect(_on_library_toggled.bind(rune))
+		var prefix := "★ " if gem.role == GemDef.Role.MAIN else "• "
+		button.text = "%s%s  (r%d, %s)" % [prefix, gem.display_name, int(gem.radius), AREA_NAMES[gem.area]]
+		button.tooltip_text = _gem_tooltip(gem)
+		button.toggled.connect(_on_library_toggled.bind(gem))
 		box.add_child(button)
 
 	# Verbinden
 	_header(box, "4. Verbinden")
-	_small_label(box, "Für eine eigene Reihenfolge: „Kreis lösen“, dann bei der Hauptrune beginnen, Runen nacheinander anklicken und mit Klick auf die Hauptrune schließen. Rechtsklick = zurück.")
+	_small_label(box, "Für eine eigene Reihenfolge: „Kreis lösen“, dann beim Hauptgem beginnen, Gems nacheinander anklicken und mit Klick auf das Hauptgem schließen. Rechtsklick = zurück.")
 	var mode_group := ButtonGroup.new()
 	var mode_row := HBoxContainer.new()
 	box.add_child(mode_row)
@@ -204,7 +204,7 @@ func _build_left_panel() -> Control:
 	box.add_child(edit_row)
 	_button(edit_row, "Zurück", func() -> void: _canvas.undo_connection())
 	_button(edit_row, "Kreis lösen", func() -> void: _canvas.clear_loop())
-	_button(box, "Alle Runen entfernen", func() -> void: _canvas.clear_runes())
+	_button(box, "Alle Gems entfernen", func() -> void: _canvas.clear_gems())
 
 	# Anzeige / Balancing
 	_header(box, "Anzeige & Balancing")
@@ -215,7 +215,7 @@ func _build_left_panel() -> Control:
 	box.add_child(threshold_row)
 	var threshold_label := Label.new()
 	threshold_label.text = "Element-Schwelle"
-	threshold_label.tooltip_text = "Ab so vielen Essenzen eines Elements nimmt eine Rune dieses Element an."
+	threshold_label.tooltip_text = "Ab so vielen Essenzen eines Elements nimmt ein Gem dieses Element an."
 	threshold_label.mouse_filter = Control.MOUSE_FILTER_PASS
 	threshold_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	threshold_row.add_child(threshold_label)
@@ -320,16 +320,16 @@ func _check(parent: Control, text: String, value: bool, callback: Callable) -> v
 	parent.add_child(check)
 
 
-func _rune_tooltip(rune: RuneDef) -> String:
+func _gem_tooltip(gem: GemDef) -> String:
 	var lines := PackedStringArray()
-	lines.append(rune.display_name + (" (Hauptrune)" if rune.role == RuneDef.Role.MAIN else " (Zusatzrune)"))
-	lines.append("Radius: %d" % int(rune.radius))
-	lines.append("Bereich: %s" % AREA_NAMES[rune.area])
-	lines.append("Max. Energiepunkte: %d" % rune.max_base)
-	lines.append("Max. Essenzen: %d" % rune.max_element)
-	lines.append("Stärke: x%.2f" % rune.strength)
-	if rune.spell_form != null:
-		lines.append("Spell-Form: %s" % rune.spell_form.display_name)
+	lines.append(gem.display_name + (" (Hauptgem)" if gem.role == GemDef.Role.MAIN else " (Nebengem)"))
+	lines.append("Radius: %d" % int(gem.radius))
+	lines.append("Bereich: %s" % AREA_NAMES[gem.area])
+	lines.append("Max. Energiepunkte: %d" % gem.max_base)
+	lines.append("Max. Essenzen: %d" % gem.max_element)
+	lines.append("Stärke: x%.2f" % gem.strength)
+	if gem.spell_form != null:
+		lines.append("Spell-Form: %s" % gem.spell_form.display_name)
 	return "\n".join(lines)
 
 
@@ -365,13 +365,13 @@ func _set_mode(mode: FocusCanvas.Mode) -> void:
 	_canvas.queue_redraw()
 
 
-func _on_library_toggled(on: bool, rune: RuneDef) -> void:
+func _on_library_toggled(on: bool, gem: GemDef) -> void:
 	if on:
-		_canvas.placing_rune = rune
+		_canvas.placing_gem = gem
 		_mode_place.button_pressed = true
 		_set_mode(FocusCanvas.Mode.PLACE)
-	elif _canvas.placing_rune == rune:
-		_canvas.placing_rune = null
+	elif _canvas.placing_gem == gem:
+		_canvas.placing_gem = null
 	_canvas.update_preview()
 	_canvas.queue_redraw()
 
@@ -498,8 +498,8 @@ func _allowed_text(def: FocusDef) -> String:
 
 func _update_fill_labels() -> void:
 	var def := focus.focus_def
-	_focus_info.text = "Form: %s   ·   Runen: %d / %d\nEnergiepunkte max. %d   ·   Essenzen max. %d\nErlaubte Essenzen: %s" % [
-		def.shape.get_shape_name(), focus.runes.size(), def.max_runes,
+	_focus_info.text = "Form: %s   ·   Gems: %d / %d\nEnergiepunkte max. %d   ·   Essenzen max. %d\nErlaubte Essenzen: %s" % [
+		def.shape.get_shape_name(), focus.gems.size(), def.max_gems,
 		def.max_base_dots, def.max_element_dots, _allowed_text(def)]
 	_element_total.text = "Essenzen: %d / %d" % [focus.get_element_total(), def.max_element_dots]
 
@@ -573,7 +573,7 @@ func _diff_line(label: String, old_value: float, new_value: float, higher_is_bet
 func _update_result_text() -> void:
 	var t := ""
 	if _preview_result != null:
-		t += "[font_size=18][b][color=#fff2a0]Vorschau: mit neuer Rune[/color][/b][/font_size]\n"
+		t += "[font_size=18][b][color=#fff2a0]Vorschau: mit neuem Gem[/color][/b][/font_size]\n"
 		t += _diff_text(result, _preview_result) + "\n[color=#555555]────────────[/color]\n\n"
 	elif _drag_baseline != null:
 		t += "[font_size=18][b][color=#fff2a0]Änderung durch Verschieben[/color][/b][/font_size]\n"
@@ -585,24 +585,24 @@ func _update_result_text() -> void:
 		t += "[b]Werte[/b]\n"
 		for stat: StringName in result.stats:
 			t += "  %s: %s\n" % [STAT_NAMES.get(stat, String(stat)), _format_number(result.stats[stat])]
-		t += "\n[b]Runen[/b]\n"
-		for rr in result.rune_results:
-			var rune := rr.placed.rune
-			var title := "★ Hauptrune" if rr.is_main() else "Zusatzrune"
-			t += "%s – %s → %s\n" % [title, rune.display_name, _element_bbcode(rr.element_id)]
+		t += "\n[b]Gems[/b]\n"
+		for rr in result.gem_results:
+			var gem := rr.placed.gem
+			var title := "★ Hauptgem" if rr.is_main() else "Nebengem"
+			t += "%s – %s → %s\n" % [title, gem.display_name, _element_bbcode(rr.element_id)]
 			t += "    Energie %d/%d · Essenzen %d/%d: %s\n" % [
-				rr.base_count, rune.max_base, rr.get_element_total(), rune.max_element, _counts_text(rr.element_counts)]
+				rr.base_count, gem.max_base, rr.get_element_total(), gem.max_element, _counts_text(rr.element_counts)]
 	else:
 		t += "[font_size=18][b]Noch kein gültiger Spell[/b][/font_size]\n\n"
 		for error in result.errors:
 			t += "[color=#ff9090]• %s[/color]\n" % error
 		var connected := focus.loop.size()
-		t += "\nKreis: %d von %d Runen verbunden%s\n" % [
-			connected, focus.runes.size(), " (geschlossen)" if focus.loop_closed else ""]
+		t += "\nKreis: %d von %d Gems verbunden%s\n" % [
+			connected, focus.gems.size(), " (geschlossen)" if focus.loop_closed else ""]
 
-	t += "\n[color=#888888][font_size=12]Runen ziehen = verschieben (in beiden Modi). "
+	t += "\n[color=#888888][font_size=12]Gems ziehen = verschieben (in beiden Modi). "
 	t += "Tasten: 1 = Setzen, 2 = Verbinden, R = neu würfeln, "
-	t += "Rücktaste = Verbindung zurück, Esc = Rune abwählen[/font_size][/color]"
+	t += "Rücktaste = Verbindung zurück, Esc = Gem abwählen[/font_size][/color]"
 	_result_text.text = t
 
 

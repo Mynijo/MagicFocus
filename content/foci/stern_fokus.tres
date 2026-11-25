@@ -15,6 +15,6 @@ id = &"stern_fokus"
 display_name = "Stern-Fokus"
 shape = SubResource("Shape_star")
 size_class = 1
-max_runes = 5
+max_gems = 5
 max_base_dots = 150
 max_element_dots = 60

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="GemDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_def.gd" id="1_gem"]
+[ext_resource type="Resource" path="res://content/spell_forms/explosion.tres" id="2_form"]
+
+[resource]
+script = ExtResource("1_gem")
+id = &"hauptgem_explosion"
+display_name = "Explosions-Hauptgem"
+role = 0
+radius = 220.0
+area = 1
+max_base = 80
+max_element = 50
+strength = 0.6
+spell_form = ExtResource("2_form")

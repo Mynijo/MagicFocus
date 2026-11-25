@@ -13,6 +13,6 @@ id = &"sehr_grosser_fokus"
 display_name = "Sehr großer Fokus"
 shape = SubResource("Shape_circle")
 size_class = 3
-max_runes = 10
+max_gems = 10
 max_base_dots = 300
 max_element_dots = 130

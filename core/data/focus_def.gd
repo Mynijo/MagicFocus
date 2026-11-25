@@ -11,7 +11,7 @@ enum SizeClass { SMALL, MEDIUM, LARGE, HUGE }
 @export var shape: FocusShape
 @export var size_class: SizeClass = SizeClass.SMALL
 ## Feste Obergrenze dieses Fokus (klein 3, mittel 3-5, groß 5-7, sehr groß bis 10).
-@export var max_runes: int = 3
+@export var max_gems: int = 3
 @export var max_base_dots: int = 100
 @export var max_element_dots: int = 40
 ## Erlaubte Elemente für farbige Punkte. Leer = alle Elemente erlaubt.

@@ -1,14 +1,14 @@
 class_name FocusCanvas
 extends Control
 ## Zeichenfläche der Werkstatt: zeigt einen Fokus und verarbeitet die Bedienung.
-##   In beiden Modi:   Rune gedrückt halten und ziehen = verschieben
-##   Modus SETZEN:     Linksklick = gewählte Rune setzen (mit Live-Vorschau),
-##                     Rechtsklick auf Rune = entfernen
-##   Modus VERBINDEN:  Klick auf Runen = verbinden (Start bei der Hauptrune,
-##                     Klick auf die Hauptrune schließt den Kreis),
+##   In beiden Modi:   Gem gedrückt halten und ziehen = verschieben
+##   Modus SETZEN:     Linksklick = gewählte Gem setzen (mit Live-Vorschau),
+##                     Rechtsklick auf Gem = entfernen
+##   Modus VERBINDEN:  Klick auf Gems = verbinden (Start bei dem Hauptgem,
+##                     Klick auf das Hauptgem schließt den Kreis),
 ##                     Rechtsklick = letzte Verbindung zurücknehmen
-## Mit `auto_connect` wird jede neue Rune mit der zuvor gesetzten verbunden und
-## der Kreis ab MIN_RUNES Runen automatisch zur Hauptrune geschlossen.
+## Mit `auto_connect` wird jede neue Gem mit der zuvor gesetzten verbunden und
+## der Kreis ab MIN_GEMS Gems automatisch zur Hauptgem geschlossen.
 
 signal focus_changed
 signal message(text: String)
@@ -19,11 +19,11 @@ signal drag_ended
 
 enum Mode { PLACE, CONNECT }
 
-const RUNE_PICK_RADIUS := 16.0   # Bildschirm-Pixel
+const GEM_PICK_RADIUS := 16.0   # Bildschirm-Pixel
 const DRAG_THRESHOLD := 5.0      # Bildschirm-Pixel, ab denen ein Klick zum Ziehen wird
-const MIN_RUNE_DISTANCE := 25.0  # Fokus-Einheiten
-const MAIN_RUNE_SIZE := 13.0     # Bildschirm-Pixel
-const MINOR_RUNE_SIZE := 9.0
+const MIN_GEM_DISTANCE := 25.0  # Fokus-Einheiten
+const MAIN_GEM_SIZE := 13.0     # Bildschirm-Pixel
+const MINOR_GEM_SIZE := 9.0
 
 const COLOR_BACKGROUND := Color(0.07, 0.07, 0.11)
 const COLOR_FOCUS := Color(0.11, 0.11, 0.18)
@@ -39,8 +39,8 @@ var focus: FocusInstance
 var result: SpellResult
 var content: CraftingContent
 var mode: Mode = Mode.PLACE
-## In der Bibliothek gewählte Rune (wird im Modus SETZEN platziert).
-var placing_rune: RuneDef
+## In der Bibliothek gewählte Gem (wird im Modus SETZEN platziert).
+var placing_gem: GemDef
 var auto_connect := true
 ## Wertet einen (hypothetischen) Fokus aus: func(FocusInstance) -> SpellResult.
 ## Wird für die Vorschau beim Setzen benutzt.
@@ -50,7 +50,7 @@ var show_radii := false
 var show_free_dots := true
 
 var _view_scale := 1.0
-var _pressed := -1          # Rune unter dem Mauszeiger beim Drücken
+var _pressed := -1          # Gem unter dem Mauszeiger beim Drücken
 var _press_screen := Vector2.ZERO
 var _dragging := false
 var _hovered := -1
@@ -95,9 +95,9 @@ func to_screen(focus_pos: Vector2) -> Vector2:
 	return size / 2.0 + focus_pos * _view_scale
 
 
-func _rune_at(screen_pos: Vector2) -> int:
-	for i in range(focus.runes.size() - 1, -1, -1):
-		if to_screen(focus.runes[i].position).distance_to(screen_pos) <= RUNE_PICK_RADIUS:
+func _gem_at(screen_pos: Vector2) -> int:
+	for i in range(focus.gems.size() - 1, -1, -1):
+		if to_screen(focus.gems[i].position).distance_to(screen_pos) <= GEM_PICK_RADIUS:
 			return i
 	return -1
 
@@ -115,9 +115,9 @@ func _gui_input(event: InputEvent) -> void:
 			_dragging = true
 			drag_started.emit()
 		if _dragging:
-			_move_rune(_pressed, _mouse_focus)
+			_move_gem(_pressed, _mouse_focus)
 		else:
-			_hovered = _rune_at(event.position)
+			_hovered = _gem_at(event.position)
 		update_preview()
 		queue_redraw()
 		return
@@ -128,15 +128,15 @@ func _gui_input(event: InputEvent) -> void:
 
 	if button.button_index == MOUSE_BUTTON_LEFT:
 		if button.pressed:
-			var idx := _rune_at(button.position)
+			var idx := _gem_at(button.position)
 			if idx >= 0:
 				_pressed = idx
 				_press_screen = button.position
 				_dragging = false
-			elif mode == Mode.PLACE and placing_rune != null:
-				_try_place(placing_rune, to_focus(button.position))
+			elif mode == Mode.PLACE and placing_gem != null:
+				_try_place(placing_gem, to_focus(button.position))
 		else:
-			# Loslassen ohne Ziehen = Klick auf die Rune
+			# Loslassen ohne Ziehen = Klick auf das Gem
 			if _pressed >= 0 and not _dragging and mode == Mode.CONNECT:
 				_try_connect(_pressed)
 			var was_dragging := _dragging
@@ -147,98 +147,98 @@ func _gui_input(event: InputEvent) -> void:
 			update_preview()
 		accept_event()
 	elif button.button_index == MOUSE_BUTTON_RIGHT and button.pressed:
-		var idx := _rune_at(button.position)
+		var idx := _gem_at(button.position)
 		if mode == Mode.PLACE and idx >= 0:
-			remove_rune(idx)
+			remove_gem(idx)
 		elif mode == Mode.CONNECT:
 			undo_connection()
 		accept_event()
 
 
-# --- Runen setzen / verschieben / entfernen --------------------------------
+# --- Gems setzen / verschieben / entfernen --------------------------------
 
 func _too_close(target: FocusInstance, pos: Vector2, ignore: int) -> bool:
-	for i in target.runes.size():
-		if i != ignore and target.runes[i].position.distance_to(pos) < MIN_RUNE_DISTANCE:
+	for i in target.gems.size():
+		if i != ignore and target.gems[i].position.distance_to(pos) < MIN_GEM_DISTANCE:
 			return true
 	return false
 
 
-## Leer = Rune darf hier gesetzt werden, sonst der Grund.
-func place_error(rune: RuneDef, pos: Vector2) -> String:
+## Leer = Gem darf hier gesetzt werden, sonst der Grund.
+func place_error(gem: GemDef, pos: Vector2) -> String:
 	var def := focus.focus_def
-	var has_main := focus.get_main_rune_index() >= 0
+	var has_main := focus.get_main_gem_index() >= 0
 	if not def.shape.contains(pos):
-		return "Die Rune muss innerhalb des Fokus liegen."
-	if focus.runes.size() >= def.max_runes:
-		return "Dieser Fokus fasst höchstens %d Runen." % def.max_runes
-	if rune.role == RuneDef.Role.MAIN and has_main:
-		return "Es gibt bereits eine Hauptrune."
-	if rune.role == RuneDef.Role.MINOR and not has_main:
-		return "Setze zuerst eine Hauptrune."
+		return "Das Gem muss innerhalb des Fokus liegen."
+	if focus.gems.size() >= def.max_gems:
+		return "Dieser Fokus fasst höchstens %d Gems." % def.max_gems
+	if gem.role == GemDef.Role.MAIN and has_main:
+		return "Es gibt bereits ein Hauptgem."
+	if gem.role == GemDef.Role.MINOR and not has_main:
+		return "Setze zuerst ein Hauptgem."
 	if _too_close(focus, pos, -1):
-		return "Zu nah an einer anderen Rune."
+		return "Zu nah an einem anderen Gem."
 	return ""
 
 
-func _try_place(rune: RuneDef, pos: Vector2) -> void:
-	var error := place_error(rune, pos)
+func _try_place(gem: GemDef, pos: Vector2) -> void:
+	var error := place_error(gem, pos)
 	if error != "":
 		message.emit(error)
 		return
-	_insert_rune(focus, rune, pos)
+	_insert_gem(focus, gem, pos)
 	focus_changed.emit()
 
 
-## Fügt eine Rune hinzu und verbindet sie (bei `auto_connect`) mit der zuvor gesetzten.
+## Fügt ein Gem hinzu und verbindet sie (bei `auto_connect`) mit der zuvor gesetzten.
 ## Wird auch für die Vorschau auf einer Kopie des Fokus benutzt.
-func _insert_rune(target: FocusInstance, rune: RuneDef, pos: Vector2) -> void:
-	target.runes.append(PlacedRune.create(rune, pos))
-	var idx := target.runes.size() - 1
+func _insert_gem(target: FocusInstance, gem: GemDef, pos: Vector2) -> void:
+	target.gems.append(PlacedGem.create(gem, pos))
+	var idx := target.gems.size() - 1
 	if not auto_connect:
 		target.loop_closed = false
 		return
 
-	if rune.role == RuneDef.Role.MAIN:
-		# Hauptrune vorne, vorhandene Zusatzrunen in Setz-Reihenfolge dahinter
+	if gem.role == GemDef.Role.MAIN:
+		# Hauptgem vorne, vorhandene Nebengems in Setz-Reihenfolge dahinter
 		var new_loop := PackedInt32Array([idx])
 		for i in idx:
 			new_loop.append(i)
 		target.loop = new_loop
 	elif not target.loop.is_empty():
-		# Bei geschlossenem Kreis landet die Rune vor der schließenden Kante.
+		# Bei geschlossenem Kreis landet das Gem vor der schließenden Kante.
 		target.loop.append(idx)
-	target.loop_closed = target.loop.size() >= SpellEvaluator.MIN_RUNES \
-		and target.loop.size() == target.runes.size()
+	target.loop_closed = target.loop.size() >= SpellEvaluator.MIN_GEMS \
+		and target.loop.size() == target.gems.size()
 
 
-func _move_rune(idx: int, pos: Vector2) -> void:
+func _move_gem(idx: int, pos: Vector2) -> void:
 	if not focus.focus_def.shape.contains(pos) or _too_close(focus, pos, idx):
 		return
-	focus.runes[idx].position = pos
+	focus.gems[idx].position = pos
 	focus_changed.emit()
 
 
-func remove_rune(idx: int) -> void:
-	var removed_main := focus.runes[idx].rune.role == RuneDef.Role.MAIN
+func remove_gem(idx: int) -> void:
+	var removed_main := focus.gems[idx].gem.role == GemDef.Role.MAIN
 	var new_loop := PackedInt32Array()
 	if not removed_main:
-		# Nachbarn der entfernten Rune werden direkt verbunden, Indizes rücken nach.
+		# Nachbarn der entfernten Gem werden direkt verbunden, Indizes rücken nach.
 		for loop_idx in focus.loop:
 			if loop_idx != idx:
 				new_loop.append(loop_idx - 1 if loop_idx > idx else loop_idx)
 	focus.loop = new_loop
-	focus.loop_closed = focus.loop_closed and new_loop.size() >= SpellEvaluator.MIN_RUNES \
-		and new_loop.size() == focus.runes.size() - 1
-	focus.runes.remove_at(idx)
+	focus.loop_closed = focus.loop_closed and new_loop.size() >= SpellEvaluator.MIN_GEMS \
+		and new_loop.size() == focus.gems.size() - 1
+	focus.gems.remove_at(idx)
 	_pressed = -1
 	_dragging = false
 	_hovered = -1
 	focus_changed.emit()
 
 
-func clear_runes() -> void:
-	focus.runes.clear()
+func clear_gems() -> void:
+	focus.gems.clear()
 	clear_loop()
 
 
@@ -253,19 +253,19 @@ func connect_error(idx: int) -> String:
 	if focus.loop_closed:
 		return "Der Kreis ist geschlossen. Rechtsklick nimmt die letzte Verbindung zurück."
 	if focus.loop.is_empty():
-		if focus.runes[idx].rune.role == RuneDef.Role.MAIN:
+		if focus.gems[idx].gem.role == GemDef.Role.MAIN:
 			return ""
-		return "Der Kreis beginnt bei der Hauptrune."
+		return "Der Kreis beginnt beim Hauptgem."
 	var last := _last_in_loop()
 	if idx == last:
-		return "Das ist die aktuelle Rune."
+		return "Das ist das aktuelle Gem."
 	if idx == focus.loop[0]:
-		if focus.loop.size() < SpellEvaluator.MIN_RUNES:
-			return "Zum Schließen braucht der Kreis mindestens %d Runen." % SpellEvaluator.MIN_RUNES
+		if focus.loop.size() < SpellEvaluator.MIN_GEMS:
+			return "Zum Schließen braucht der Kreis mindestens %d Gems." % SpellEvaluator.MIN_GEMS
 	elif focus.loop.has(idx):
-		return "Diese Rune ist bereits verbunden."
-	var from := focus.runes[last].position
-	var to := focus.runes[idx].position
+		return "Dieses Gem ist bereits verbunden."
+	var from := focus.gems[last].position
+	var to := focus.gems[idx].position
 	if _edge_crosses(from, to, last, idx):
 		return "Verbindungen dürfen sich nicht kreuzen."
 	if not focus.focus_def.shape.contains_segment(from, to):
@@ -279,7 +279,7 @@ func _edge_crosses(a: Vector2, b: Vector2, a_idx: int, b_idx: int) -> bool:
 		var e2 := focus.loop[k + 1]
 		if e1 == a_idx or e1 == b_idx or e2 == a_idx or e2 == b_idx:
 			continue
-		if Geometry2D.segment_intersects_segment(a, b, focus.runes[e1].position, focus.runes[e2].position) != null:
+		if Geometry2D.segment_intersects_segment(a, b, focus.gems[e1].position, focus.gems[e2].position) != null:
 			return true
 	return false
 
@@ -312,7 +312,7 @@ func clear_loop() -> void:
 	focus_changed.emit()
 
 
-## Kanten des Kreises als Paare von Rune-Indizes.
+## Kanten des Kreises als Paare von Gem-Indizes.
 func _loop_edges() -> Array[Vector2i]:
 	var edges: Array[Vector2i] = []
 	var n := focus.loop.size()
@@ -333,8 +333,8 @@ func _crossing_edges(edges: Array[Vector2i]) -> Dictionary:
 			if a.x == b.x or a.x == b.y or a.y == b.x or a.y == b.y:
 				continue
 			if Geometry2D.segment_intersects_segment(
-					focus.runes[a.x].position, focus.runes[a.y].position,
-					focus.runes[b.x].position, focus.runes[b.y].position) != null:
+					focus.gems[a.x].position, focus.gems[a.y].position,
+					focus.gems[b.x].position, focus.gems[b.y].position) != null:
 				crossing[i] = true
 				crossing[j] = true
 	return crossing
@@ -348,7 +348,7 @@ func _clear_preview() -> void:
 	_preview_error = ""
 
 
-## Berechnet, was die gewählte Rune an der Mausposition einsammeln würde,
+## Berechnet, was die gewählte Gem an der Mausposition einsammeln würde,
 ## und meldet das Ergebnis über `preview_changed`.
 func update_preview() -> void:
 	_compute_preview()
@@ -357,11 +357,11 @@ func update_preview() -> void:
 
 func _compute_preview() -> void:
 	_clear_preview()
-	if focus == null or mode != Mode.PLACE or placing_rune == null:
+	if focus == null or mode != Mode.PLACE or placing_gem == null:
 		return
 	if not _mouse_inside or _hovered >= 0 or _pressed >= 0:
 		return
-	_preview_error = place_error(placing_rune, _mouse_focus)
+	_preview_error = place_error(placing_gem, _mouse_focus)
 	if _preview_error != "" or not evaluate_preview.is_valid():
 		return
 
@@ -370,23 +370,23 @@ func _compute_preview() -> void:
 	copy.base_count = focus.base_count
 	copy.element_fill = focus.element_fill
 	copy.dot_seed = focus.dot_seed
-	copy.runes = focus.runes.duplicate()
+	copy.gems = focus.gems.duplicate()
 	copy.loop = focus.loop.duplicate()
 	copy.loop_closed = focus.loop_closed
-	_insert_rune(copy, placing_rune, _mouse_focus)
-	_preview_index = copy.runes.size() - 1
+	_insert_gem(copy, placing_gem, _mouse_focus)
+	_preview_index = copy.gems.size() - 1
 	_preview = evaluate_preview.call(copy)
 
 
-## Punkte, die die Vorschau-Rune einsammeln würde. Ist der Spell mit ihr noch
+## Punkte, die die Vorschau-Gem einsammeln würde. Ist der Spell mit ihr noch
 ## nicht gültig, werden die aktuell freien Punkte in ihrer Reichweite gezeigt.
 func _preview_dots(claimed: Dictionary) -> Array[EnergyDot]:
 	var dots: Array[EnergyDot] = []
 	if _preview != null and _preview.valid:
-		dots.assign(_preview.rune_results[_preview_index].collected)
+		dots.assign(_preview.gem_results[_preview_index].collected)
 		return dots
 	for dot in result.dots:
-		if not claimed.has(dot) and dot.position.distance_to(_mouse_focus) <= placing_rune.radius:
+		if not claimed.has(dot) and dot.position.distance_to(_mouse_focus) <= placing_gem.radius:
 			dots.append(dot)
 	return dots
 
@@ -422,12 +422,12 @@ func _element_color(element_id: StringName, fallback: Color) -> Color:
 	return fallback
 
 
-func _draw_sector(rr: RuneResult, fill_alpha: float, border: Color, px: float) -> void:
+func _draw_sector(rr: GemResult, fill_alpha: float, border: Color, px: float) -> void:
 	if rr.sector_sweep < 0.01:
 		return
 	var color := _element_color(rr.element_id, COLOR_NEUTRAL)
 	var polygon := FocusGeometry.sector_polygon(
-		rr.placed.position, rr.placed.rune.radius, rr.sector_start, rr.sector_sweep, 48)
+		rr.placed.position, rr.placed.gem.radius, rr.sector_start, rr.sector_sweep, 48)
 	draw_colored_polygon(polygon, Color(color, fill_alpha))
 	var outline := polygon.duplicate()
 	outline.append(polygon[0])
@@ -456,7 +456,7 @@ func _draw() -> void:
 
 	# Einflussbereiche
 	if valid:
-		for rr in result.rune_results:
+		for rr in result.gem_results:
 			for dot in rr.collected:
 				claimed[dot] = true
 			if show_sectors:
@@ -465,42 +465,42 @@ func _draw() -> void:
 
 	# Reichweite (immer, solange noch kein gültiger Spell besteht)
 	if show_radii or not valid:
-		for placed in focus.runes:
-			draw_arc(placed.position, placed.rune.radius, 0.0, TAU, 64, Color(1, 1, 1, 0.18), 1.0 * px, true)
+		for placed in focus.gems:
+			draw_arc(placed.position, placed.gem.radius, 0.0, TAU, 64, Color(1, 1, 1, 0.18), 1.0 * px, true)
 
 	# Verbindungen (kreuzende oder aus dem Fokus führende rot)
 	var edges := _loop_edges()
 	var crossing := _crossing_edges(edges)
 	var shape := focus.focus_def.shape
 	for i in edges.size():
-		var a := focus.runes[edges[i].x].position
-		var b := focus.runes[edges[i].y].position
+		var a := focus.gems[edges[i].x].position
+		var b := focus.gems[edges[i].y].position
 		var bad := crossing.has(i) or not shape.contains_segment(a, b)
 		draw_line(a, b, COLOR_BAD if bad else COLOR_EDGE, 3.0 * px, true)
 
 	# Gummiband beim Verbinden
 	var n := focus.loop.size()
 	if mode == Mode.CONNECT and _mouse_inside and n > 0 and not focus.loop_closed and not _dragging:
-		var from := focus.runes[_last_in_loop()].position
+		var from := focus.gems[_last_in_loop()].position
 		var to := _mouse_focus
 		var band_color := Color(1, 1, 1, 0.4)
 		if _hovered >= 0:
-			to = focus.runes[_hovered].position
+			to = focus.gems[_hovered].position
 			band_color = COLOR_OK if connect_error(_hovered) == "" else COLOR_BAD
 		elif _edge_crosses(from, to, _last_in_loop(), -1) or not shape.contains_segment(from, to):
 			band_color = COLOR_BAD
 		draw_line(from, to, band_color, 2.0 * px, true)
 
 	# Vorschau beim Setzen: Bereich und neue Verbindungen
-	var show_ghost := mode == Mode.PLACE and placing_rune != null and _mouse_inside \
+	var show_ghost := mode == Mode.PLACE and placing_gem != null and _mouse_inside \
 		and _hovered < 0 and _pressed < 0
 	var preview_dots: Array[EnergyDot] = []
 	if show_ghost and _preview_error == "":
 		if _preview != null and _preview.valid:
-			var preview_rune := _preview.rune_results[_preview_index]
-			_draw_sector(preview_rune, 0.22, COLOR_PREVIEW, px)
+			var preview_gem := _preview.gem_results[_preview_index]
+			_draw_sector(preview_gem, 0.22, COLOR_PREVIEW, px)
 		else:
-			draw_arc(_mouse_focus, placing_rune.radius, 0.0, TAU, 64, Color(COLOR_PREVIEW, 0.7), 1.0 * px, true)
+			draw_arc(_mouse_focus, placing_gem.radius, 0.0, TAU, 64, Color(COLOR_PREVIEW, 0.7), 1.0 * px, true)
 		_draw_preview_edges(px)
 		preview_dots = _preview_dots(claimed)
 
@@ -517,22 +517,22 @@ func _draw() -> void:
 		draw_circle(dot.position, 3.2 * px, color, true, -1.0, true)
 		draw_arc(dot.position, 6.0 * px, 0.0, TAU, 16, COLOR_PREVIEW, 1.5 * px, true)
 
-	# Geist der zu setzenden Rune
+	# Geist der zu setzenden Gem
 	if show_ghost:
 		var ghost_color := Color(COLOR_OK if _preview_error == "" else COLOR_BAD, 0.6)
 		if _preview_error != "":
-			draw_arc(_mouse_focus, placing_rune.radius, 0.0, TAU, 64, Color(COLOR_BAD, 0.4), 1.0 * px, true)
-		var ghost_size := MAIN_RUNE_SIZE if placing_rune.role == RuneDef.Role.MAIN else MINOR_RUNE_SIZE
+			draw_arc(_mouse_focus, placing_gem.radius, 0.0, TAU, 64, Color(COLOR_BAD, 0.4), 1.0 * px, true)
+		var ghost_size := MAIN_GEM_SIZE if placing_gem.role == GemDef.Role.MAIN else MINOR_GEM_SIZE
 		draw_circle(_mouse_focus, ghost_size * px, ghost_color, true, -1.0, true)
 
-	# Runen
-	for i in focus.runes.size():
-		var placed := focus.runes[i]
-		var is_main := placed.rune.role == RuneDef.Role.MAIN
+	# Gems
+	for i in focus.gems.size():
+		var placed := focus.gems[i]
+		var is_main := placed.gem.role == GemDef.Role.MAIN
 		var fill := COLOR_NEUTRAL
 		if valid:
-			fill = _element_color(result.rune_results[i].element_id, COLOR_NEUTRAL)
-		var radius := (MAIN_RUNE_SIZE if is_main else MINOR_RUNE_SIZE) * px
+			fill = _element_color(result.gem_results[i].element_id, COLOR_NEUTRAL)
+		var radius := (MAIN_GEM_SIZE if is_main else MINOR_GEM_SIZE) * px
 		draw_circle(placed.position, radius, fill, true, -1.0, true)
 		var ring := Color.BLACK
 		if i == _pressed or i == _hovered:
@@ -545,12 +545,12 @@ func _draw() -> void:
 	draw_set_transform_matrix(Transform2D.IDENTITY)
 	var font := get_theme_default_font()
 	var minor_number := 0
-	for i in focus.runes.size():
-		var is_main := focus.runes[i].rune.role == RuneDef.Role.MAIN
+	for i in focus.gems.size():
+		var is_main := focus.gems[i].gem.role == GemDef.Role.MAIN
 		if not is_main:
 			minor_number += 1
 		var label := "H" if is_main else str(minor_number)
-		draw_string(font, to_screen(focus.runes[i].position) + Vector2(12, -10), label,
+		draw_string(font, to_screen(focus.gems[i].position) + Vector2(12, -10), label,
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(1, 1, 1, 0.85))
 
 	if show_ghost:
@@ -561,17 +561,17 @@ func _draw() -> void:
 		draw_string(font, text_pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, text_color)
 
 
-## Gestrichelte Linien zu den Runen, mit denen die neue Rune verbunden würde.
+## Gestrichelte Linien zu den Gems, mit denen die neue Gem verbunden würde.
 func _draw_preview_edges(px: float) -> void:
-	if not auto_connect or placing_rune.role == RuneDef.Role.MAIN or focus.loop.is_empty():
+	if not auto_connect or placing_gem.role == GemDef.Role.MAIN or focus.loop.is_empty():
 		return
 	var shape := focus.focus_def.shape
-	var from := focus.runes[_last_in_loop()].position
+	var from := focus.gems[_last_in_loop()].position
 	var color := Color(COLOR_PREVIEW if shape.contains_segment(from, _mouse_focus) else COLOR_BAD, 0.7)
 	draw_dashed_line(from, _mouse_focus, color, 2.0 * px, 8.0 * px, true, true)
 	var will_close := focus.loop_closed or \
-		(focus.loop.size() + 1 >= SpellEvaluator.MIN_RUNES and focus.loop.size() + 1 == focus.runes.size() + 1)
+		(focus.loop.size() + 1 >= SpellEvaluator.MIN_GEMS and focus.loop.size() + 1 == focus.gems.size() + 1)
 	if will_close:
-		var main_pos := focus.runes[focus.loop[0]].position
+		var main_pos := focus.gems[focus.loop[0]].position
 		color = Color(COLOR_PREVIEW if shape.contains_segment(_mouse_focus, main_pos) else COLOR_BAD, 0.7)
 		draw_dashed_line(_mouse_focus, main_pos, color, 2.0 * px, 8.0 * px, true, true)

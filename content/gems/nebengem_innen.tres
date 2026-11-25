@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="GemDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_def.gd" id="1_gem"]
+
+[resource]
+script = ExtResource("1_gem")
+id = &"nebengem_innen"
+display_name = "Innen-Nebengem"
+role = 1
+radius = 90.0
+area = 0
+max_base = 10
+max_element = 10
+strength = 1.5

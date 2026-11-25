@@ -1,6 +1,6 @@
-class_name RuneDef
+class_name GemDef
 extends Resource
-## Eine Rune aus der Runen-Bibliothek.
+## Eine Gem aus der Gem-Bibliothek.
 
 enum Role { MAIN, MINOR }
 ## Welcher Teil des Einflusskreises zählt: Innenwinkel, Außenwinkel oder beides.
@@ -15,14 +15,14 @@ enum Area { INNER, OUTER, BOTH }
 @export var max_base: int = 15
 ## Maximal einsammelbare farbige Energiepunkte.
 @export var max_element: int = 15
-## Multipliziert alle Beiträge dieser Rune.
+## Multipliziert alle Beiträge diesem Gem.
 @export var strength: float = 1.0
-## Nur für Hauptrunen: welche Spell-Form sie erzeugt.
+## Nur für Hauptgems: welche Spell-Form sie erzeugt.
 @export var spell_form: SpellFormDef
-## Zusätzliche Regeln dieser Rune, unabhängig von ihrem Element.
+## Zusätzliche Regeln diesem Gem, unabhängig von ihrem Element.
 @export var extra_rules: Array[ScalingRule] = []
-## Nur Zusatzrunen: Wendet die Regeln des angenommenen Elements an (ElementDef.minor_rules).
-## Aus bei Runen, die Elemente über `extra_rules` selbst auswerten (z. B. Statuseffekt-Rune).
+## Nur Nebengems: Wendet die Regeln des angenommenen Elements an (ElementDef.minor_rules).
+## Aus bei Gems, die Elemente über `extra_rules` selbst auswerten (z. B. Statuseffekt-Gem).
 @export var use_element_rules := true
 ## Spezial-Effekte (noch ungenutzt).
-@export var effects: Array[RuneEffect] = []
+@export var effects: Array[GemEffect] = []

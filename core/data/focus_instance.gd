@@ -9,13 +9,13 @@ extends Resource
 ## Element-ID -> Anzahl farbiger Punkte, z. B. {&"fire": 25}
 @export var element_fill: Dictionary = {}
 @export var dot_seed: int = 0
-## In Platzierungsreihenfolge. Sie bestimmt, welche kleine Rune bei
+## In Platzierungsreihenfolge. Sie bestimmt, welche kleine Gem bei
 ## Überlappung zuerst einsammelt.
-@export var runes: Array[PlacedRune] = []
-## Indizes in `runes` in Verbindungsreihenfolge, beginnend bei der Hauptrune.
-## Die Kante von der letzten zur ersten Rune ist implizit.
+@export var gems: Array[PlacedGem] = []
+## Indizes in `gems` in Verbindungsreihenfolge, beginnend bei dem Hauptgem.
+## Die Kante von der letzten zur ersten Gem ist implizit.
 @export var loop: PackedInt32Array = PackedInt32Array()
-## true, sobald die letzte Rune wieder mit der Hauptrune verbunden wurde.
+## true, sobald das letzte Gem wieder mit dem Hauptgem verbunden wurde.
 @export var loop_closed: bool = false
 
 
@@ -26,8 +26,8 @@ func get_element_total() -> int:
 	return total
 
 
-func get_main_rune_index() -> int:
-	for i in runes.size():
-		if runes[i] != null and runes[i].rune != null and runes[i].rune.role == RuneDef.Role.MAIN:
+func get_main_gem_index() -> int:
+	for i in gems.size():
+		if gems[i] != null and gems[i].gem != null and gems[i].gem.role == GemDef.Role.MAIN:
 			return i
 	return -1

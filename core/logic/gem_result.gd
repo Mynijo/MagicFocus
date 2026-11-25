@@ -1,10 +1,10 @@
-class_name RuneResult
+class_name GemResult
 extends RefCounted
-## Auswertungsergebnis einer einzelnen Rune.
+## Auswertungsergebnis einer einzelnen Gem.
 
-## Index in FocusInstance.runes (Platzierungsreihenfolge)
+## Index in FocusInstance.gems (Platzierungsreihenfolge)
 var index: int
-var placed: PlacedRune
+var placed: PlacedGem
 ## Einflussbereich als Kreissektor: Startwinkel und Öffnungswinkel (Radiant).
 var sector_start: float = 0.0
 var sector_sweep: float = 0.0
@@ -17,7 +17,7 @@ var element_id: StringName = &""
 
 
 func is_main() -> bool:
-	return placed.rune.role == RuneDef.Role.MAIN
+	return placed.gem.role == GemDef.Role.MAIN
 
 
 func add_dot(dot: EnergyDot) -> void:
