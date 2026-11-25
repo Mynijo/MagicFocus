@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="FocusDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/focus_def.gd" id="1_focus"]
+[ext_resource type="Script" path="res://core/data/star_focus_shape.gd" id="2_star"]
+
+[sub_resource type="Resource" id="Shape_star"]
+script = ExtResource("2_star")
+points = 5
+outer_radius = 340.0
+inner_radius = 170.0
+
+[resource]
+script = ExtResource("1_focus")
+id = &"stern_fokus"
+display_name = "Stern-Fokus"
+shape = SubResource("Shape_star")
+size_class = 1
+max_runes = 5
+max_base_dots = 150
+max_element_dots = 60

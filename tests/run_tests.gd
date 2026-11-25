@@ -26,6 +26,9 @@ func _init() -> void:
 		test_dot_field_reproducible,
 		test_content_loads_and_evaluates,
 		test_canvas_editing,
+		test_canvas_auto_connect_and_preview,
+		test_focus_shapes,
+		test_allowed_elements,
 	]
 	for test: Callable in tests:
 		_current = test.get_method()
@@ -337,7 +340,7 @@ func test_content_loads_and_evaluates() -> void:
 		return
 	check(content.elements.size() == 5, "5 Elemente erwartet")
 	check(content.runes.size() == 6, "6 Runen erwartet")
-	check(content.foci.size() == 4, "4 Fokus-Typen erwartet")
+	check(content.foci.size() == 8, "8 Fokus-Typen erwartet")
 	check(content.get_element(&"fire").minor_rules.size() == 1, "Feuer sollte eine Regel haben")
 	check(content.get_rune(&"hauptrune_geschoss").spell_form != null, "Hauptrune braucht eine Spell-Form")
 
@@ -366,6 +369,7 @@ func test_canvas_editing() -> void:
 	focus.focus_def = content.get_focus(&"kleiner_fokus")
 	var canvas := FocusCanvas.new()
 	canvas.focus = focus
+	canvas.auto_connect = false  # manuelles Verbinden testen
 	var messages: Array[String] = []
 	canvas.message.connect(func(text: String) -> void: messages.append(text))
 
@@ -398,8 +402,118 @@ func test_canvas_editing() -> void:
 	canvas.undo_connection()
 	check(not focus.loop_closed and focus.loop.size() == 3, "Zurück sollte zuerst den Kreis öffnen")
 	canvas.remove_rune(1)
-	check(focus.runes.size() == 2 and focus.loop == PackedInt32Array([0]), "Entfernen sollte den Kreis vor der Rune kürzen")
+	check(focus.runes.size() == 2 and focus.loop == PackedInt32Array([0, 1]),
+		"Entfernen sollte die Nachbarn verbinden, war %s" % [focus.loop])
+	check(not focus.loop_closed, "Mit 2 Runen darf der Kreis nicht geschlossen sein")
 	canvas.free()
+
+
+func test_canvas_auto_connect_and_preview() -> void:
+	var content := load("res://content/crafting_content.tres") as CraftingContent
+	var main := content.get_rune(&"hauptrune_geschoss")
+	var minor := content.get_rune(&"zusatzrune_standard")
+	var focus := FocusInstance.new()
+	focus.focus_def = content.get_focus(&"mittlerer_fokus")
+	focus.base_count = 150
+	focus.element_fill = {&"fire": 60}
+	focus.dot_seed = 7
+	var canvas := FocusCanvas.new()
+	canvas.focus = focus
+	canvas.evaluate_preview = func(f: FocusInstance) -> SpellResult:
+		return SpellEvaluator.evaluate(f, content.elements)
+
+	canvas._try_place(main, Vector2(-120, 60))
+	canvas._try_place(minor, Vector2(120, 60))
+	check(focus.loop == PackedInt32Array([0, 1]) and not focus.loop_closed, "Zweite Rune sollte automatisch verbunden sein")
+	canvas._try_place(minor, Vector2(0, -150))
+	check(focus.loop == PackedInt32Array([0, 1, 2]) and focus.loop_closed, "Ab 3 Runen sollte sich der Kreis schließen")
+	canvas._try_place(minor, Vector2(0, 200))
+	check(focus.loop == PackedInt32Array([0, 1, 2, 3]) and focus.loop_closed,
+		"Neue Rune sollte vor der schließenden Kante eingefügt werden")
+
+	canvas.remove_rune(2)
+	check(focus.loop == PackedInt32Array([0, 1, 2]) and focus.loop_closed,
+		"Nach Entfernen sollte der Kreis mit 3 Runen geschlossen bleiben, war %s" % [focus.loop])
+
+	# Vorschau: verändert den Fokus nicht, liefert eine gültige Auswertung mit der neuen Rune
+	canvas.mode = FocusCanvas.Mode.PLACE
+	canvas.placing_rune = minor
+	canvas._mouse_inside = true
+	canvas._mouse_focus = Vector2(-250, 180)  # zwischen letzter Zusatzrune und Hauptrune, ohne Kreuzung
+	canvas.update_preview()
+	check(focus.runes.size() == 3, "Vorschau darf den Fokus nicht verändern")
+	check(canvas._preview != null and canvas._preview.valid, "Vorschau sollte einen gültigen Spell ergeben")
+	check(canvas._preview_index == 3, "Vorschau-Rune sollte die vierte sein")
+
+	canvas._mouse_focus = Vector2(1000, 0)
+	canvas.update_preview()
+	check(canvas._preview == null and canvas._preview_error.contains("innerhalb"), "Vorschau außerhalb sollte den Grund nennen")
+
+	# Main entfernen löst den Kreis; neue Hauptrune verbindet die vorhandenen Zusatzrunen
+	canvas.remove_rune(0)
+	check(focus.loop.is_empty() and not focus.loop_closed, "Ohne Hauptrune gibt es keinen Kreis")
+	canvas._try_place(main, Vector2(-150, 100))
+	check(focus.loop == PackedInt32Array([2, 0, 1]) and focus.loop_closed,
+		"Neue Hauptrune sollte die Zusatzrunen verbinden, war %s" % [focus.loop])
+	canvas.free()
+
+
+func test_focus_shapes() -> void:
+	var star := StarFocusShape.new()
+	star.points = 5
+	star.outer_radius = 300.0
+	star.inner_radius = 150.0
+	check(star.get_outline().size() == 10, "Stern mit 5 Zacken hat 10 Eckpunkte")
+	check(star.contains(Vector2.ZERO), "Sternmitte liegt im Stern")
+	check(star.contains(Vector2(0, -280)), "Obere Zacke liegt im Stern")
+	check(not star.contains(Vector2(0, 280)), "Zwischen den unteren Zacken liegt außerhalb")
+	star.inner_radius = 290.0
+	check(star.contains(Vector2(0, 280)), "Nach Änderung des Innenradius neu berechnen")
+
+	var drop := DropFocusShape.new()
+	check(drop.contains(Vector2.ZERO), "Tropfenmitte liegt im Tropfen")
+	check(drop.contains(Vector2(0, -300)), "Nahe der Spitze liegt im Tropfen")
+	check(not drop.contains(Vector2(200, -250)), "Neben der Spitze liegt außerhalb")
+	check(drop.contains(Vector2(0, 300)), "Unten im Bauch liegt im Tropfen")
+
+	for shape: FocusShape in [star, drop]:
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 3
+		var inside := true
+		for i in 300:
+			inside = inside and shape.contains(shape.random_point(rng))
+		check(inside, "Zufallspunkte sollten in der Form %s liegen" % shape.get_shape_name())
+
+
+func test_allowed_elements() -> void:
+	var content := load("res://content/crafting_content.tres") as CraftingContent
+	var fire_focus := content.get_focus(&"feuer_fokus")
+	check(fire_focus.allows_element(&"fire") and not fire_focus.allows_element(&"water"), "Feuer-Fokus erlaubt nur Feuer")
+	check(content.get_focus(&"kleiner_fokus").allows_element(&"water"), "Normaler Fokus erlaubt alle Elemente")
+
+	var focus := FocusInstance.new()
+	focus.focus_def = fire_focus
+	focus.element_fill = {&"fire": 60, &"water": 5}
+	focus.runes = [
+		PlacedRune.create(content.get_rune(&"hauptrune_geschoss"), Vector2(-100, 60)),
+		PlacedRune.create(content.get_rune(&"zusatzrune_standard"), Vector2(100, 60)),
+		PlacedRune.create(content.get_rune(&"zusatzrune_standard"), Vector2(0, -120)),
+	]
+	focus.loop = PackedInt32Array([0, 1, 2])
+	focus.loop_closed = true
+	var r := SpellEvaluator.evaluate(focus, content.elements)
+	check(not r.valid and _has_error(r, "kein Wasser"), "Wasser im Feuer-Fokus sollte abgelehnt werden: %s" % [r.errors])
+	focus.element_fill = {&"fire": 80}
+	r = SpellEvaluator.evaluate(focus, content.elements)
+	check(r.valid, "80 Feuer im Feuer-Fokus sollte gültig sein: %s" % [r.errors])
+
+	focus.focus_def = content.get_focus(&"neutraler_fokus")
+	focus.base_count = 300
+	r = SpellEvaluator.evaluate(focus, content.elements)
+	check(not r.valid and _has_error(r, "Zu viele farbige"), "Farbige Punkte im neutralen Fokus sollten abgelehnt werden")
+	focus.element_fill = {}
+	r = SpellEvaluator.evaluate(focus, content.elements)
+	check(r.valid, "300 Basispunkte im neutralen Fokus sollten gültig sein: %s" % [r.errors])
 
 
 func _has_error(result: SpellResult, fragment: String) -> bool:

@@ -22,10 +22,14 @@
 [ext_resource type="Resource" path="res://content/foci/mittlerer_fokus.tres" id="41_medium"]
 [ext_resource type="Resource" path="res://content/foci/grosser_fokus.tres" id="42_large"]
 [ext_resource type="Resource" path="res://content/foci/sehr_grosser_fokus.tres" id="43_huge"]
+[ext_resource type="Resource" path="res://content/foci/stern_fokus.tres" id="44_star"]
+[ext_resource type="Resource" path="res://content/foci/tropfen_fokus.tres" id="45_drop"]
+[ext_resource type="Resource" path="res://content/foci/feuer_fokus.tres" id="46_fire"]
+[ext_resource type="Resource" path="res://content/foci/neutraler_fokus.tres" id="47_neutral"]
 
 [resource]
 script = ExtResource("1_content")
 elements = Array[ExtResource("2_element")]([ExtResource("10_fire"), ExtResource("11_water"), ExtResource("12_earth"), ExtResource("13_air"), ExtResource("14_lightning")])
 spell_forms = Array[ExtResource("3_form")]([ExtResource("20_geschoss"), ExtResource("21_schild")])
 runes = Array[ExtResource("4_rune")]([ExtResource("30_main_geschoss"), ExtResource("31_main_schild"), ExtResource("32_minor"), ExtResource("33_minor_inner"), ExtResource("34_minor_round"), ExtResource("35_minor_wide")])
-foci = Array[ExtResource("5_focus")]([ExtResource("40_small"), ExtResource("41_medium"), ExtResource("42_large"), ExtResource("43_huge")])
+foci = Array[ExtResource("5_focus")]([ExtResource("40_small"), ExtResource("41_medium"), ExtResource("42_large"), ExtResource("43_huge"), ExtResource("44_star"), ExtResource("45_drop"), ExtResource("46_fire"), ExtResource("47_neutral")])

@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="FocusDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/focus_def.gd" id="1_focus"]
+[ext_resource type="Script" path="res://core/data/drop_focus_shape.gd" id="2_drop"]
+
+[sub_resource type="Resource" id="Shape_drop"]
+script = ExtResource("2_drop")
+height = 330.0
+width = 340.0
+sharpness = 1.0
+
+[resource]
+script = ExtResource("1_focus")
+id = &"tropfen_fokus"
+display_name = "Tropfen-Fokus"
+shape = SubResource("Shape_drop")
+size_class = 1
+max_runes = 4
+max_base_dots = 140
+max_element_dots = 55

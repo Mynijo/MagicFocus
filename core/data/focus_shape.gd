@@ -16,3 +16,8 @@ func random_point(_rng: RandomNumberGenerator) -> Vector2:
 ## Umriss zum Zeichnen.
 func get_outline() -> PackedVector2Array:
 	return PackedVector2Array()
+
+
+## Anzeigename der Form, z. B. "Kreis".
+func get_shape_name() -> String:
+	return "?"

@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="FocusDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/focus_def.gd" id="1_focus"]
+[ext_resource type="Script" path="res://core/data/circle_focus_shape.gd" id="2_circle"]
+
+[sub_resource type="Resource" id="Shape_circle"]
+script = ExtResource("2_circle")
+radius = 260.0
+
+[resource]
+script = ExtResource("1_focus")
+id = &"feuer_fokus"
+display_name = "Feuer-Fokus"
+shape = SubResource("Shape_circle")
+size_class = 0
+max_runes = 3
+max_base_dots = 80
+max_element_dots = 80
+allowed_elements = Array[StringName]([&"fire"])

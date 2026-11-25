@@ -4,6 +4,10 @@ extends FocusShape
 @export var radius: float = 250.0
 
 
+func get_shape_name() -> String:
+	return "Kreis"
+
+
 func contains(point: Vector2) -> bool:
 	return point.length() <= radius
 

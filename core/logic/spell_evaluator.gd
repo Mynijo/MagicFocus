@@ -30,7 +30,7 @@ static func evaluate(focus: FocusInstance, elements: Array[ElementDef],
 	var result := SpellResult.new()
 	result.dots.assign(dots if dots != null else DotField.generate(focus))
 
-	_validate(focus, result)
+	_validate(focus, result, elements)
 	if not result.errors.is_empty():
 		return result
 
@@ -51,11 +51,19 @@ static func evaluate(focus: FocusInstance, elements: Array[ElementDef],
 
 # --- Phase 1 ---------------------------------------------------------------
 
-static func _validate(focus: FocusInstance, result: SpellResult) -> void:
+static func _validate(focus: FocusInstance, result: SpellResult, elements: Array[ElementDef]) -> void:
 	var def := focus.focus_def
 	if def == null:
 		result.errors.append("Der Fokus hat keinen Fokus-Typ.")
 		return
+
+	for element_id: StringName in focus.element_fill:
+		if int(focus.element_fill[element_id]) > 0 and not def.allows_element(element_id):
+			var element_name := String(element_id)
+			for element in elements:
+				if element.id == element_id:
+					element_name = element.display_name
+			result.errors.append("%s nimmt kein %s auf." % [def.display_name, element_name])
 
 	if focus.base_count > def.max_base_dots:
 		result.errors.append("Zu viele Basispunkte (%d / %d)." % [focus.base_count, def.max_base_dots])

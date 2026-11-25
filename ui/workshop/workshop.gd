@@ -53,7 +53,12 @@ func _new_focus(def: FocusDef) -> void:
 	focus = FocusInstance.new()
 	focus.focus_def = def
 	focus.base_count = def.max_base_dots
-	focus.element_fill = {&"fire": int(def.max_element_dots / 2.0)}
+	focus.element_fill = {}
+	# Zum Start die Hälfte der farbigen Kapazität mit dem ersten erlaubten Element füllen
+	for element in CONTENT.elements:
+		if def.allows_element(element.id) and def.max_element_dots > 0:
+			focus.element_fill[element.id] = int(def.max_element_dots / 2.0)
+			break
 	focus.dot_seed = randi()
 
 
@@ -71,6 +76,7 @@ func _refresh() -> void:
 	result = SpellEvaluator.evaluate(focus, CONTENT.elements, null, threshold)
 	_canvas.focus = focus
 	_canvas.result = result
+	_canvas.update_preview()
 	_canvas.queue_redraw()
 	_update_fill_labels()
 	_update_result_text()
@@ -93,6 +99,7 @@ func _build_ui() -> void:
 
 	_canvas = FocusCanvas.new()
 	_canvas.content = CONTENT
+	_canvas.evaluate_preview = _evaluate
 	_canvas.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_canvas.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_canvas.clip_contents = true
@@ -117,7 +124,7 @@ func _build_left_panel() -> Control:
 	_header(box, "1. Fokus")
 	_focus_select = OptionButton.new()
 	for def in CONTENT.foci:
-		_focus_select.add_item(def.display_name)
+		_focus_select.add_item("%s  (%s)" % [def.display_name, def.shape.get_shape_name()])
 	_focus_select.item_selected.connect(_on_focus_type_selected)
 	box.add_child(_focus_select)
 	_focus_info = _small_label(box, "")
@@ -159,7 +166,8 @@ func _build_left_panel() -> Control:
 
 	# Runen-Bibliothek
 	_header(box, "3. Runen setzen")
-	_small_label(box, "Rune wählen, dann in den Fokus klicken. Ziehen = verschieben, Rechtsklick = entfernen.")
+	_small_label(box, "Rune wählen und in den Fokus klicken – die Vorschau zeigt, welche Punkte sie einsammeln würde. Runen jederzeit ziehen = verschieben, Rechtsklick = entfernen.")
+	_check(box, "Automatisch verbinden", true, _set_auto_connect)
 	_library_group.allow_unpress = true
 	for rune in CONTENT.runes:
 		var button := Button.new()
@@ -174,7 +182,7 @@ func _build_left_panel() -> Control:
 
 	# Verbinden
 	_header(box, "4. Verbinden")
-	_small_label(box, "Bei der Hauptrune beginnen, Runen nacheinander anklicken, mit Klick auf die Hauptrune schließen. Rechtsklick = zurück.")
+	_small_label(box, "Für eine eigene Reihenfolge: „Kreis lösen“, dann bei der Hauptrune beginnen, Runen nacheinander anklicken und mit Klick auf die Hauptrune schließen. Rechtsklick = zurück.")
 	var mode_group := ButtonGroup.new()
 	var mode_row := HBoxContainer.new()
 	box.add_child(mode_row)
@@ -344,6 +352,7 @@ func _set_mode(mode: FocusCanvas.Mode) -> void:
 		var pressed := _library_group.get_pressed_button()
 		if pressed != null:
 			pressed.button_pressed = false
+	_canvas.update_preview()
 	_canvas.queue_redraw()
 
 
@@ -354,6 +363,17 @@ func _on_library_toggled(on: bool, rune: RuneDef) -> void:
 		_set_mode(FocusCanvas.Mode.PLACE)
 	elif _canvas.placing_rune == rune:
 		_canvas.placing_rune = null
+	_canvas.update_preview()
+	_canvas.queue_redraw()
+
+
+func _evaluate(target: FocusInstance) -> SpellResult:
+	return SpellEvaluator.evaluate(target, CONTENT.elements, null, threshold)
+
+
+func _set_auto_connect(on: bool) -> void:
+	_canvas.auto_connect = on
+	_canvas.update_preview()
 	_canvas.queue_redraw()
 
 
@@ -387,10 +407,12 @@ func _on_focus_type_selected(index: int) -> void:
 	var def := CONTENT.foci[index]
 	focus.focus_def = def
 	focus.base_count = mini(focus.base_count, def.max_base_dots)
-	# Farbige Punkte auf die neue Kapazität kürzen
+	# Farbige Punkte auf erlaubte Elemente und die neue Kapazität kürzen
 	var remaining := def.max_element_dots
 	for element in CONTENT.elements:
 		var count := mini(int(focus.element_fill.get(element.id, 0)), remaining)
+		if not def.allows_element(element.id):
+			count = 0
 		remaining -= count
 		if count > 0:
 			focus.element_fill[element.id] = count
@@ -428,17 +450,34 @@ func _sync_fill_ui() -> void:
 	_base_spin.set_value_no_signal(focus.base_count)
 	for element_id: StringName in _element_spins:
 		var spin: SpinBox = _element_spins[element_id]
+		var allowed := def.allows_element(element_id) and def.max_element_dots > 0
 		spin.max_value = def.max_element_dots
+		spin.editable = allowed
+		spin.modulate.a = 1.0 if allowed else 0.35
+		spin.tooltip_text = "" if allowed else "In diesem Fokus nicht erlaubt"
 		spin.set_value_no_signal(int(focus.element_fill.get(element_id, 0)))
 	var index := CONTENT.foci.find(def)
 	if index >= 0:
 		_focus_select.select(index)
 
 
+func _allowed_text(def: FocusDef) -> String:
+	if def.max_element_dots <= 0:
+		return "keine (nur Basispunkte)"
+	if def.allowed_elements.is_empty():
+		return "alle"
+	var names := PackedStringArray()
+	for element in CONTENT.elements:
+		if def.allows_element(element.id):
+			names.append(element.display_name)
+	return "nur " + ", ".join(names)
+
+
 func _update_fill_labels() -> void:
 	var def := focus.focus_def
-	_focus_info.text = "Runen: %d / %d   ·   Basispunkte max. %d   ·   farbige Punkte max. %d" % [
-		focus.runes.size(), def.max_runes, def.max_base_dots, def.max_element_dots]
+	_focus_info.text = "Form: %s   ·   Runen: %d / %d\nBasispunkte max. %d   ·   farbige max. %d\nErlaubte Elemente: %s" % [
+		def.shape.get_shape_name(), focus.runes.size(), def.max_runes,
+		def.max_base_dots, def.max_element_dots, _allowed_text(def)]
 	_element_total.text = "Farbige Punkte: %d / %d" % [focus.get_element_total(), def.max_element_dots]
 
 
@@ -487,7 +526,8 @@ func _update_result_text() -> void:
 		t += "\nKreis: %d von %d Runen verbunden%s\n" % [
 			connected, focus.runes.size(), " (geschlossen)" if focus.loop_closed else ""]
 
-	t += "\n[color=#888888][font_size=12]Tasten: 1 = Setzen, 2 = Verbinden, R = neu würfeln, "
+	t += "\n[color=#888888][font_size=12]Runen ziehen = verschieben (in beiden Modi). "
+	t += "Tasten: 1 = Setzen, 2 = Verbinden, R = neu würfeln, "
 	t += "Rücktaste = Verbindung zurück, Esc = Rune abwählen[/font_size][/color]"
 	_result_text.text = t
 
