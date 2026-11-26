@@ -25,6 +25,9 @@ const SPITZ_MULTIPLIER := 2.0
 @export var max_base: int = 15
 ## Maximal einsammelbare Element-Essenzen (E).
 @export var max_element: int = 15
+## Größe des Steins (halber Durchmesser, Fokus-Einheiten). Essenz darunter ist verdeckt
+## und zählt für kein Gem. 0 = kein Stein (Tests).
+@export var body_radius := 0.0
 
 
 func is_inner() -> bool:

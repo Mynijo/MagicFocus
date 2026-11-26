@@ -521,6 +521,8 @@ func _preview_dots(claimed: Dictionary) -> Array[EnergyDot]:
 func _preview_summary(dots: Array[EnergyDot]) -> String:
 	# placing_gem: Spitz zählt doppelt, das steht direkt in der Zusammenfassung
 	var text := _dots_summary(dots, placing_gem.get_multiplier() if placing_gem != null else 1.0)
+	if _preview != null and _preview.valid:
+		text = _gem_summary(_preview.gem_results[_preview_index])
 	if not dots.is_empty() and (_preview == null or not _preview.valid):
 		text += "  (in Reichweite)"
 	return text
@@ -543,6 +545,44 @@ func _dots_summary(dots: Array[EnergyDot], multiplier := 1.0) -> String:
 			if counts.has(element.id):
 				parts.append("%s %s" % [element.display_name, _count_text(counts[element.id], multiplier)])
 	return " · ".join(parts)
+
+
+## Halbe Größe des Steins in Fokus-Einheiten (aus GemDef.body_radius, sonst feste Bildschirmgröße).
+func _body_radius(gem: GemDef, px: float) -> float:
+	if gem.body_radius > 0.0:
+		return gem.body_radius
+	return (MAIN_GEM_SIZE if gem.role == GemDef.Role.MAIN else MINOR_GEM_SIZE) * px
+
+
+## "  ·  verdeckt 3 (zählen nicht)" für die Essenz unter diesem Stein
+func _blocked_text(placed: PlacedGem) -> String:
+	var count := 0
+	for dot in result.blocked:
+		if dot.position.distance_to(placed.position) < placed.gem.body_radius:
+			count += 1
+	return "  ·  verdeckt %d (zählen nicht)" % count if count > 0 else ""
+
+
+## Zählt ein Punkt der Vorschau doppelt? (Spitz oder innerer Ring der Multiplikator-Gravur)
+func _preview_doubled(dot: EnergyDot) -> bool:
+	if _preview != null and _preview.valid:
+		return _preview.gem_results[_preview_index].dot_multiplier(dot) > 1.0 + 0.001
+	return placing_gem != null and placing_gem.get_multiplier() > 1.0 + 0.001
+
+
+## Eingesammelte Punkte eines Gems; mit innerem Ring (Multiplikator) getrennt nach außen und innen.
+func _gem_summary(gr: GemResult) -> String:
+	if gr.placed.get_inner_radius() <= 0.0:
+		return _dots_summary(gr.collected, gr.multiplier)
+	var outer: Array[EnergyDot] = []
+	var inner: Array[EnergyDot] = []
+	for dot in gr.collected:
+		if gr.dot_multiplier(dot) > gr.multiplier + 0.001:
+			inner.append(dot)
+		else:
+			outer.append(dot)
+	return "außen %s  ·  innerer Ring %s" % [_dots_summary(outer, gr.multiplier),
+		_dots_summary(inner, gr.multiplier * gr.placed.engraving.inner_multiplier)]
 
 
 ## Gem, dessen eingesammelte Punkte gerade hervorgehoben werden
@@ -637,11 +677,18 @@ func _draw_sector(rr: GemResult, fill_alpha: float, border: Color, px: float) ->
 		return
 	var color := _gem_color(rr.placed.gem)
 	var polygon := FocusGeometry.sector_polygon(
-		rr.placed.position, rr.placed.get_radius(), rr.sector_start, rr.sector_sweep, 48)
+		rr.placed.position, rr.get_radius(), rr.sector_start, rr.sector_sweep, 48)
 	draw_colored_polygon(polygon, Color(color, fill_alpha))
 	var outline := polygon.duplicate()
 	outline.append(polygon[0])
 	draw_polyline(outline, border, 1.0 * px, true)
+	# Multiplikator-Gravur: innerer Ring, in dem Essenz doppelt zählt
+	var inner := rr.placed.get_inner_radius()
+	if inner > 0.0:
+		var inner_polygon := FocusGeometry.sector_polygon(rr.placed.position, inner, rr.sector_start, rr.sector_sweep, 32)
+		draw_colored_polygon(inner_polygon, Color(color, fill_alpha))
+		inner_polygon.append(inner_polygon[0])
+		draw_polyline(inner_polygon, border, 1.0 * px, true)
 
 
 func _draw() -> void:
@@ -674,7 +721,7 @@ func _draw() -> void:
 		for rr in result.gem_results:
 			for dot in rr.collected:
 				claimed[dot] = true
-				if rr.multiplier > 1.0 + 0.001:
+				if rr.dot_multiplier(dot) > 1.0 + 0.001:
 					doubled[dot] = true
 			if show_sectors:
 				var color := _gem_color(rr.placed.gem)
@@ -756,9 +803,10 @@ func _draw() -> void:
 	for dot in preview_dots:
 		var color := _element_color(dot.element_id, COLOR_BASE_DOT)
 		var scale := 1.0 if dot.is_base() else ELEMENT_DOT_SCALE
-		_draw_dot(dot, 3.6 * scale * px, color, placing_gem.get_multiplier() > 1.0 + 0.001)
+		var preview_doubled := _preview_doubled(dot)
+		_draw_dot(dot, 3.6 * scale * px, color, preview_doubled)
 		_draw_dot_ring(dot.position, 6.0 * scale * px, COLOR_PREVIEW, px)
-		if placing_gem.get_multiplier() > 1.0 + 0.001:
+		if preview_doubled:
 			_draw_dot_ring(_shadow_position(dot, 3.6 * scale * px), 6.0 * scale * px, Color(COLOR_PREVIEW, 0.6), px)
 
 	# Geist der zu setzenden Gem
@@ -773,19 +821,27 @@ func _draw() -> void:
 				var other := focus.gems[blocker]
 				draw_arc(other.position, maxf(other.get_radius(), ghost_radius), 0.0, TAU, 64,
 					Color(COLOR_BAD, 0.8), 2.0 * px, true)
-		var ghost_size := MAIN_GEM_SIZE if placing_gem.role == GemDef.Role.MAIN else MINOR_GEM_SIZE
-		_draw_gem_sprite(placing_gem, _mouse_focus, ghost_size * px, ghost_color)
-		_draw_engraving(placing_engraving, _mouse_focus, ghost_size * px)
+		var ghost_size := _body_radius(placing_gem, px)
+		_draw_gem_sprite(placing_gem, _mouse_focus, ghost_size, ghost_color)
+		_draw_engraving(placing_engraving, _mouse_focus, ghost_size)
 
 	# Gems
 	for i in focus.gems.size():
 		var placed := focus.gems[i]
 		var is_main := placed.gem.role == GemDef.Role.MAIN
-		var radius := (MAIN_GEM_SIZE if is_main else MINOR_GEM_SIZE) * px
+		var radius := _body_radius(placed.gem, px)
 		_draw_gem_sprite(placed.gem, placed.position, radius, Color.WHITE)
 		_draw_engraving(placed.engraving, placed.position, radius)
 		if i == _pressed or i == _hovered:
 			draw_arc(placed.position, radius + 3.0 * px, 0.0, TAU, 32, Color(1, 0.9, 0.3), 2.0 * px, true)
+	# Verdeckte Essenz: auf dem Stein blass mit rotem Kreuz (zählt nicht)
+	if valid:
+		for dot in result.blocked:
+			var scale := 1.0 if dot.is_base() else ELEMENT_DOT_SCALE
+			var r := 3.0 * scale * px
+			_draw_dot(dot, r, Color(_element_color(dot.element_id, COLOR_BASE_DOT), 0.55))
+			draw_line(dot.position - Vector2(r, r), dot.position + Vector2(r, r), Color(COLOR_BAD, 0.9), 1.2 * px, true)
+			draw_line(dot.position + Vector2(-r, r), dot.position + Vector2(r, -r), Color(COLOR_BAD, 0.9), 1.2 * px, true)
 
 	# Beschriftungen in Bildschirm-Koordinaten
 	draw_set_transform_matrix(Transform2D.IDENTITY)
@@ -803,7 +859,7 @@ func _draw() -> void:
 		_draw_hint(font, to_screen(_mouse_focus), text, COLOR_BAD if _preview_error != "" else COLOR_PREVIEW)
 	elif owner != null:
 		var anchor := to_screen(owner.placed.position)
-		_draw_hint(font, anchor, "Sammelt: " + _dots_summary(owner.collected, owner.multiplier), Color(1, 1, 1, 0.95))
+		_draw_hint(font, anchor, "Sammelt: " + _gem_summary(owner) + _blocked_text(owner.placed), Color(1, 1, 1, 0.95))
 		if show_replace:
 			var text := "Klick: wird zu %s  ·  %s" % [
 				_gem_label(placing_gem, placing_engraving), _preview_summary(_preview_dots(claimed))]

@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="EngravingDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_rpxtp"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_multiplikator.png" id="2_2ah8r"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="3_j4veq"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="4_cvk2w"]
+
+[resource]
+script = ExtResource("4_cvk2w")
+id = &"multiplikator"
+display_name = "Multiplikator"
+icon = ExtResource("2_2ah8r")
+description = "Gibt seine neutrale Essenz und Essenzen an das Hauptgem weiter (wie Power Transfer). Sammelt mit 0,8-fachem Radius; was im inneren Ring (0,3-facher Radius) liegt, zählt doppelt. Nur kleine und mittlere Gems"
+transfer_to_main = true
+radius_factor = 0.8
+inner_radius_factor = 0.3
+max_size = 1

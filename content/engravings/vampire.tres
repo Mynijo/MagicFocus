@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="EngravingDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_bcdxt"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_vampire.png" id="2_m7l70"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="3_bpcop"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="4_sylnd"]
+
+[sub_resource type="Resource" id="Resource_08yns"]
+script = ExtResource("3_bpcop")
+source = 3
+per_n = 100
+stat = &"vampire"
+
+[resource]
+script = ExtResource("4_sylnd")
+id = &"vampire"
+display_name = "Vampire"
+role = 0
+element_ids = Array[StringName]([&"water"])
+icon = ExtResource("2_m7l70")
+description = "1 Leben-Reg pro Bleed-Stack des Gegners, +1 pro Bleed-Stack je 100 Punkte. Punkte: neutrale Essenz 1, Wasser-Essenz 5, andere Essenz 0"
+base_stats = {
+&"vampire": 1.0
+}
+rules = Array[ExtResource("3_bpcop")]([SubResource("Resource_08yns")])
+target = 1

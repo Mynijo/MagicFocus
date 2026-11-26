@@ -11,3 +11,4 @@ size = 2
 radius = 165.0
 max_base = 85
 max_element = 35
+body_radius = 15.0

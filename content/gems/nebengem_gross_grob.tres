@@ -10,3 +10,4 @@ size = 2
 radius = 90.0
 max_base = 30
 max_element = 20
+body_radius = 10.0

@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="EngravingDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_y8f54"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_regeneration.png" id="2_3tqwq"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="3_mdubh"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="4_xr4x0"]
+
+[sub_resource type="Resource" id="Resource_kakid"]
+script = ExtResource("3_mdubh")
+source = 1
+element_id = &"water"
+per_n = 5
+stat = &"life_regen"
+
+[resource]
+script = ExtResource("4_xr4x0")
+id = &"regeneration"
+display_name = "Regeneration"
+element_ids = Array[StringName]([&"water"])
+icon = ExtResource("2_3tqwq")
+description = "1 Leben-Reg pro 5 Punkte. Punkte: Wasser-Essenz 5, andere Essenz 0, neutrale Essenz 0"
+rules = Array[ExtResource("3_mdubh")]([SubResource("Resource_kakid")])

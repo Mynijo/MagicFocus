@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="EngravingDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_pyk41"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_water_rain.png" id="2_x20h6"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="3_7oyyd"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="4_delqc"]
+
+[sub_resource type="Resource" id="Resource_vloxi"]
+script = ExtResource("3_7oyyd")
+source = 1
+element_id = &"water"
+per_n = 5
+stat = &"wet"
+
+[resource]
+script = ExtResource("4_delqc")
+id = &"water_rain"
+display_name = "Water Rain"
+role = 0
+element_ids = Array[StringName]([&"water"])
+icon = ExtResource("2_x20h6")
+description = "Trifft beide Magier. 1 Nass pro 5 Punkte aus Wasser-Essenz. Punkte: Wasser-Essenz 5, andere Essenz 0, neutrale Essenz 0"
+rules = Array[ExtResource("3_7oyyd")]([SubResource("Resource_vloxi")])
+target = 2

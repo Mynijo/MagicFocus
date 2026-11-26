@@ -37,6 +37,7 @@ Kommunikation mit dem Nutzer auf **Deutsch**.
 - Ein Spell braucht genau **1 Hauptgem** und mindestens **3 Gems** in einem **geschlossenen Kreis**, der beim Hauptgem beginnt. Kanten dürfen sich nicht kreuzen und müssen **innerhalb der Fokusform** verlaufen.
 - **Gem = Form + Gravur.** Die Form (`GemDef`) legt Radius, Winkel und Kapazität fest, die Gravur (`EngravingDef`) die Wirkung. Die Rolle (Haupt/Neben) muss übereinstimmen. In der Werkstatt wählt man **Gravur, Größe (klein/mittel/groß) und Spitz ja/nein**; ein **Klick auf ein gesetztes Gem** übernimmt diese Auswahl (gleiche Rolle nötig, Position und Kreis bleiben, Vorschau beim Darüberfahren); die Gravur legt die Rolle fest, die Form ergibt sich über `CraftingContent.find_gem()`. Es gibt 12 Formen (2 Rollen × 3 Größen × Spitz/Grob), erzeugt aus `GEM_SIZES` im Generator.
 - **Abstand:** Kein Gem darf in der Reichweite eines anderen liegen, in beide Richtungen (Abstand ≥ größerer der beiden Radien, gilt auch zum Hauptgem). Nur die Werkstatt prüft das beim Setzen, Verschieben und Ändern (`FocusCanvas.radius_conflict`); die Auswertung nicht, ältere Foki bleiben gültig. Beim Ziehen gleitet ein Gem am Rand fremder Reichweiten entlang (`_slide_position`).
+- **Verdeckte Essenz:** Jedes Gem hat einen Stein (`GemDef.body_radius`, Fokus-Einheiten, `GEM_BODY` im Generator: Haupt 15, Neben 10). Essenz darunter zählt für kein Gem (`SpellResult.blocked`); die Werkstatt zeichnet den Stein in dieser Größe und markiert verdeckte Essenz mit rotem Kreuz. Der innere Ring des Multiplikators beginnt am Stein (Stein + 0,3 × Radius).
 - **Winkel:** Spitz sammelt im Innenwinkel der Ecke, Grob im Außenwinkel („innen“ = zum Polygoninneren, auch bei konkaven Formen).
 - **Multiplikator:** Spitze Gems zählen eingesammelte Essenzen pauschal **×2** (`GemDef.SPITZ_MULTIPLIER`), grobe ×1. Das gilt auch für Hauptgems. Radius und Kapazität wirken nicht auf den Multiplikator.
 - **Einsammeln:** zuerst das Hauptgem, dann die Nebengems in **Platzierungsreihenfolge**. Jedes nimmt die nächstgelegenen freien Punkte bis zu seiner Kapazität (N-E und E getrennt). Jeder Punkt wird nur einmal eingesammelt. Danach: effektiv = eingesammelt × Multiplikator.
@@ -48,7 +49,7 @@ Kommunikation mit dem Nutzer auf **Deutsch**.
 - In der Werkstatt werden E-Punkte größer gezeichnet als N-E (`FocusCanvas.ELEMENT_DOT_SCALE`); doppelt zählende Punkte (Spitz) haben eine versetzte Schattenkopie, die Gem-Liste zeigt „Punkte für die Gravur“. Beim Darüberfahren (und Ziehen) zeigt ein Gem seine eingesammelten Punkte mit Linien und „Sammelt: …“.
 - **Crit:** 1 Crit = 1 % Crit-Chance. Ein Crit macht 200 % Schaden (Auswirkung erst im Kampf, M6).
 - **Speicherstände** liegen als JSON in `user://foci/` und enthalten nur IDs (`FocusInstance.to_dict()` / `from_dict()`). Unbekannte IDs werden beim Laden entfernt und gemeldet; fehlt ein Gem, wird der Kreis gelöst. **IDs von Gems, Gravuren, Foki und Elementen nicht leichtfertig umbenennen**, sonst gehen gespeicherte Gems verloren.
-- **Hauptgravuren** (Element in Klammern): Magischer Bolzen (alle), Freeze (Wasser und Luft, 100 Nass → 1 Eis), Slow (Luft), Heal (Wasser), Schutz (Erde), Hasted (Luft), Leben-Reg (Wasser), Mana-Reg (Blitz), Feuerball (Feuer, Burn), Wasser-Detonation (Wasser, Nass), Luftklinge (Luft, Bleed), Kanone (Erde, Armor Break), Blitzschlag (Blitz, Schock).
+- **Hauptgravuren** (Element in Klammern): Magischer Bolzen (alle), Freeze (Wasser und Luft, 100 Nass → 1 Eis), Slow (Luft), Heal (Wasser), Schutz (Erde), Hasted (Luft), Leben-Reg (Wasser), Mana-Reg (Blitz), Feuerball (Feuer, Burn), Wasser-Detonation (Wasser, Nass), Luftklinge (Luft, Bleed), Kanone (Erde, Armor Break), Blitzschlag (Blitz, Schock). Dazu die Gravuren aus dem Spell-Paket (Abschnitt unten).
 - **Nebengravuren:** Power Transfer (Übertragen, halber Radius, keins), Crit (Feuer), Mana-Reduktion (Wasser), Cast-Speed (Luft), Armor (Erde), Mana Burn (Blitz), Burn (Feuer), Nass (Wasser), Bleed (Luft), Armor Break (Erde), Schock (Blitz). Die sechs Status-Nebengravuren (inkl. Mana Burn) zählen keine N-E, 1 Status pro 5 Punkte.
 - **Cast-Zeit** = 1 s pro Gem − `cast_time_reduction` (mind. 0,5 s). **Mana** = Kantenlänge × 0,1 − `mana_reduction` (mind. 1).
 - **Foki** sind feste Typen: Form (Kreis, Stern, Tropfen), Gem-Kapazität (klein 3, mittel 3–5, groß 5–7, sehr groß bis 10), **Gesamtkapazität** `max_dots` für N-E und E zusammen, ein **Limit für alle E zusammen** `max_element_dots` (nicht pro Element) und `allowed_elements` (z. B. Feuer-Fokus nur Feuer, neutraler Fokus 0 E). **N-E wird nicht eingestellt**, sondern füllt immer bis zur Gesamtkapazität auf (`FocusInstance.get_base_count()`). Upgrades durch den Spieler sind vorerst nicht vorgesehen.
@@ -88,8 +89,16 @@ Kommunikation mit dem Nutzer auf **Deutsch**.
 | Mana Absorption | +X Mana pro Stack bei jedem erhaltenen Spell-Treffer, −1 Stack pro Treffer |
 | Damage Reduction | halbiert den nächsten gegnerischen Spell (alle Treffer), −1 Stack pro Spell |
 | Life Rewind | speichert das Leben, nach 10 s wird es darauf gesetzt (auch nach unten); Tod ist Tod |
-| Cleanse / Dispel | Spell-Werte: entfernen alle Debuffs bzw. Buffs des Ziels (`Combat.DEBUFFS`, `Combat.BUFFS`) |
+| Cleanse | Spell-Wert: entfernt alle Debuffs des Ziels (`Combat.DEBUFFS`) |
+| Dispel | Spell-Wert (Stacks): pro Stack ein Buff des Ziels (`Combat.BUFFS`) mit allen Stacks, der mit den meisten Stacks zuerst |
 | Mehrfach-Treffer | Spell-Wert `hits`: Schaden gilt pro Treffer, jeder Treffer würfelt Crit, löst Thorns/Mana Absorption aus |
+| Critical Chance | +1 % Crit pro Stack auf eigene Spells, bleibt bis zum nächsten Crit (dann alle Stacks verbraucht) |
+| Critical Damage | Spell-Wert `crit_damage`: + so viele Prozentpunkte auf den Crit-Schaden (kein Status) |
+| Blood Thinner | Bleed tickt zusätzlich zur halben Sekunde, −1 Stack pro s |
+| Cauterized | entsteht 1 : 1 aus Bleed + Burn, verhindert die nächste Heilung (auch Leben-Reg), −1 pro verhinderter Heilung |
+| Max Health / Rotten | +X bzw. −X maximales Leben pro Stack (`CombatRules`); Max Health hebt nur das Maximum, bei Rotten sinkt das Leben mit; beide bauen sich nicht ab |
+| Vampire | Spell-Wert `vampire`: Leben-Reg = Bleed-Stacks des Gegners × Wert |
+| Echo | Spell-Wert `echo`: Spell wirkt sofort so oft erneut, Mana jedes Mal (löst Schock aus), keine Cast-Zeit; fehlt Mana, endet das Echo |
 
 ## Befehle
 
@@ -105,7 +114,7 @@ godot --headless --path . -s res://tools/prepare_assets.gd
 # Tests (Exit-Code 0 = grün)
 godot --headless --path . -s res://tests/run_tests.gd
 # Render-Check der Werkstatt (PNG-Frames)
-godot --path . res://tests/preview_snapshot.tscn --write-movie out.png --quit-after 4 --fixed-fps 30 -- [--focus=<id>] [--place] [--place-at=x,y] [--all-elements] [--tooltip] [--details] [--scroll] [--hover[=N]] [--replace]
+godot --path . res://tests/preview_snapshot.tscn --write-movie out.png --quit-after 4 --fixed-fps 30 -- [--focus=<id>] [--place] [--place-at=x,y] [--all-elements] [--tooltip] [--details] [--scroll] [--hover[=N]] [--replace] [--minor=<gravur-id>]
 godot --path . --write-movie out.png --quit-after 3 --fixed-fps 30 -- --example
 # Render-Check der Arena (Beispiel-Magier, nicht aus user://)
 godot --path . res://tests/arena_snapshot.tscn --write-movie out.png --quit-after 4 --fixed-fps 30 -- [--seconds=N] [--stats]
@@ -120,7 +129,7 @@ godot --path . res://tests/arena_snapshot.tscn --write-movie out.png --quit-afte
 
 ## Spell-Paket vom 2026-11-26 (Vorgabe des Nutzers, in Etappen)
 
-Etappe 1 (Systemänderungen) und Etappe 2 (neue Status im Kampf, Werte in `CombatRules`) sind umgesetzt. Offen:
+Etappen 1 bis 5 und die Spells aus Paket 2 sind umgesetzt (Gravuren im Generator, Werte Platzhalter). Erledigt waren:
 
 - **Etappe 3 – Hauptgravuren:** Meteor, Fire Rain (beide), Permanent Burn; Water Rain (beide), Cleanse, Bless, Life Rewind; Dispel, Thunderstorm (1 Treffer pro 50 Blitz-Punkte); Bulwark (ab 50 Erd-Punkte, viel Armor), Damage Reduction; Accelerated Burn (Luft + Feuer), Mana Absorption (Wasser + Erde).
 - **Etappe 4 – Nebengravuren:** Echo (Spell erneut, Mana erneut, keine Cast-Zeit), Mana Efficiency / Quick Cast (Wasser + Luft, flache Werte), Radius Expansion (Erde, Radius des Hauptgems pro Erd-Punkt; braucht 2. Auswertungsdurchlauf), Thorns (Erde).
@@ -132,7 +141,8 @@ Etappe 1 (Systemänderungen) und Etappe 2 (neue Status im Kampf, Werte in `Comba
 - **Paket 2 – danach (Reihenfolge: erst alle Spells):** Glossar-Seite (alle Foki, Gems, Gravuren, Status mit Werten), Gravur-Editor und Fokus-Editor (Werte im Spiel bearbeiten), fehlende Assets (Symbole) auflisten und einbauen.
 - **Grundsatz:** Status- und Kampfwerte **flach**, nicht in Prozent (außer wo der Nutzer Prozent vorgibt, z. B. Damage Reduction 50 %).
 - **Entschieden:** Dodge (Status und Hauptgravur) entfällt. Perma-Burn baut sich nicht ab (pro Stack und Sekunde 1 Burn), nur Cleanse entfernt ihn. Accelerated Burn = doppelte Tick-Frequenz (gleicher Gesamtschaden, halbe Zeit). Life Rewind: Tod ist Tod; nach 10 s wird das Leben auf den gespeicherten Wert gesetzt (auch nach unten).
-- **Noch zu entscheiden:** Echo-Schwellen. Neue Gravuren brauchen Symbole (Assets).
+- **Umsetzung:** Regel-Kurzform im Generator hat optional Mindestanzahl und Höchstwert (`ScalingRule.min_count`, `cap`). Nebengravuren dürfen feste Werte haben (`base_stats`, z. B. Cleanse). Radius Expansion: Stat `radius_bonus`, `SpellEvaluator` wertet dann ein zweites Mal mit größerem Hauptgem-Radius aus (`GemResult.radius_bonus`). Multiplikator (ID `multiplikator`): Gravur mit `inner_radius_factor` 0,3, Radius 0,8, überträgt wie Power Transfer, `max_size` mittel (Werkstatt sperrt Groß); `GemResult.dot_multiplier()` je Punkt. Bedingungen: „Selbst/Gegner hat mehr/weniger als X“ Stacks eines Status. Gleichnamige Haupt- und Nebengravuren haben getrennte IDs (`neben_cleanse`, `neben_dispel`, `status_slow`).
+- **Noch zu entscheiden:** Echo-Schwelle (Platzhalter: 1 Wiederholung pro 100 Essenz-Punkte). Life Rewind wirkt erst ab 50 Wasser-Punkten und skaliert nicht. Neue Gravuren brauchen Symbole (Assets). Danach: Glossar-Seite, Editoren, Assets.
 
 ## Offene Punkte
 

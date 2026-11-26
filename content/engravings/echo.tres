@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="EngravingDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_0k2e1"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_echo.png" id="2_yobh4"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="3_b5jmb"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="4_1xy2v"]
+
+[sub_resource type="Resource" id="Resource_fl4gy"]
+script = ExtResource("3_b5jmb")
+source = 2
+per_n = 100
+stat = &"echo"
+
+[resource]
+script = ExtResource("4_1xy2v")
+id = &"echo"
+display_name = "Echo"
+element_ids = Array[StringName]([&"fire", &"water", &"earth", &"air", &"lightning"])
+icon = ExtResource("2_yobh4")
+description = "Wiederholt den Spell sofort: 1 Mal pro volle 100 Punkte aus Essenz. Jede Wiederholung kostet das Mana erneut, aber keine Cast-Zeit. Punkte: Feuer-Essenz 5, Wasser-Essenz 5, Erde-Essenz 5, Luft-Essenz 5, Blitz-Essenz 5, neutrale Essenz 0"
+rules = Array[ExtResource("3_b5jmb")]([SubResource("Resource_fl4gy")])

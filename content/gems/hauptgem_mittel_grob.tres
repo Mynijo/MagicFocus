@@ -10,3 +10,4 @@ role = 0
 radius = 120.0
 max_base = 60
 max_element = 25
+body_radius = 15.0

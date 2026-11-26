@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="EngravingDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_s2158"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_blood_thinner.png" id="2_rkipw"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="3_habi2"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="4_534u4"]
+
+[sub_resource type="Resource" id="Resource_2hvyy"]
+script = ExtResource("3_habi2")
+source = 3
+per_n = 10
+stat = &"blood_thinner"
+
+[resource]
+script = ExtResource("4_534u4")
+id = &"blood_thinner"
+display_name = "Blood Thinner"
+role = 0
+element_ids = Array[StringName]([&"water", &"earth"])
+icon = ExtResource("2_rkipw")
+description = "1 Blood Thinner pro 10 Punkte. Punkte: neutrale Essenz 1, Wasser-Essenz 5, Erde-Essenz 5, andere Essenz 0"
+rules = Array[ExtResource("3_habi2")]([SubResource("Resource_2hvyy")])

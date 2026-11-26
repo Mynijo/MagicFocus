@@ -17,6 +17,8 @@ var element_counts: Dictionary = {}
 
 ## Flächen-Multiplikator der Gem-Form
 var multiplier: float = 1.0
+## Nur Hauptgem: zusätzlicher Radius durch Radius Expansion
+var radius_bonus := 0.0
 ## Eingesammeltes × Multiplikator
 var effective_base: float = 0.0
 ## Element-ID -> effektive Anzahl
@@ -50,12 +52,29 @@ func get_element_total() -> int:
 	return total
 
 
+## Wirksamer Sammelradius (mit Radius Expansion).
+func get_radius() -> float:
+	return placed.get_radius() + radius_bonus
+
+
+## Multiplikator eines eingesammelten Punkts: Form × innerer Bereich (Multiplikator-Gravur).
+func dot_multiplier(dot: EnergyDot) -> float:
+	var inner := placed.get_inner_radius()
+	if inner > 0.0 and dot.position.distance_to(placed.position) <= inner:
+		return multiplier * placed.engraving.inner_multiplier
+	return multiplier
+
+
 func apply_multiplier(value: float) -> void:
 	multiplier = value
-	effective_base = base_count * value
+	effective_base = 0.0
 	effective_elements.clear()
-	for element_id: StringName in element_counts:
-		effective_elements[element_id] = element_counts[element_id] * value
+	for dot in collected:
+		var m := dot_multiplier(dot)
+		if dot.is_base():
+			effective_base += m
+		else:
+			effective_elements[dot.element_id] = effective_elements.get(dot.element_id, 0.0) + m
 
 
 func receive(other: GemResult) -> void:

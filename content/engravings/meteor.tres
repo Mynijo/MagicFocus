@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="EngravingDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_cnyc0"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_meteor.png" id="2_kmxfu"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="3_l5jgj"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="4_uiuer"]
+
+[sub_resource type="Resource" id="Resource_8tuja"]
+script = ExtResource("3_l5jgj")
+source = 1
+element_id = &"fire"
+per_n = 50
+stat = &"damage"
+amount = 150.0
+
+[resource]
+script = ExtResource("4_uiuer")
+id = &"meteor"
+display_name = "Meteor"
+role = 0
+element_ids = Array[StringName]([&"fire"])
+icon = ExtResource("2_kmxfu")
+description = "150 Schaden pro volle 50 Punkte aus Feuer-Essenz, dazwischen kein Schaden. Punkte: Feuer-Essenz 5, andere Essenz 0, neutrale Essenz 0"
+rules = Array[ExtResource("3_l5jgj")]([SubResource("Resource_8tuja")])

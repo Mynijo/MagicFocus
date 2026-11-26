@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="EngravingDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_xlf16"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_accelerated_burn.png" id="2_at5ap"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="3_ltdjn"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="4_fdanj"]
+
+[sub_resource type="Resource" id="Resource_rvh84"]
+script = ExtResource("3_ltdjn")
+source = 1
+element_id = &"air"
+per_n = 10
+stat = &"accelerated_burn"
+
+[sub_resource type="Resource" id="Resource_q87qx"]
+script = ExtResource("3_ltdjn")
+source = 1
+element_id = &"fire"
+per_n = 10
+stat = &"burn"
+
+[resource]
+script = ExtResource("4_fdanj")
+id = &"accelerated_burn"
+display_name = "Accelerated Burn"
+role = 0
+element_ids = Array[StringName]([&"fire", &"air"])
+icon = ExtResource("2_at5ap")
+description = "1 Accelerated Burn pro 10 Punkte aus Luft-Essenz, 1 Burn pro 10 Punkte aus Feuer-Essenz. Punkte: Feuer-Essenz 5, Luft-Essenz 5, andere Essenz 0, neutrale Essenz 0"
+rules = Array[ExtResource("3_ltdjn")]([SubResource("Resource_rvh84"), SubResource("Resource_q87qx")])

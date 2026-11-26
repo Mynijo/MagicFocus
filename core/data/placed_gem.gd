@@ -12,6 +12,16 @@ func get_radius() -> float:
 	return radius_of(gem, engraving)
 
 
+## Innerer Ring der Multiplikator-Gravur (0 = keiner): vom Stein bis 0,3 × Radius darüber hinaus.
+func get_inner_radius() -> float:
+	if gem == null or engraving == null:
+		return 0.0
+	if engraving.inner_radius_factor <= 0.0:
+		return 0.0
+	# beginnt am Rand des Steins
+	return gem.body_radius + gem.radius * engraving.inner_radius_factor
+
+
 static func radius_of(p_gem: GemDef, p_engraving: EngravingDef) -> float:
 	if p_gem == null:
 		return 0.0

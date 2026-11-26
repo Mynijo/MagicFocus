@@ -20,6 +20,8 @@ const MIN_MANA := 1.0
 
 const STAT_CAST_TIME_REDUCTION := &"cast_time_reduction"
 const STAT_MANA_REDUCTION := &"mana_reduction"
+## Radius Expansion: zusätzlicher Radius des Hauptgems (wirkt im zweiten Durchlauf)
+const STAT_RADIUS_BONUS := &"radius_bonus"
 
 
 ## `elements` wird für lesbare Fehlermeldungen gebraucht.
@@ -35,18 +37,31 @@ static func evaluate(focus: FocusInstance, elements: Array[ElementDef],
 
 	var points := _loop_points(focus)
 	var ccw := FocusGeometry.signed_area(points) > 0.0
-	_build_gem_results(focus, points, ccw, result)
+	_run(focus, points, ccw, result, elements, 0.0)
+	# Radius Expansion: zweiter Durchlauf mit größerem Radius des Hauptgems
+	var bonus := result.get_stat(STAT_RADIUS_BONUS)
+	if bonus > 0.0:
+		_run(focus, points, ccw, result, elements, bonus)
+		result.stats[STAT_RADIUS_BONUS] = bonus
 
+	result.valid = true
+	return result
+
+
+## Phasen 2 bis 6. `main_bonus` = zusätzlicher Radius des Hauptgems.
+static func _run(focus: FocusInstance, points: PackedVector2Array, ccw: bool, result: SpellResult,
+		elements: Array[ElementDef], main_bonus: float) -> void:
+	result.gem_results.clear()
+	result.stats.clear()
+	_build_gem_results(focus, points, ccw, result)
+	var main := result.gem_results[focus.get_main_gem_index()]
+	main.radius_bonus = main_bonus
 	var order := _collection_order(result)
 	_collect(order, result)
 	for gr in result.gem_results:
 		gr.apply_multiplier(gr.placed.gem.get_multiplier())
-	var main := result.gem_results[focus.get_main_gem_index()]
 	_transfer(main, result)
 	_compute_spell(main, order, points, result, elements)
-
-	result.valid = true
-	return result
 
 
 # --- Phase 1 ---------------------------------------------------------------
@@ -86,6 +101,9 @@ static func _validate(focus: FocusInstance, result: SpellResult, elements: Array
 		elif placed.engraving.role != placed.gem.role:
 			result.errors.append("Die Gravur „%s“ passt nicht auf %s." % [
 				placed.engraving.display_name, placed.gem.display_name])
+		elif placed.gem.size > placed.engraving.max_size:
+			result.errors.append("Die Gravur „%s“ passt nur auf Gems bis Größe %s." % [
+				placed.engraving.display_name, GemDef.SIZE_NAMES[placed.engraving.max_size]])
 		if def.shape != null and not def.shape.contains(placed.position):
 			result.errors.append("%s liegt außerhalb des Fokus." % placed.gem.display_name)
 	if main_count != 1:
@@ -161,6 +179,14 @@ static func _collection_order(result: SpellResult) -> Array[GemResult]:
 
 static func _collect(order: Array[GemResult], result: SpellResult) -> void:
 	var claimed := {}
+	# Essenz unter einem Stein ist verdeckt und zählt für niemanden
+	result.blocked.clear()
+	for dot in result.dots:
+		for gr in order:
+			if dot.position.distance_to(gr.placed.position) < gr.placed.gem.body_radius:
+				result.blocked.append(dot)
+				claimed[dot] = true
+				break
 	for gr in order:
 		var gem := gr.placed.gem
 		var center := gr.placed.position
@@ -169,7 +195,7 @@ static func _collect(order: Array[GemResult], result: SpellResult) -> void:
 		for dot in result.dots:
 			if claimed.has(dot):
 				continue
-			if FocusGeometry.in_sector(dot.position, center, gr.placed.get_radius(), gr.sector_start, gr.sector_sweep):
+			if FocusGeometry.in_sector(dot.position, center, gr.get_radius(), gr.sector_start, gr.sector_sweep):
 				candidates.append(dot)
 		candidates.sort_custom(func(a: EnergyDot, b: EnergyDot) -> bool:
 			return a.position.distance_squared_to(center) < b.position.distance_squared_to(center))
@@ -214,8 +240,6 @@ static func _compute_spell(main: GemResult, order: Array[GemResult],
 		points: PackedVector2Array, result: SpellResult, elements: Array[ElementDef]) -> void:
 	var main_engraving := main.placed.engraving
 	result.engraving = main_engraving
-	for stat: StringName in main_engraving.base_stats:
-		result.add_stat(stat, float(main_engraving.base_stats[stat]))
 
 	var factors := {}
 	for element in elements:
@@ -224,6 +248,9 @@ static func _compute_spell(main: GemResult, order: Array[GemResult],
 	# Hauptgem: eigene und übertragene Essenzen; Nebengems: nur eigene
 	for gr in order:
 		var engraving := gr.placed.engraving
+		# feste Werte der Gravur (Haupt- und Nebengravuren)
+		for stat: StringName in engraving.base_stats:
+			result.add_stat(stat, float(engraving.base_stats[stat]))
 		var base := gr.total_base() if gr.is_main() else gr.effective_base
 		var counts := _weighted_counts(
 			gr.total_elements() if gr.is_main() else gr.effective_elements, engraving, factors)

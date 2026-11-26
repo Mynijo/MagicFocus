@@ -30,6 +30,12 @@ func counts_element(element_id: StringName) -> bool:
 @export var transfer_to_main := false
 ## Faktor auf den Radius des Gems (Power Transfer: 0,5).
 @export var radius_factor := 1.0
+## Multiplikator-Gravur: Essenz innerhalb von `inner_radius_factor` × Radius der Form
+## zählt zusätzlich × `inner_multiplier` (0 = kein innerer Bereich).
+@export var inner_radius_factor := 0.0
+@export var inner_multiplier := 2.0
+## Größte erlaubte Gem-Größe (Multiplikator: nur klein und mittel).
+@export var max_size: GemDef.Size = GemDef.Size.GROSS
 ## Nur Hauptgravur: Wen der Spell trifft. Alle Werte des Spells, auch die der
 ## Nebengravuren, gehen auf dieses Ziel.
 enum Target { ENEMY, SELF, BOTH }

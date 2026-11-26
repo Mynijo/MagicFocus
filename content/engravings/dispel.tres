@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="EngravingDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_blwk1"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_dispel.png" id="2_s6p26"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="3_w2dgb"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="4_lelud"]
+
+[sub_resource type="Resource" id="Resource_43vll"]
+script = ExtResource("3_w2dgb")
+source = 3
+per_n = 50
+stat = &"dispel"
+
+[sub_resource type="Resource" id="Resource_bi8vf"]
+script = ExtResource("3_w2dgb")
+source = 3
+per_n = 2
+stat = &"damage"
+
+[resource]
+script = ExtResource("4_lelud")
+id = &"dispel"
+display_name = "Dispel"
+role = 0
+element_ids = Array[StringName]([&"lightning"])
+icon = ExtResource("2_s6p26")
+description = "1 Dispel, +1 pro 50 Punkte. +1 Schaden pro 2 Punkte. Punkte: neutrale Essenz 1, Blitz-Essenz 5, andere Essenz 0"
+base_stats = {
+&"dispel": 1.0
+}
+rules = Array[ExtResource("3_w2dgb")]([SubResource("Resource_43vll"), SubResource("Resource_bi8vf")])

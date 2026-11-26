@@ -25,6 +25,8 @@ const SPELL_STATUS := {
 	&"armor": &"armor", &"hasted": &"hasted", &"life_regen": &"life_regen", &"mana_regen": &"mana_regen",
 	&"perma_burn": &"perma_burn", &"accelerated_burn": &"accelerated_burn", &"bless": &"bless",
 	&"thorns": &"thorns", &"mana_absorption": &"mana_absorption", &"damage_reduction": &"damage_reduction",
+	&"critical_chance": &"critical_chance", &"blood_thinner": &"blood_thinner",
+	&"max_health": &"max_health", &"rotten": &"rotten",
 }
 ## Anzeigenamen der Status (entsprechen den Begriffen der Tooltips)
 const STATUS_NAMES := {
@@ -33,12 +35,15 @@ const STATUS_NAMES := {
 	&"mana_regen": "Mana-Reg", &"ice": "Eis", &"perma_burn": "Perma-Burn",
 	&"accelerated_burn": "Accelerated Burn", &"bless": "Bless", &"thorns": "Thorns",
 	&"mana_absorption": "Mana Absorption", &"damage_reduction": "Damage Reduction", &"life_rewind": "Life Rewind",
+	&"critical_chance": "Critical Chance", &"blood_thinner": "Blood Thinner", &"cauterized": "Cauterized",
+	&"max_health": "Max Health", &"rotten": "Rotten",
 }
 ## Cleanse entfernt diese Status vom Ziel (eigene Debuffs) ...
-const DEBUFFS := [&"burn", &"bleed", &"wet", &"shock", &"slow", &"mana_burn", &"ice", &"perma_burn", &"accelerated_burn"]
+const DEBUFFS := [&"burn", &"bleed", &"wet", &"shock", &"slow", &"mana_burn", &"ice", &"perma_burn", &"accelerated_burn",
+	&"blood_thinner", &"cauterized", &"rotten"]
 ## ... Dispel diese (Buffs des Gegners).
 const BUFFS := [&"armor", &"hasted", &"life_regen", &"mana_regen", &"bless", &"thorns", &"mana_absorption",
-	&"damage_reduction", &"life_rewind"]
+	&"damage_reduction", &"life_rewind", &"critical_chance", &"max_health"]
 
 var rules: CombatRules
 var mages: Array[CombatMage] = []
@@ -96,13 +101,13 @@ func step() -> void:
 		finished[i] = _advance(i, dt)
 	for i in 2:
 		if finished[i] >= 0:
-			_apply_spell(i, finished[i])
+			_finish_spell(i, finished[i])
 	_pulse_timer += dt
-	# Accelerated Burn: zusätzlicher Burn-Tick zur halben Sekunde
+	# Accelerated Burn und Blood Thinner: zusätzlicher Tick zur halben Sekunde
 	if not _half_pulse_done and _pulse_timer >= 0.5 - 0.0001:
 		_half_pulse_done = true
 		for i in 2:
-			_accelerated_burn_tick(i)
+			_half_tick(i)
 	if _pulse_timer >= 1.0 - 0.0001:
 		_pulse_timer -= 1.0
 		_half_pulse_done = false
@@ -194,6 +199,24 @@ func targets_of(i: int, spell: SpellResult) -> Array[int]:
 	return [1 - i]
 
 
+## Fertiger Spell wirkt; Echo wiederholt ihn sofort (Mana erneut, keine Cast-Zeit).
+func _finish_spell(i: int, index: int) -> void:
+	var caster := mages[i]
+	var spell := caster.spells[index]
+	_apply_spell(i, index)
+	for e in int(spell.get_stat(&"echo")):
+		if over or not caster.is_alive() or not mages[1 - i].is_alive():
+			return
+		if caster.mana < spell.mana_cost:
+			_log(i, "%s: Echo fehlt Mana." % caster.mage_name)
+			return
+		caster.mana -= spell.mana_cost
+		_count(statistics[i].casts, caster.spell_names[index] + " (Echo)", 1.0)
+		_log(i, "%s: Echo wiederholt %s." % [caster.mage_name, caster.spell_names[index]])
+		_trigger_shock(i, spell.mana_cost)
+		_apply_spell(i, index)
+
+
 func _apply_spell(i: int, index: int) -> void:
 	var caster := mages[i]
 	var spell := caster.spells[index]
@@ -201,6 +224,8 @@ func _apply_spell(i: int, index: int) -> void:
 	var damage := spell.get_stat(&"damage")
 	# Mehrfach-Treffer (z. B. Thunderstorm): `damage` gilt pro Treffer, jeder würfelt Crit
 	var hits := maxi(1, int(spell.get_stat(&"hits")))
+	# Critical Damage erhöht den Crit-Schaden dieses Spells (in Prozentpunkten)
+	var crit_multiplier := rules.crit_multiplier + spell.get_stat(&"crit_damage") / 100.0
 
 	for t in targets_of(i, spell):
 		var target := mages[t]
@@ -208,16 +233,21 @@ func _apply_spell(i: int, index: int) -> void:
 		if spell.get_stat(&"cleanse") > 0.0:
 			_remove_all(t, DEBUFFS, "Cleanse")
 		if spell.get_stat(&"dispel") > 0.0:
-			_remove_all(t, BUFFS, "Dispel")
+			_dispel(t, int(spell.get_stat(&"dispel")))
 		if damage > 0.0:
 			# Damage Reduction halbiert den ganzen Spell (alle Treffer), 1 Stack pro Spell
 			var reduced := t != i and target.remove_stacks(&"damage_reduction", 1) > 0
 			for h in hits:
 				var amount := damage
-				var crit := _rng.randf() * 100.0 < spell.get_stat(&"crit")
+				# Critical Chance (Status des Casters) zählt mit und wird beim Crit verbraucht
+				var chance := spell.get_stat(&"crit") + caster.stacks(&"critical_chance")
+				var crit := _rng.randf() * 100.0 < chance
 				if crit:
-					amount *= rules.crit_multiplier
+					amount *= crit_multiplier
 					_count(statistics[i].crits, spell_name, 1.0)
+					var used := caster.remove_stacks(&"critical_chance", caster.stacks(&"critical_chance"))
+					if used > 0:
+						_log(i, "%s: %d Critical Chance verbraucht." % [caster.mage_name, used])
 				if reduced:
 					amount *= rules.damage_reduction_factor
 				var label := spell_name + (" (Crit)" if crit else "") + (" (halbiert)" if reduced else "")
@@ -233,6 +263,11 @@ func _apply_spell(i: int, index: int) -> void:
 				target.mage_name, target.stacks(&"life_rewind"), _num(rules.life_rewind_seconds)])
 		for stat: StringName in SPELL_STATUS:
 			_add_status(t, SPELL_STATUS[stat], int(spell.get_stat(stat)))
+		# Vampire: Leben-Reg in Höhe der Bleed-Stacks des Gegners des Casters
+		var vampire := spell.get_stat(&"vampire")
+		if vampire > 0.0:
+			_add_status(t, &"life_regen", int(mages[1 - i].stacks(&"bleed") * vampire))
+		_update_max_hp(t)
 		_armor_break(t, int(spell.get_stat(&"armor_break")))
 		# Freeze: wandelt Nass des Ziels in Eis (nach dem Nass dieses Spells)
 		var conversion := spell.get_stat(&"freeze_conversion")
@@ -273,6 +308,28 @@ func _remove_all(t: int, statuses: Array, source: String) -> void:
 		target.rewind_time_left = 0.0
 	if not removed.is_empty():
 		_log(t, "%s: %s entfernt %s." % [target.mage_name, source, ", ".join(removed)])
+	_update_max_hp(t)
+
+
+## Dispel: pro Stack ein Buff des Ziels mit allen Stacks, der mit den meisten Stacks zuerst.
+func _dispel(t: int, count: int) -> void:
+	var target := mages[t]
+	for n in count:
+		var best: StringName = &""
+		for stat: StringName in BUFFS:
+			if target.stacks(stat) > 0 and (best == &"" or target.stacks(stat) > target.stacks(best)):
+				best = stat
+		if best == &"":
+			break
+		_remove_all(t, [best], "Dispel")
+
+
+## Maximales Leben aus Grundwert, Max Health und Rotten; Leben wird höchstens gekappt.
+func _update_max_hp(t: int) -> void:
+	var mage := mages[t]
+	mage.max_hp = maxf(1.0, rules.max_hp + mage.stacks(&"max_health") * rules.max_health_per_stack
+		- mage.stacks(&"rotten") * rules.rotten_per_stack)
+	mage.hp = minf(mage.hp, mage.max_hp)
 
 
 ## Schaden über Armor: Armor fängt Schaden 1 : 1 ab und verliert dabei Stacks.
@@ -296,6 +353,10 @@ func _damage(target_index: int, amount: float, source: String, stat_source := ""
 ## Heilung; Bless erhöht jede erhaltene Heilung und verbraucht dabei 1 Stack.
 func _heal(target_index: int, amount: float, source: String) -> void:
 	var target := mages[target_index]
+	# Cauterized verhindert die ganze Heilung und verliert dabei 1 Stack
+	if target.remove_stacks(&"cauterized", 1) > 0:
+		_log(target_index, "%s: Cauterized verhindert die Heilung (%s)." % [target.mage_name, source])
+		return
 	var bless := target.stacks(&"bless")
 	if bless > 0:
 		amount += bless * rules.bless_heal
@@ -328,6 +389,14 @@ func _add_status(target_index: int, stat: StringName, amount: int) -> void:
 			return
 	target.add_stacks(stat, amount)
 	_log(target_index, "%s erhält %d %s." % [target.mage_name, amount, STATUS_NAMES.get(stat, String(stat))])
+	# Cauterized: je 1 Bleed und 1 Burn werden zu 1 Cauterized
+	if stat == &"bleed" or stat == &"burn":
+		var pairs := mini(target.stacks(&"bleed"), target.stacks(&"burn"))
+		if pairs > 0:
+			target.remove_stacks(&"bleed", pairs)
+			target.remove_stacks(&"burn", pairs)
+			target.add_stacks(&"cauterized", pairs)
+			_log(target_index, "%s: %d Bleed und Burn werden zu %d Cauterized." % [target.mage_name, pairs, pairs])
 
 
 ## Armor Break hebt Armor im Verhältnis 1 : ratio auf (sofort, Rest verfällt).
@@ -366,6 +435,7 @@ func _pulse(i: int) -> void:
 	if perma > 0:
 		_add_status(i, &"burn", int(round(perma * rules.perma_burn_rate)))
 	mage.remove_stacks(&"accelerated_burn", 1)
+	mage.remove_stacks(&"blood_thinner", 1)
 	# Life Rewind: nach Ablauf Leben auf den gespeicherten Wert (auch nach unten)
 	if mage.rewind_time_left > 0.0:
 		mage.rewind_time_left -= 1.0
@@ -392,9 +462,14 @@ func _pulse(i: int) -> void:
 	mage.remove_stacks(&"ice", 1)
 
 
-## Accelerated Burn: Burn tickt zusätzlich zur halben Sekunde (gleicher Gesamtschaden, halbe Zeit).
-func _accelerated_burn_tick(i: int) -> void:
+## Zusätzlicher Tick zur halben Sekunde (gleicher Gesamtschaden, halbe Zeit):
+## Blood Thinner für Bleed, Accelerated Burn für Burn.
+func _half_tick(i: int) -> void:
 	var mage := mages[i]
+	var bleed := mage.stacks(&"bleed")
+	if bleed > 0 and mage.stacks(&"blood_thinner") > 0:
+		_damage(i, bleed * rules.bleed_damage, "Bleed")
+		mage.remove_stacks(&"bleed", 1)
 	var burn := mage.stacks(&"burn")
 	if burn > 0 and mage.stacks(&"accelerated_burn") > 0:
 		_damage(i, burn * rules.burn_damage, "Burn")

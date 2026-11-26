@@ -24,7 +24,15 @@ const STAT_NAMES := {
 	&"hits": "Treffer",
 	&"life_rewind": "Life Rewind",
 	&"cleanse": "Cleanse",
-	&"dispel": "Dispel",
+	&"dispel": "Dispel (Buffs)",
+	&"critical_chance": "Critical Chance (Stacks)",
+	&"blood_thinner": "Blood Thinner (Stacks)",
+	&"max_health": "Max Health (Stacks)",
+	&"rotten": "Rotten (Stacks)",
+	&"vampire": "Vampire (Leben-Reg pro Bleed des Gegners)",
+	&"echo": "Echo (Wiederholungen)",
+	&"crit_damage": "Crit-Schaden (+%)",
+	&"radius_bonus": "Radius des Hauptgems (+)",
 	&"burn": "Burn (Stacks)",
 	&"wet": "Nass (Stacks)",
 	&"bleed": "Bleed (Stacks)",
@@ -54,6 +62,7 @@ var _gem_info: RichTextLabel
 ## Verschachtelte Tooltips für Elemente und Status in den Texten.
 var tooltips: TermTooltips
 var _selected_size: GemDef.Size = GemDef.Size.MITTEL
+var _size_buttons: Array[Button] = []
 var _mode_place: Button
 var _mode_connect: Button
 var _status: Label
@@ -241,6 +250,7 @@ func _build_left_panel() -> Control:
 		var button := _toggle_button(size_row, GemDef.SIZE_NAMES[size].capitalize(), size_group)
 		button.button_pressed = size == GemDef.Size.MITTEL
 		button.pressed.connect(_on_size_selected.bind(size))
+		_size_buttons.append(button)
 	_spitz_check = CheckBox.new()
 	_spitz_check.text = "Spitz (Innenwinkel, Essenzen zählen ×2)"
 	_spitz_check.toggled.connect(_on_gem_selection_changed.unbind(1))
@@ -399,6 +409,12 @@ func _check(parent: Control, text: String, value: bool, callback: Callable) -> v
 ## Überträgt die Auswahl (Gravur, Größe, Spitz) auf das zu setzende Gem.
 func _update_placing() -> void:
 	var engraving: EngravingDef = _engraving_select.get_item_metadata(_engraving_select.selected)
+	# manche Gravuren passen nur auf kleinere Gems (Multiplikator)
+	for size in _size_buttons.size():
+		_size_buttons[size].disabled = size > engraving.max_size
+	if _selected_size > engraving.max_size:
+		_selected_size = engraving.max_size
+		_size_buttons[_selected_size].button_pressed = true
 	var angle := GemDef.Angle.SPITZ if _spitz_check.button_pressed else GemDef.Angle.GROB
 	var gem := CONTENT.find_gem(engraving.role, _selected_size, angle)
 	_canvas.placing_engraving = engraving

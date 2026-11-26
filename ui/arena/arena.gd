@@ -17,12 +17,14 @@ const STATUS_TERMS := {
 	&"mana_regen": &"mana_reg", &"ice": &"eis", &"perma_burn": &"perma_burn", &"accelerated_burn": &"accelerated_burn",
 	&"bless": &"bless", &"thorns": &"thorns", &"mana_absorption": &"mana_absorption",
 	&"damage_reduction": &"damage_reduction", &"life_rewind": &"life_rewind",
+	&"critical_chance": &"critical_chance", &"blood_thinner": &"blood_thinner", &"cauterized": &"cauterized",
+	&"max_health": &"max_health", &"rotten": &"rotten",
 }
 
 ## Auswahl bleibt erhalten, wenn man zwischendurch in die Werkstatt wechselt.
 static var _saved_slots := [[], []]
 static var _saved_names := ["Magier links", "Magier rechts"]
-## pro Seite und Slot: {type, percent, status}
+## pro Seite und Slot: {type, percent, amount, status}
 static var _saved_conditions := [[{}, {}, {}, {}, {}], [{}, {}, {}, {}, {}]]
 
 var tooltips: TermTooltips
@@ -370,8 +372,8 @@ func _status_text(mage: CombatMage) -> String:
 
 # --- Aktivierungsbedingungen ------------------------------------------------
 
-## Bedingung eines Slots: Art, dazu je nach Art Prozent oder Status.
-## Gibt die Bedienelemente zurück: {type: OptionButton, percent: SpinBox, status: OptionButton}
+## Bedingung eines Slots: Art, dazu je nach Art Prozent, Status oder Stacks und Status.
+## Gibt die Bedienelemente zurück: {type: OptionButton, percent: SpinBox, amount: SpinBox, status: OptionButton}
 func _build_condition(row: HBoxContainer, side: int, slot: int) -> Dictionary:
 	var saved: Dictionary = _saved_conditions[side][slot]
 	var type_select := OptionButton.new()
@@ -386,6 +388,12 @@ func _build_condition(row: HBoxContainer, side: int, slot: int) -> Dictionary:
 	percent.suffix = "%"
 	percent.value = float(saved.get("percent", 50.0))
 	row.add_child(percent)
+	var amount := SpinBox.new()
+	amount.min_value = 0
+	amount.max_value = 999
+	amount.suffix = "Stacks"
+	amount.value = float(saved.get("amount", 1))
+	row.add_child(amount)
 	var status := OptionButton.new()
 	for id: StringName in Combat.STATUS_NAMES:
 		status.add_item(Combat.STATUS_NAMES[id])
@@ -393,15 +401,17 @@ func _build_condition(row: HBoxContainer, side: int, slot: int) -> Dictionary:
 		if id == StringName(saved.get("status", "burn")):
 			status.select(status.item_count - 1)
 	row.add_child(status)
-	var controls := { type = type_select, percent = percent, status = status }
+	var controls := { type = type_select, percent = percent, amount = amount, status = status }
 	var on_change := func(_v: Variant = null) -> void:
 		_update_condition_controls(controls)
 		_saved_conditions[side][slot] = {
 			type = type_select.selected, percent = percent.value,
+			amount = int(amount.value),
 			status = String(status.get_item_metadata(status.selected)),
 		}
 	type_select.item_selected.connect(on_change)
 	percent.value_changed.connect(on_change)
+	amount.value_changed.connect(on_change)
 	status.item_selected.connect(on_change)
 	_update_condition_controls(controls)
 	return controls
@@ -410,10 +420,11 @@ func _build_condition(row: HBoxContainer, side: int, slot: int) -> Dictionary:
 func _update_condition_controls(controls: Dictionary) -> void:
 	var type: int = (controls.type as OptionButton).selected
 	(controls.percent as SpinBox).visible = SpellCondition.uses_percent(type)
+	(controls.amount as SpinBox).visible = SpellCondition.uses_amount(type)
 	(controls.status as OptionButton).visible = SpellCondition.uses_status(type)
 
 
 func _condition_of(controls: Dictionary) -> SpellCondition:
 	var status_select: OptionButton = controls.status
 	return SpellCondition.create((controls.type as OptionButton).selected, (controls.percent as SpinBox).value,
-		status_select.get_item_metadata(status_select.selected))
+		status_select.get_item_metadata(status_select.selected), int((controls.amount as SpinBox).value))

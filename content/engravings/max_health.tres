@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="EngravingDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_vsa6k"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_max_health.png" id="2_opfl7"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="3_58jgj"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="4_w77hh"]
+
+[sub_resource type="Resource" id="Resource_ut4rp"]
+script = ExtResource("3_58jgj")
+source = 3
+per_n = 2
+stat = &"max_health"
+
+[resource]
+script = ExtResource("4_w77hh")
+id = &"max_health"
+display_name = "Max Health"
+role = 0
+element_ids = Array[StringName]([&"water"])
+icon = ExtResource("2_opfl7")
+description = "1 Max Health pro 2 Punkte. Punkte: neutrale Essenz 1, Wasser-Essenz 5, andere Essenz 0"
+rules = Array[ExtResource("3_58jgj")]([SubResource("Resource_ut4rp")])
+target = 1

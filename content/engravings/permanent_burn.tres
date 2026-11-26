@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="EngravingDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_br2h4"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_permanent_burn.png" id="2_depev"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="3_312e3"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="4_8qdim"]
+
+[sub_resource type="Resource" id="Resource_150rk"]
+script = ExtResource("3_312e3")
+source = 1
+element_id = &"fire"
+per_n = 25
+stat = &"perma_burn"
+
+[resource]
+script = ExtResource("4_8qdim")
+id = &"permanent_burn"
+display_name = "Permanent Burn"
+role = 0
+element_ids = Array[StringName]([&"fire"])
+icon = ExtResource("2_depev")
+description = "1 Perma-Burn pro 25 Punkte aus Feuer-Essenz. Punkte: Feuer-Essenz 5, andere Essenz 0, neutrale Essenz 0"
+rules = Array[ExtResource("3_312e3")]([SubResource("Resource_150rk")])

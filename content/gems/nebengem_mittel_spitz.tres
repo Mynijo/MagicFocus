@@ -9,3 +9,4 @@ display_name = "Nebengem mittel Spitz"
 radius = 60.0
 angle = 0
 max_base = 25
+body_radius = 10.0

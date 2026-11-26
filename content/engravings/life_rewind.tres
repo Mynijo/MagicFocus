@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="EngravingDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_p0hwo"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_life_rewind.png" id="2_n7d5u"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="3_qfcce"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="4_lclng"]
+
+[sub_resource type="Resource" id="Resource_u2bcc"]
+script = ExtResource("3_qfcce")
+source = 1
+element_id = &"water"
+per_n = 50
+stat = &"life_rewind"
+cap = 1.0
+
+[resource]
+script = ExtResource("4_lclng")
+id = &"life_rewind"
+display_name = "Life Rewind"
+role = 0
+element_ids = Array[StringName]([&"water"])
+icon = ExtResource("2_n7d5u")
+description = "Ab 50 Punkten aus Wasser-Essenz: speichert das aktuelle Leben (Life Rewind); nach 10 Sekunden wird das Leben darauf gesetzt. Mehr Essenz verstärkt nichts. Punkte: Wasser-Essenz 5, andere Essenz 0, neutrale Essenz 0"
+rules = Array[ExtResource("3_qfcce")]([SubResource("Resource_u2bcc")])
+target = 1

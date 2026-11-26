@@ -8,3 +8,4 @@ id = &"nebengem_mittel_grob"
 display_name = "Nebengem mittel Grob"
 radius = 60.0
 max_base = 25
+body_radius = 10.0

@@ -10,3 +10,4 @@ size = 0
 radius = 45.0
 angle = 0
 max_element = 10
+body_radius = 10.0

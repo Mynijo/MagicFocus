@@ -63,6 +63,15 @@ func _init() -> void:
 		test_combat_conditions,
 		test_power_transfer_half_radius,
 		test_combat_new_statuses,
+		test_rule_min_and_cap,
+		test_minor_base_stats_and_mana_efficiency,
+		test_radius_expansion,
+		test_multiplier_engraving,
+		test_combat_package_two,
+		test_stack_conditions,
+		test_blocked_under_gem,
+		test_life_rewind_threshold,
+		test_dispel_per_stack,
 		test_freeze_counts_water_and_air,
 		test_focus_shapes,
 		test_allowed_elements,
@@ -194,8 +203,8 @@ func test_content_loads() -> void:
 	check(content.find_gem(MINOR, GemDef.Size.KLEIN, GROB).radius < content.find_gem(MINOR, GemDef.Size.GROSS, GROB).radius,
 		"Größere Gems haben einen größeren Radius")
 	check(content.foci.size() == 8, "8 Fokus-Typen erwartet")
-	check(content.get_engravings_for(MAIN).size() == 13, "13 Hauptgravuren erwartet")
-	check(content.get_engravings_for(MINOR).size() == 11, "11 Nebengravuren erwartet")
+	check(content.get_engravings_for(MAIN).size() == 31, "31 Hauptgravuren erwartet")
+	check(content.get_engravings_for(MINOR).size() == 22, "22 Nebengravuren erwartet")
 	for e in content.engravings:
 		check(e.description != "" and not e.description.contains("N-E"), "%s braucht eine Beschreibung ohne Abkürzung" % e.id)
 		for rule in e.rules:
@@ -1012,7 +1021,7 @@ func test_gems_outside_other_radius() -> void:
 
 
 func test_glossary_and_linkify() -> void:
-	check(content.glossary.size() == 5 + 22, "5 Elemente + 22 Status/Effekte als Begriffe, waren %d" % content.glossary.size())
+	check(content.glossary.size() == 5 + 27, "5 Elemente + 27 Status/Effekte als Begriffe, waren %d" % content.glossary.size())
 	for term in content.glossary:
 		check(term.text != "" and not term.words.is_empty(), "Begriff %s braucht Text und Wörter" % term.id)
 	var tips := TermTooltips.new()
@@ -1102,14 +1111,16 @@ func test_combat_damage_armor_crit() -> void:
 func test_combat_status_rules() -> void:
 	var rules := CombatRules.new()
 	# Burn: Schaden pro Stack und Sekunde, dann -1 Stack
-	var c := duel([make_spell({ &"burn": 3, &"bleed": 2 })], [])
-	c._apply_spell(0, 0)
+	# (Stacks direkt gesetzt: über _add_status würden Bleed + Burn zu Cauterized)
+	var c := duel([make_spell({ &"burn": 3 })], [])
+	c.mages[1].add_stacks(&"burn", 3)
+	c.mages[1].add_stacks(&"bleed", 2)
 	c._pulse(1)
 	check(is_equal_approx(c.mages[1].hp, rules.max_hp - 3 * rules.burn_damage - 2 * rules.bleed_damage), "Burn und Bleed Puls, HP %s" % c.mages[1].hp)
 	check(c.mages[1].stacks(&"burn") == 2 and c.mages[1].stacks(&"bleed") == 1, "Je -1 Stack pro Sekunde")
 	# Nass hebt Burn 1 : 1 auf
-	c._apply_spell(0, 0)  # Burn jetzt 5
 	c.mages[1].remove_stacks(&"bleed", 99)
+	c._apply_spell(0, 0)  # Burn jetzt 5
 	c._add_status(1, &"wet", 3)
 	check(c.mages[1].stacks(&"burn") == 2 and c.mages[1].stacks(&"wet") == 0, "3 Nass heben 3 Burn auf")
 	# Slowed und Hasted heben sich auf, höchstens 10
@@ -1337,3 +1348,155 @@ func test_combat_new_statuses() -> void:
 	for k in int(rules.life_rewind_seconds):
 		c._pulse(0)
 	check(is_equal_approx(c.mages[0].hp, 300.0) and c.mages[0].stacks(&"life_rewind") == 0, "Life Rewind setzt auf 300 zurück, HP %s" % c.mages[0].hp)
+
+
+# --- Etappen 3 bis 5 und Paket 2 -----------------------------------------------
+
+func test_rule_min_and_cap() -> void:
+	var rule := ScalingRule.new()
+	rule.source = ScalingRule.Source.BASE
+	rule.per_n = 1
+	rule.amount = 1.0
+	rule.min_count = 50
+	check(is_zero_approx(rule.evaluate(49.0, {})), "Unter der Mindestanzahl: nichts")
+	check(is_equal_approx(rule.evaluate(60.0, {}), 60.0), "Ab der Mindestanzahl: voller Wert")
+	rule.cap = 10.0
+	check(is_equal_approx(rule.evaluate(60.0, {}), 10.0), "Höchstwert begrenzt")
+
+
+func test_minor_base_stats_and_mana_efficiency() -> void:
+	var r := evaluate(lab(make_gem(MAIN, GROB, 80), engraving(&"magischer_bolzen"),
+		make_gem(MINOR, GROB, 80), engraving(&"neben_cleanse")), [])
+	check_stat(r, &"cleanse", 1.0)
+	# Mana Efficiency: +1 s Cast-Zeit, 3 Luft = 15 Punkte senken um 0,3 s; 2 Wasser = 10 Punkte = -10 Mana
+	var dots := dots_line(MINOR_POS, MINOR_OUTER, 3, &"air") + dots_line(MINOR_POS + Vector2(0, 2), MINOR_OUTER, 2, &"water")
+	r = evaluate(lab(make_gem(MAIN, GROB, 80), engraving(&"magischer_bolzen"),
+		make_gem(MINOR, GROB, 80), engraving(&"mana_efficiency")), dots)
+	check_stat(r, &"cast_time_reduction", -0.7)
+	check_stat(r, &"mana_reduction", 10.0)
+
+
+func test_radius_expansion() -> void:
+	# Hauptgem Radius 30 sammelt 6 Punkte (10..30); 4 Erde = 20 Punkte = +10 Radius -> 8 Punkte (10..38)
+	var dots := dots_line(MAIN_POS, MAIN_OUTER, 20) + dots_line(MINOR_POS, MINOR_OUTER, 4, &"earth")
+	var r := evaluate(lab(make_gem(MAIN, GROB, 30), engraving(&"magischer_bolzen"),
+		make_gem(MINOR, GROB, 80), engraving(&"radius_expansion")), dots)
+	check(r.valid, "gültig: %s" % [r.errors])
+	check_stat(r, &"radius_bonus", 10.0)
+	check(r.gem_results[0].base_count == 8, "Zweiter Durchlauf mit Radius 40: 8 Punkte, waren %d" % r.gem_results[0].base_count)
+	check_stat(r, &"damage", 8.0)
+
+
+func test_multiplier_engraving() -> void:
+	var multi := engraving(&"multiplikator")
+	var gem := make_gem(MINOR, GROB, 100)
+	# Radius 80, innerer Ring 30: Punkte bei 10..78 = 18, davon 6 innen (10..30) zählen doppelt
+	var r := evaluate(lab(make_gem(MAIN, GROB, 5), engraving(&"magischer_bolzen"), gem, multi),
+		dots_line(MINOR_POS, MINOR_OUTER, 20))
+	check(r.valid, "gültig: %s" % [r.errors])
+	check(r.gem_results[1].base_count == 18, "0,8-facher Radius: 18 Punkte, waren %d" % r.gem_results[1].base_count)
+	check(is_equal_approx(r.gem_results[1].effective_base, 24.0), "6 innen ×2 + 12 außen = 24, war %s" % r.gem_results[1].effective_base)
+	check_stat(r, &"damage", 24.0)  # an das Hauptgem übertragen
+	gem.size = GemDef.Size.GROSS
+	r = evaluate(lab(make_gem(MAIN, GROB, 5), engraving(&"magischer_bolzen"), gem, multi), [])
+	check(not r.valid, "Multiplikator passt nicht auf große Gems")
+
+
+func test_combat_package_two() -> void:
+	var rules := CombatRules.new()
+	# Critical Chance: zählt zur Crit-Chance und wird beim Crit verbraucht
+	var c := duel([make_spell({ &"damage": 50 })], [])
+	c.mages[0].add_stacks(&"critical_chance", 100)
+	c._apply_spell(0, 0)
+	check(is_equal_approx(c.mages[1].hp, rules.max_hp - 100.0) and c.mages[0].stacks(&"critical_chance") == 0,
+		"Critical Chance: Crit, danach verbraucht")
+	# Critical Damage: +50 % Crit-Schaden
+	c = duel([make_spell({ &"damage": 50, &"crit": 100, &"crit_damage": 50 })], [])
+	c._apply_spell(0, 0)
+	check(is_equal_approx(c.mages[1].hp, rules.max_hp - 125.0), "Crit mit +50 %% = 250 %%, HP %s" % c.mages[1].hp)
+	# Cauterized: Bleed + Burn 1 : 1, verhindert die nächste Heilung
+	c = duel([], [])
+	c._add_status(1, &"bleed", 3)
+	c._add_status(1, &"burn", 2)
+	var m := c.mages[1]
+	check(m.stacks(&"bleed") == 1 and m.stacks(&"burn") == 0 and m.stacks(&"cauterized") == 2, "2 Bleed + 2 Burn -> 2 Cauterized")
+	m.hp = 100.0
+	c._heal(1, 30.0, "Test")
+	check(is_equal_approx(m.hp, 100.0) and m.stacks(&"cauterized") == 1, "Cauterized verhindert eine Heilung")
+	# Blood Thinner: Bleed tickt zusätzlich zur halben Sekunde
+	c = duel([], [])
+	c.mages[1].add_stacks(&"bleed", 4)
+	c.mages[1].add_stacks(&"blood_thinner", 1)
+	c._half_tick(1)
+	check(is_equal_approx(c.mages[1].hp, rules.max_hp - 4 * rules.bleed_damage) and c.mages[1].stacks(&"bleed") == 3, "Blood Thinner: halber Tick")
+	# Max Health hebt nur das Maximum, Rotten senkt es (Leben sinkt mit)
+	c = duel([make_spell({ &"max_health": 10 }, 1.0, 10.0, EngravingDef.Target.SELF), make_spell({ &"rotten": 30 })], [])
+	c._apply_spell(0, 0)
+	check(is_equal_approx(c.mages[0].max_hp, rules.max_hp + 10 * rules.max_health_per_stack) and is_equal_approx(c.mages[0].hp, rules.max_hp),
+		"Max Health: Maximum %s, Leben bleibt" % c.mages[0].max_hp)
+	c._apply_spell(0, 1)
+	check(is_equal_approx(c.mages[1].max_hp, rules.max_hp - 30 * rules.rotten_per_stack) and is_equal_approx(c.mages[1].hp, c.mages[1].max_hp),
+		"Rotten: Maximum und Leben sinken")
+	c._remove_all(1, Combat.DEBUFFS, "Cleanse")
+	check(is_equal_approx(c.mages[1].max_hp, rules.max_hp), "Cleanse entfernt Rotten")
+	# Vampire: Leben-Reg in Höhe der Bleed-Stacks des Gegners
+	c = duel([make_spell({ &"vampire": 2 }, 1.0, 10.0, EngravingDef.Target.SELF)], [])
+	c.mages[1].add_stacks(&"bleed", 5)
+	c._apply_spell(0, 0)
+	check(c.mages[0].stacks(&"life_regen") == 10, "Vampire: 5 Bleed × 2 = 10 Leben-Reg")
+	# Echo: wiederholt sofort, kostet Mana erneut
+	c = duel([make_spell({ &"damage": 10, &"echo": 2 }, 1.0, 10.0)], [])
+	c.mages[0].mana = 15.0
+	c._finish_spell(0, 0)
+	check(is_equal_approx(c.mages[1].hp, rules.max_hp - 20.0) and is_equal_approx(c.mages[0].mana, 5.0),
+		"Echo: 1 Wiederholung, dann fehlt Mana (HP %s)" % c.mages[1].hp)
+
+
+func test_stack_conditions() -> void:
+	var a := CombatMage.new()
+	var b := CombatMage.new()
+	a.add_stacks(&"burn", 3)
+	var above := SpellCondition.create(SpellCondition.Type.OWN_STACKS_ABOVE, 50.0, &"burn", 2)
+	check(above.is_met(a, b, 0), "3 Burn > 2")
+	above.amount = 3
+	check(not above.is_met(a, b, 0), "3 Burn ist nicht mehr als 3")
+	var below := SpellCondition.create(SpellCondition.Type.ENEMY_STACKS_BELOW, 50.0, &"burn", 1)
+	check(below.is_met(a, b, 0), "Gegner hat weniger als 1 Burn")
+	check(below.describe() == "Gegner hat weniger als 1 Burn", "Beschreibung: %s" % below.describe())
+
+
+func test_blocked_under_gem() -> void:
+	# Stein mit halber Größe 15: Punkte bei 10 und 14 sind verdeckt, ab 18 zählen sie
+	var gem := make_gem(MINOR, GROB, 80)
+	gem.body_radius = 15.0
+	var r := evaluate(lab(make_gem(MAIN, GROB, 5), engraving(&"magischer_bolzen"), gem, engraving(&"standard")),
+		dots_line(MINOR_POS, MINOR_OUTER, 5))
+	check(r.blocked.size() == 2, "2 Punkte verdeckt, waren %d" % r.blocked.size())
+	check(r.gem_results[1].base_count == 3, "3 Punkte eingesammelt, waren %d" % r.gem_results[1].base_count)
+	# Multiplikator: innerer Ring beginnt am Stein (15 + 0,3 × 100 = 45)
+	gem.radius = 100.0
+	var placed := PlacedGem.create(gem, engraving(&"multiplikator"), Vector2.ZERO)
+	check(is_equal_approx(placed.get_inner_radius(), 45.0), "Innerer Ring bis 45, war %s" % placed.get_inner_radius())
+
+
+func test_life_rewind_threshold() -> void:
+	var rewind := engraving(&"life_rewind")
+	var r := evaluate(lab(make_gem(MAIN, GROB, 80), rewind, make_gem(MINOR, GROB, 80), null),
+		dots_line(MAIN_POS, MAIN_OUTER, 9, &"water"))
+	check_stat(r, &"life_rewind", 0.0)  # 9 Wasser = 45 Punkte
+	r = evaluate(lab(make_gem(MAIN, GROB, 80), rewind, make_gem(MINOR, GROB, 80), null),
+		dots_line(MAIN_POS, MAIN_OUTER, 16, &"water"))
+	check_stat(r, &"life_rewind", 1.0)  # 80 Punkte: trotzdem nur 1
+
+
+func test_dispel_per_stack() -> void:
+	# 2 Dispel: entfernt die zwei Buffs mit den meisten Stacks komplett, der dritte bleibt
+	var c := duel([make_spell({ &"dispel": 2 })], [])
+	var m := c.mages[1]
+	m.add_stacks(&"armor", 30)
+	m.add_stacks(&"thorns", 5)
+	m.add_stacks(&"bless", 2)
+	m.add_stacks(&"burn", 4)
+	c._apply_spell(0, 0)
+	check(m.stacks(&"armor") == 0 and m.stacks(&"thorns") == 0, "Armor und Thorns ganz entfernt")
+	check(m.stacks(&"bless") == 2 and m.stacks(&"burn") == 4, "Bless bleibt, Debuffs unberührt")

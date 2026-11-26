@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="EngravingDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_hsbjd"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_neben_dispel.png" id="2_1pmnr"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="3_vvgiq"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="4_wf4sp"]
+
+[sub_resource type="Resource" id="Resource_gby75"]
+script = ExtResource("3_vvgiq")
+source = 1
+element_id = &"lightning"
+per_n = 25
+stat = &"dispel"
+
+[resource]
+script = ExtResource("4_wf4sp")
+id = &"neben_dispel"
+display_name = "Dispel"
+element_ids = Array[StringName]([&"lightning"])
+icon = ExtResource("2_1pmnr")
+description = "1 Dispel pro 25 Punkte (wirkt auf das Ziel des Spells). Punkte: Blitz-Essenz 5, andere Essenz 0, neutrale Essenz 0"
+rules = Array[ExtResource("3_vvgiq")]([SubResource("Resource_gby75")])

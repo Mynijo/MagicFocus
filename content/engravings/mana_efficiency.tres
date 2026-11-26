@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="EngravingDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_7a2sk"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_mana_efficiency.png" id="2_fach4"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="3_kh5hn"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="4_fxf0o"]
+
+[sub_resource type="Resource" id="Resource_2w1dr"]
+script = ExtResource("3_kh5hn")
+source = 1
+element_id = &"water"
+stat = &"mana_reduction"
+
+[sub_resource type="Resource" id="Resource_tnk1e"]
+script = ExtResource("3_kh5hn")
+source = 1
+element_id = &"air"
+per_n = 5
+stat = &"cast_time_reduction"
+amount = 0.1
+cap = 1.0
+
+[resource]
+script = ExtResource("4_fxf0o")
+id = &"mana_efficiency"
+display_name = "Mana Efficiency"
+element_ids = Array[StringName]([&"water", &"air"])
+icon = ExtResource("2_fach4")
+description = "-1 Mana pro Punkt aus Wasser-Essenz. Dafür +1 s Cast-Zeit; Luft-Essenz senkt die Erhöhung um 0,1 s pro 5 Punkte (höchstens ganz). Punkte: Wasser-Essenz 5, Luft-Essenz 5, andere Essenz 0, neutrale Essenz 0"
+base_stats = {
+&"cast_time_reduction": -1.0
+}
+rules = Array[ExtResource("3_kh5hn")]([SubResource("Resource_2w1dr"), SubResource("Resource_tnk1e")])

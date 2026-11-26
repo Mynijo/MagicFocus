@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="EngravingDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_p4bot"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_thorns.png" id="2_7tjuv"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="3_sok73"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="4_6ei2m"]
+
+[sub_resource type="Resource" id="Resource_62qnj"]
+script = ExtResource("3_sok73")
+source = 1
+element_id = &"earth"
+per_n = 5
+stat = &"thorns"
+
+[resource]
+script = ExtResource("4_6ei2m")
+id = &"thorns"
+display_name = "Thorns"
+element_ids = Array[StringName]([&"earth"])
+icon = ExtResource("2_7tjuv")
+description = "1 Thorns pro 5 Punkte. Punkte: Erde-Essenz 5, andere Essenz 0, neutrale Essenz 0"
+rules = Array[ExtResource("3_sok73")]([SubResource("Resource_62qnj")])

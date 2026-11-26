@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="EngravingDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_s5dgr"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_thunderstorm.png" id="2_j1wy2"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="3_utikh"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="4_jumga"]
+
+[sub_resource type="Resource" id="Resource_n4g2r"]
+script = ExtResource("3_utikh")
+source = 1
+element_id = &"lightning"
+per_n = 50
+stat = &"hits"
+
+[resource]
+script = ExtResource("4_jumga")
+id = &"thunderstorm"
+display_name = "Thunderstorm"
+role = 0
+element_ids = Array[StringName]([&"lightning"])
+icon = ExtResource("2_j1wy2")
+description = "30 Schaden pro Treffer, 1 Treffer pro volle 50 Punkte aus Blitz-Essenz (mindestens 1). Jeder Treffer würfelt Crit. Punkte: Blitz-Essenz 5, andere Essenz 0, neutrale Essenz 0"
+base_stats = {
+&"damage": 30.0
+}
+rules = Array[ExtResource("3_utikh")]([SubResource("Resource_n4g2r")])

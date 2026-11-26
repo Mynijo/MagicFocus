@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="EngravingDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_hwlob"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_radius_expansion.png" id="2_3ipvu"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="3_yo3mb"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="4_rg27f"]
+
+[sub_resource type="Resource" id="Resource_y32fv"]
+script = ExtResource("3_yo3mb")
+source = 1
+element_id = &"earth"
+per_n = 2
+stat = &"radius_bonus"
+
+[resource]
+script = ExtResource("4_rg27f")
+id = &"radius_expansion"
+display_name = "Radius Expansion"
+element_ids = Array[StringName]([&"earth"])
+icon = ExtResource("2_3ipvu")
+description = "Radius des Hauptgems +1 pro 2 Punkte aus Erd-Essenz. Punkte: Erde-Essenz 5, andere Essenz 0, neutrale Essenz 0"
+rules = Array[ExtResource("3_yo3mb")]([SubResource("Resource_y32fv")])

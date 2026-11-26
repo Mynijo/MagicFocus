@@ -17,6 +17,8 @@ var mana_cost: float = 0.0
 var gem_results: Array[GemResult] = []
 ## Alle Energiepunkte des Fokus (für die Darstellung)
 var dots: Array[EnergyDot] = []
+## Punkte unter einem Gem-Stein: verdeckt, zählen für kein Gem
+var blocked: Array[EnergyDot] = []
 
 
 func add_stat(stat: StringName, value: float) -> void:

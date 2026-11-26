@@ -43,6 +43,16 @@ func _ready() -> void:
 			if OS.get_cmdline_user_args().has("--all-elements"):
 				workshop.focus.element_fill = {&"fire": 8, &"water": 8, &"earth": 8, &"air": 8, &"lightning": 8}
 				workshop._sync_fill_ui()
+			# Optional: --minor=<gravur-id> gibt dem linken Nebengem diese Gravur und wählt sie zum Setzen aus
+			for minor_arg in OS.get_cmdline_user_args():
+				if minor_arg.begins_with("--minor="):
+					var minor_engraving := content.get_engraving(StringName(minor_arg.trim_prefix("--minor=")))
+					gems[1].engraving = minor_engraving
+					var select: OptionButton = workshop._engraving_select
+					for k in select.item_count:
+						if select.get_item_metadata(k) == minor_engraving:
+							select.select(k)
+					workshop._update_placing()
 			workshop._refresh()
 			# Optional: --hover=N auch hier (Maus über Gem N)
 			for hover_arg in OS.get_cmdline_user_args():

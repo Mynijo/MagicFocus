@@ -48,3 +48,7 @@ extends Resource
 @export var damage_reduction_factor := 0.5
 ## Life Rewind: nach so vielen Sekunden wird das Leben zurückgesetzt
 @export var life_rewind_seconds := 10.0
+## Max Health: zusätzliches maximales Leben pro Stack (hebt nur das Maximum)
+@export var max_health_per_stack := 2.0
+## Rotten: weniger maximales Leben pro Stack
+@export var rotten_per_stack := 1.0

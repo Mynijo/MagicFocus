@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="EngravingDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_effect.gd" id="1_xk1ij"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_critical_chance.png" id="2_8smba"]
+[ext_resource type="Script" path="res://core/data/scaling_rule.gd" id="3_dgsvm"]
+[ext_resource type="Script" path="res://core/data/engraving_def.gd" id="4_ebrfe"]
+
+[sub_resource type="Resource" id="Resource_pby8s"]
+script = ExtResource("3_dgsvm")
+source = 3
+per_n = 5
+stat = &"critical_chance"
+
+[resource]
+script = ExtResource("4_ebrfe")
+id = &"critical_chance"
+display_name = "Critical Chance"
+role = 0
+element_ids = Array[StringName]([&"fire"])
+icon = ExtResource("2_8smba")
+description = "1 Critical Chance pro 5 Punkte. Punkte: neutrale Essenz 1, Feuer-Essenz 5, andere Essenz 0"
+rules = Array[ExtResource("3_dgsvm")]([SubResource("Resource_pby8s")])
+target = 1

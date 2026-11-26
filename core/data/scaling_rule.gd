@@ -20,6 +20,9 @@ enum Source {
 @export var amount: float = 1.0
 ## Unterhalb dieser Anzahl greift die Regel gar nicht.
 @export var min_count: int = 0
+## Höchstwert des Ergebnisses (0 = keine Grenze), z. B. Mana Efficiency: Luft hebt die
+## Cast-Zeit-Erhöhung höchstens ganz auf.
+@export var cap := 0.0
 
 
 func count_from(base_count: float, element_counts: Dictionary) -> float:
@@ -41,4 +44,5 @@ func evaluate(base_count: float, element_counts: Dictionary) -> float:
 	if count < min_count or per_n <= 0:
 		return 0.0
 	# kleine Toleranz, damit z. B. 4.9999 effektive Essenzen nicht abgerundet werden
-	return floorf(count / float(per_n) + 0.0001) * amount
+	var value := floorf(count / float(per_n) + 0.0001) * amount
+	return minf(value, cap) if cap > 0.0 else value
