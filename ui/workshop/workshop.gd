@@ -4,8 +4,6 @@ extends Control
 ## Die Oberfläche wird im Code aufgebaut; die Grafik folgt in M4.
 
 const CONTENT := preload("res://content/crafting_content.tres")
-const SAVE_DIR := "user://foci/"
-const SAVE_EXTENSION := ".json"
 
 const STAT_NAMES := {
 	&"damage": "Schaden",
@@ -278,6 +276,11 @@ func _build_left_panel() -> Control:
 	_button(load_row, "Laden", _load_focus)
 	_button(load_row, "Löschen", _delete_focus)
 	_button(box, "Beispiel laden", _on_example_pressed)
+
+	# Kampf
+	_header(box, "Kampf")
+	_small_label(box, "Gespeicherte Foki in der Arena gegeneinander antreten lassen.")
+	_button(box, "Zur Arena", func() -> void: get_tree().change_scene_to_file("res://ui/arena/arena.tscn"))
 	_delete_dialog = ConfirmationDialog.new()
 	_delete_dialog.title = "Fokus löschen"
 	_delete_dialog.ok_button_text = "Löschen"
@@ -689,20 +692,17 @@ func _format_number(value: float) -> String:
 
 # --- Speichern / Laden ------------------------------------------------------
 
-## Speicherstände liegen als JSON mit IDs in user://foci/ (siehe FocusInstance.to_dict).
+## Speicherstände: siehe FocusStore (JSON mit IDs in user://foci/).
 func _refresh_save_list() -> void:
 	_save_select.clear()
-	if not DirAccess.dir_exists_absolute(SAVE_DIR):
-		return
-	for file in DirAccess.get_files_at(SAVE_DIR):
-		if file.ends_with(SAVE_EXTENSION):
-			_save_select.add_item(file.get_basename())
+	for focus_name in FocusStore.list_names():
+		_save_select.add_item(focus_name)
 
 
-func _selected_save_path() -> String:
+func _selected_save_name() -> String:
 	if _save_select.selected < 0:
 		return ""
-	return SAVE_DIR + _save_select.get_item_text(_save_select.selected) + SAVE_EXTENSION
+	return _save_select.get_item_text(_save_select.selected)
 
 
 func _save_focus() -> void:
@@ -710,13 +710,10 @@ func _save_focus() -> void:
 	if file_name == "":
 		_show_status("Bitte einen Namen eingeben.")
 		return
-	DirAccess.make_dir_recursive_absolute(SAVE_DIR)
-	var file := FileAccess.open(SAVE_DIR + file_name + SAVE_EXTENSION, FileAccess.WRITE)
-	if file == null:
-		_show_status("Speichern fehlgeschlagen (Fehler %d)." % FileAccess.get_open_error())
+	var error := FocusStore.save(focus, file_name)
+	if error != OK:
+		_show_status("Speichern fehlgeschlagen (Fehler %d)." % error)
 		return
-	file.store_string(JSON.stringify(focus.to_dict(), "\t"))
-	file.close()
 	_show_status("Gespeichert: %s" % file_name)
 	_refresh_save_list()
 	for i in _save_select.item_count:
@@ -725,21 +722,16 @@ func _save_focus() -> void:
 
 
 func _load_focus() -> void:
-	var path := _selected_save_path()
-	if path == "":
+	var file_name := _selected_save_name()
+	if file_name == "":
 		_show_status("Kein gespeicherter Fokus ausgewählt.")
 		return
-	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
-	if not data is Dictionary:
-		_show_status("Laden fehlgeschlagen: Die Datei ist beschädigt.")
-		return
 	var warnings: Array[String] = []
-	var loaded := FocusInstance.from_dict(data, CONTENT, warnings)
+	var loaded := FocusStore.load_focus(file_name, CONTENT, warnings)
 	if loaded == null:
 		_show_status("Laden fehlgeschlagen: %s" % " ".join(warnings))
 		return
 	focus = loaded
-	var file_name := path.get_file().get_basename()
 	_save_name.text = file_name
 	_sync_fill_ui()
 	_refresh()
@@ -750,23 +742,23 @@ func _load_focus() -> void:
 
 
 func _delete_focus() -> void:
-	var path := _selected_save_path()
-	if path == "":
+	var file_name := _selected_save_name()
+	if file_name == "":
 		_show_status("Kein gespeicherter Fokus ausgewählt.")
 		return
-	_delete_dialog.dialog_text = "„%s“ wirklich löschen?" % path.get_file().get_basename()
+	_delete_dialog.dialog_text = "„%s“ wirklich löschen?" % file_name
 	_delete_dialog.popup_centered()
 
 
 func _on_delete_confirmed() -> void:
-	var path := _selected_save_path()
-	if path == "":
+	var file_name := _selected_save_name()
+	if file_name == "":
 		return
-	var error := DirAccess.remove_absolute(path)
+	var error := FocusStore.delete(file_name)
 	if error != OK:
 		_show_status("Löschen fehlgeschlagen (Fehler %d)." % error)
 		return
-	_show_status("Gelöscht: %s" % path.get_file().get_basename())
+	_show_status("Gelöscht: %s" % file_name)
 	_refresh_save_list()
 
 

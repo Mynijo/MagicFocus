@@ -214,6 +214,9 @@ func _init() -> void:
 	for id in FOCI:
 		content.foci.append(load("res://content/foci/%s.tres" % id))
 	_build_glossary(content)
+	# Kampfregeln nur anlegen, nie überschreiben (Werte werden von Hand im Editor angepasst)
+	if not ResourceLoader.exists("res://content/combat_rules.tres"):
+		_save(CombatRules.new(), "res://content/combat_rules.tres")
 	_save(content, "res://content/crafting_content.tres")
 	print("Inhalte erzeugt: %d Gems, %d Gravuren" % [content.gems.size(), content.engravings.size()])
 	quit()

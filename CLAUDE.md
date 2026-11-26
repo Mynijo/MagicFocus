@@ -11,14 +11,16 @@ Kommunikation mit dem Nutzer auf **Deutsch**.
 
 | Ordner | Inhalt |
 |---|---|
-| `core/data/` | Ressourcen-Klassen: `ElementDef`, `GemDef` (Form), `EngravingDef` (Gravur), `ScalingRule`, `FocusDef`, `FocusShape` (+ `CircleFocusShape`, `PolygonFocusShape` → `StarFocusShape`, `DropFocusShape`), `FocusInstance`, `PlacedGem`, `GemEffect`, `CraftingContent` |
+| `core/data/` | Ressourcen-Klassen: `FocusStore` (gespeicherte Foki als JSON), `GlossaryTerm`, `ElementDef`, `GemDef` (Form), `EngravingDef` (Gravur), `ScalingRule`, `FocusDef`, `FocusShape` (+ `CircleFocusShape`, `PolygonFocusShape` → `StarFocusShape`, `DropFocusShape`), `FocusInstance`, `PlacedGem`, `GemEffect`, `CraftingContent` |
 | `core/logic/` | Reine Logik ohne Physik/Szenen: `SpellEvaluator` (Auswertung in 6 Phasen), `FocusGeometry`, `DotField` (Punkte aus Seed), `SpellResult`, `GemResult`, `EnergyDot` |
+| `core/combat/` | Kampf (M6), reine Logik: `Combat` (Ablauf, Status, Log), `CombatMage` (Zustand, `from_foci`), `CombatRules` (Zahlen, Inhalt in `content/combat_rules.tres`) |
 | `content/` | Inhalte als `.tres`: `elements/`, `gems/`, `engravings/`, `foci/`. `crafting_content.tres` listet alles (Reihenfolge = Reihenfolge in der UI) |
 | `tools/` | `generate_content.gd`: erzeugt Gems, Gravuren und `crafting_content.tres` aus Tabellen. **Werte dort ändern und neu erzeugen**, nicht die `.tres` von Hand. `prepare_assets.gd`: schneidet und verkleinert generierte Bilder nach `assets/sprites/` (Gravur-Symbole: alle PNGs aus `assets/engravings/<gravur-id>.png`, danach Generator neu laufen lassen) |
-| `assets/` | Bilder (vom Nutzer mit ChatGPT erzeugt): Originale in `gems/`, `essences/`, `textures/`, `engravings/<gravur-id>.png`, `elements/element_<id>.png`; Spiel nutzt `sprites/` (aufbereitet, Mipmaps an). Jedes Element hat eine eigene Punktform (`ElementDef.dot_texture`, im Generator gesetzt), neutrale Essenz ist eine Kugel. Gravuren zeigen auf dem Gem ihr Symbol (`EngravingDef.icon`); ohne Symbol die Form ihres Elements (nur bei genau einem Element). Elemente haben ein Symbol (`ElementDef.icon`) für Befüllen-Liste und Tooltips; Status-Tooltips nutzen das Symbol der erzeugenden Gravur (`STATUS_ICONS` im Generator). Elemente haben ein Symbol (`ElementDef.icon`) für Befüllen-Liste und Tooltips; Status-Tooltips nutzen das Symbol der erzeugenden Gravur (`STATUS_ICONS` im Generator). Neue Bilder kommen in `input/` und werden von Claude einsortiert |
+| `assets/` | Bilder (vom Nutzer mit ChatGPT erzeugt): Originale in `gems/`, `essences/`, `textures/`, `engravings/<gravur-id>.png`, `elements/element_<id>.png`; Spiel nutzt `sprites/` (aufbereitet, Mipmaps an). Jedes Element hat eine eigene Punktform (`ElementDef.dot_texture`, im Generator gesetzt), neutrale Essenz ist eine Kugel. Gravuren zeigen auf dem Gem ihr Symbol (`EngravingDef.icon`); ohne Symbol die Form ihres Elements (nur bei genau einem Element). Elemente haben ein Symbol (`ElementDef.icon`) für Befüllen-Liste und Tooltips; Status-Tooltips nutzen das Symbol der erzeugenden Gravur (`STATUS_ICONS` im Generator). Neue Bilder kommen in `input/` und werden von Claude einsortiert |
+| `ui/arena/` | Arena: zwei Magier aus gespeicherten Foki (bis zu 5 Spells), Balken, Status-Symbole, Log, Tempo 1×/2×/4× |
 | `ui/common/` | `term_tooltips.gd`: verschachtelte Tooltips für Begriffe (Elemente, Status) in RichTextLabels: `linkify()` + `register()` |
 | `ui/workshop/` | Fokus-Werkstatt (Hauptszene): `workshop.gd` (Panels, im Code aufgebaut), `focus_canvas.gd` (Zeichnen und Mausbedienung) |
-| `tests/` | `run_tests.gd` (headless Testsuite), `preview_snapshot.tscn` (Render-Check der Werkstatt) |
+| `tests/` | `run_tests.gd` (headless Testsuite), `preview_snapshot.tscn` (Render-Check der Werkstatt), `arena_snapshot.tscn` (Render-Check der Arena) |
 | `FocusCraft/`, `FocusLexicon/` | **Altcode** (Prototyp 2023/24, physikbasiert). Nicht weiterentwickeln, nur Referenz |
 
 ## Architekturregeln
@@ -52,7 +54,17 @@ Kommunikation mit dem Nutzer auf **Deutsch**.
 - **Foki** sind feste Typen: Form (Kreis, Stern, Tropfen), Gem-Kapazität (klein 3, mittel 3–5, groß 5–7, sehr groß bis 10), **Gesamtkapazität** `max_dots` für N-E und E zusammen, ein **Limit für alle E zusammen** `max_element_dots` (nicht pro Element) und `allowed_elements` (z. B. Feuer-Fokus nur Feuer, neutraler Fokus 0 E). **N-E wird nicht eingestellt**, sondern füllt immer bis zur Gesamtkapazität auf (`FocusInstance.get_base_count()`). Upgrades durch den Spieler sind vorerst nicht vorgesehen.
 - Der Kampf ist ausschließlich 1-gegen-1, es gibt keinen Flächenschaden und keine Mehrfachziele.
 
-## Kampfregeln für M6 (Entwurf des Nutzers, noch nicht implementiert)
+## Kampf (M6, umgesetzt in `core/combat/`)
+
+- 1 gegen 1, Tick 0,1 s, deterministisch über einen Seed (Crit wird gewürfelt). Gekämpft wird mit gespeicherten Foki (`FocusStore`), je Magier bis zu 5 Spells.
+- **Feste Reihenfolge:** Spells werden der Reihe nach im Kreis gecastet; fehlt Mana, wartet der Magier. **Mana wird beim Cast-Start bezahlt** (löst Schock aus). Cast-Zeit = Spell-Cast-Zeit + Slowed − Hasted (beim Start festgelegt, mind. 0,5 s).
+- **Ziele:** Schaden, Burn, Bleed, Nass, Schock, Armor Break, Slowed, Mana Burn gehen auf den Gegner; Heilung, Armor, Hasted, Leben-Reg, Mana-Reg auf den Caster.
+- **Eis pausiert den Cast** (kein Abbruch). Freeze wandelt nach dem Treffer je `freeze_conversion` Nass in 1 Eis.
+- Status wirken einmal pro Sekunde (Puls), Stacks sind ganze Zahlen; auch die Mana-Reg kommt im Puls. Armor Break wirkt sofort (Rest verfällt).
+- Ende: ein Magier ohne Leben (beide gleichzeitig = unentschieden) oder Zeitlimit (unentschieden).
+- Alle „X“ der Tabelle stehen in `CombatRules` (Platzhalter). `content/combat_rules.tres` legt der Generator nur einmal an und überschreibt es nicht.
+
+### Kampfregeln (Tabelle des Nutzers)
 
 | Status | Wirkung |
 |---|---|
@@ -86,6 +98,8 @@ godot --headless --path . -s res://tests/run_tests.gd
 # Render-Check der Werkstatt (PNG-Frames)
 godot --path . res://tests/preview_snapshot.tscn --write-movie out.png --quit-after 4 --fixed-fps 30 -- [--focus=<id>] [--place] [--place-at=x,y] [--all-elements] [--tooltip] [--details] [--scroll] [--hover] [--replace]
 godot --path . --write-movie out.png --quit-after 3 --fixed-fps 30 -- --example
+# Render-Check der Arena (Beispiel-Magier, nicht aus user://)
+godot --path . res://tests/arena_snapshot.tscn --write-movie out.png --quit-after 4 --fixed-fps 30 -- [--seconds=N] [--stats]
 ```
 
 ## Arbeitsweise
@@ -98,6 +112,6 @@ godot --path . --write-movie out.png --quit-after 3 --fixed-fps 30 -- --example
 ## Offene Punkte
 
 - **Freeze:** 100 Nass → 1 Eis ist mit 1 Nass pro 10 Wasser-Punkte (= 2 Wasser-E) kaum erreichbar. Verhältnis im Balancing prüfen; Stun-Lock durch Eis vermeiden.
-- **Kampfsystem (M6):** Status-Mechaniken siehe oben; headless und deterministisch geplant.
+- **Kampf (M6) weiter:** Werte in `CombatRules` und der Spells balancen (Kämpfe werden über Mana-Engpässe entschieden, Status-Stacks aus Spells sind klein). Später: Gegner-Vorlagen, Spell-Bedingungen, Balancing-Werkzeug (viele Kämpfe simulieren).
 - **Grafik (M4):** Stil, Referenzbilder und Assets vom Nutzer stehen noch aus. Ideen: HDR-2D-Glow, Shader für Linien und Sektoren, Partikel beim Einsammeln.
 - **Ressourcen und Dungeons** über den Auto-Battler: erst später.
