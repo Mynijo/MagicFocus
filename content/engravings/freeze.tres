@@ -15,9 +15,9 @@ script = ExtResource("4_hlahb")
 id = &"freeze"
 display_name = "Freeze"
 role = 0
-element_ids = Array[StringName]([&"water", &"air"])
+description = "Wandelt je 100 Nass in 1 Eis. +1 Schaden pro Punkt. Ziel: Gegner. Punkte: neutrale Essenz ×1, Wasser-Essenz ×5, Luft-Essenz ×5"
 icon = ExtResource("2_vrc83")
-description = "Wandelt 100 Nass in 1 Eis. +1 Schaden pro Punkt. Punkte: neutrale Essenz 1, Wasser-Essenz 5, Luft-Essenz 5, andere Essenz 0"
+element_ids = Array[StringName]([&"water", &"air"])
 base_stats = {
 &"freeze_conversion": 100.0
 }

@@ -1,54 +1,33 @@
 extends Control
-## Fokus-Werkstatt (M2): Fokus wählen und befüllen, Gems aus der Bibliothek setzen,
-## verschieben und zu einem Kreis verbinden. Der Spell wird live ausgewertet.
-## Die Oberfläche wird im Code aufgebaut; die Grafik folgt in M4.
+## Fokus-Werkstatt: Fokus wählen und befüllen, Gems setzen, verschieben und zu einem
+## Kreis verbinden. Der Spell wird live ausgewertet. Die Oberfläche wird im Code aufgebaut.
 
 const CONTENT := preload("res://content/crafting_content.tres")
+const ARENA_SCENE := "res://ui/arena/arena.tscn"
 
-const STAT_NAMES := {
-	&"damage": "Schaden",
-	&"heal": "Heilung",
-	&"armor": "Armor",
-	&"crit": "Crit-Chance (%)",
-	&"slow": "Slow (Stacks)",
-	&"hasted": "Hasted (Stacks)",
-	&"life_regen": "Leben-Reg (Stacks)",
-	&"mana_regen": "Mana-Reg (Stacks)",
-	&"mana_burn": "Mana Burn (Stacks)",
-	&"perma_burn": "Perma-Burn (Stacks)",
-	&"accelerated_burn": "Accelerated Burn (Stacks)",
-	&"bless": "Bless (Stacks)",
-	&"thorns": "Thorns (Stacks)",
-	&"mana_absorption": "Mana Absorption (Stacks)",
-	&"damage_reduction": "Damage Reduction (Stacks)",
-	&"hits": "Treffer",
-	&"life_rewind": "Life Rewind",
-	&"cleanse": "Cleanse",
-	&"dispel": "Dispel (Buffs)",
-	&"critical_chance": "Critical Chance (Stacks)",
-	&"blood_thinner": "Blood Thinner (Stacks)",
-	&"max_health": "Max Health (Stacks)",
-	&"rotten": "Rotten (Stacks)",
-	&"vampire": "Vampire (Leben-Reg pro Bleed des Gegners)",
-	&"echo": "Echo (Wiederholungen)",
-	&"crit_damage": "Crit-Schaden (+%)",
-	&"radius_bonus": "Radius des Hauptgems (+)",
-	&"burn": "Burn (Stacks)",
-	&"wet": "Nass (Stacks)",
-	&"bleed": "Bleed (Stacks)",
-	&"armor_break": "Armor Break (Stacks)",
-	&"shock": "Schock (Stacks)",
-	&"freeze_conversion": "Freeze (Nass pro Eis)",
-	&"mana_reduction": "Mana-Reduktion",
-	&"cast_time_reduction": "Cast-Zeit-Verkürzung (s)",
+## Anzeigenamen der Spell-Werte, die kein Status sind (Status: Name aus `Status`).
+const VALUE_NAMES := {
+	&"damage": "Schaden", &"heal": "Heilung", &"crit": "Crit (%)", &"crit_damage": "Crit-Schaden (+%)",
+	&"hits": "Treffer", &"echo": "Echo (Wiederholungen)", &"vampire": "Vampire (Leben-Reg pro Bleed)",
+	&"cleanse": "Cleanse", &"dispel": "Dispel", &"armor_break": "Armor Break",
+	&"freeze_conversion": "Freeze (Nass pro Eis)", &"mana_reduction": "Mana-Reduktion",
+	&"cast_time_reduction": "Cast-Zeit-Verkürzung (s)", &"radius_bonus": "Radius des Hauptgems",
 }
+const COLOR_GOOD := "#80ff90"
+const COLOR_BAD := "#ff9090"
+const KEY_HELP := "Tasten: 1 Setzen · 2 Verbinden · R neu würfeln · Rücktaste Verbindung zurück"
 
 var focus: FocusInstance
 var result: SpellResult
+## Verschachtelte Tooltips für Begriffe in den Texten.
+var tooltips: TermTooltips
 ## Auswertung mit dem Gem unter dem Mauszeiger (beim Setzen), sonst null.
 var _preview_result: SpellResult
 ## Auswertung vor Beginn des Verschiebens (während des Ziehens), sonst null.
 var _drag_baseline: SpellResult
+## Gem-Liste im Ergebnis aufgeklappt?
+var _show_gem_details := false
+var _selected_size: GemDef.Size = GemDef.Size.MITTEL
 
 var _canvas: FocusCanvas
 var _focus_select: OptionButton
@@ -57,12 +36,9 @@ var _base_value: Label
 var _element_spins := {}  # Element-ID -> SpinBox
 var _element_total: Label
 var _engraving_select: OptionButton
+var _size_buttons: Array[Button] = []
 var _spitz_check: CheckBox
 var _gem_info: RichTextLabel
-## Verschachtelte Tooltips für Elemente und Status in den Texten.
-var tooltips: TermTooltips
-var _selected_size: GemDef.Size = GemDef.Size.MITTEL
-var _size_buttons: Array[Button] = []
 var _mode_place: Button
 var _mode_connect: Button
 var _status: Label
@@ -70,8 +46,6 @@ var _result_text: RichTextLabel
 var _save_name: LineEdit
 var _save_select: OptionButton
 var _delete_dialog: ConfirmationDialog
-## Gem-Liste im Ergebnis aufgeklappt?
-var _show_gem_details := false
 
 
 func _ready() -> void:
@@ -90,7 +64,6 @@ func _ready() -> void:
 func _new_focus(def: FocusDef) -> void:
 	focus = FocusInstance.new()
 	focus.focus_def = def
-	focus.element_fill = {}
 	# Zum Start die Hälfte der Essenz-Kapazität mit dem ersten erlaubten Element füllen
 	for element in CONTENT.elements:
 		if def.allows_element(element.id) and def.max_element_dots > 0:
@@ -100,18 +73,18 @@ func _new_focus(def: FocusDef) -> void:
 
 
 func _load_example() -> void:
-	var standard := CONTENT.get_engraving(&"standard")
+	var transfer := CONTENT.get_engraving(&"standard")
 	focus.gems = [
 		PlacedGem.create(CONTENT.get_gem(&"hauptgem_mittel_grob"), CONTENT.get_engraving(&"magischer_bolzen"), Vector2(-110, 70)),
-		PlacedGem.create(CONTENT.get_gem(&"nebengem_mittel_grob"), standard, Vector2(130, 50)),
-		PlacedGem.create(CONTENT.get_gem(&"nebengem_mittel_spitz"), standard, Vector2(0, -140)),
+		PlacedGem.create(CONTENT.get_gem(&"nebengem_mittel_grob"), transfer, Vector2(130, 50)),
+		PlacedGem.create(CONTENT.get_gem(&"nebengem_mittel_spitz"), transfer, Vector2(0, -140)),
 	]
 	focus.loop = PackedInt32Array([0, 1, 2])
 	focus.loop_closed = true
 
 
 func _refresh() -> void:
-	result = SpellEvaluator.evaluate(focus, CONTENT.elements)
+	result = _evaluate(focus)
 	_canvas.focus = focus
 	_canvas.result = result
 	_canvas.update_preview()
@@ -120,23 +93,22 @@ func _refresh() -> void:
 	_update_result_text()
 
 
+func _evaluate(target: FocusInstance) -> SpellResult:
+	return SpellEvaluator.evaluate(target, CONTENT.elements)
+
+
 # --- Aufbau der Oberfläche --------------------------------------------------
 
 func _build_ui() -> void:
 	tooltips = TermTooltips.new()
 	tooltips.setup(CONTENT)
 	add_child(tooltips)
-
-	var background := ColorRect.new()
-	background.color = Color(0.12, 0.12, 0.15)
-	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(background)
+	UiKit.background(self)
 
 	var root := HBoxContainer.new()
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.add_theme_constant_override("separation", 8)
 	add_child(root)
-
 	root.add_child(_build_left_panel())
 
 	_canvas = FocusCanvas.new()
@@ -148,7 +120,7 @@ func _build_ui() -> void:
 	_canvas.focus_changed.connect(_on_canvas_changed)
 	_canvas.message.connect(_show_status)
 	_canvas.preview_changed.connect(_on_preview_changed)
-	_canvas.drag_started.connect(_on_drag_started)
+	_canvas.drag_started.connect(func() -> void: _drag_baseline = result)
 	_canvas.drag_ended.connect(_on_drag_ended)
 	root.add_child(_canvas)
 
@@ -159,40 +131,65 @@ func _build_left_panel() -> Control:
 	var scroll := ScrollContainer.new()
 	scroll.custom_minimum_size.x = 300
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	var margin := _margin(scroll)
 	var box := VBoxContainer.new()
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	box.add_theme_constant_override("separation", 6)
-	margin.add_child(box)
+	UiKit.margin(scroll).add_child(box)
 
-	# Fokus
-	_header(box, "1. Fokus")
+	UiKit.header(box, "1. Fokus")
 	_focus_select = OptionButton.new()
 	for def in CONTENT.foci:
-		_focus_select.add_item("%s  (%s)" % [def.display_name, def.shape.get_shape_name()])
+		_focus_select.add_item("%s (%s)" % [def.display_name, def.shape.get_shape_name()])
 	_focus_select.item_selected.connect(_on_focus_type_selected)
 	box.add_child(_focus_select)
-	_focus_info = _small_label(box, "")
+	_focus_info = UiKit.hint(box, "")
 
-	# Befüllung
-	_header(box, "2. Befüllen")
-	var base_row := HBoxContainer.new()
-	box.add_child(base_row)
+	UiKit.header(box, "2. Befüllen")
+	_build_fill(box)
+
+	UiKit.header(box, "3. Gems setzen")
+	UiKit.hint(box, "Gravur, Größe und Form wählen, dann in den Fokus klicken. Klick auf ein Gem: übernimmt die Auswahl. Ziehen: verschieben. Rechtsklick: entfernen.")
+	UiKit.check(box, "Automatisch verbinden", true, _set_auto_connect)
+	_build_gem_choice(box)
+
+	UiKit.header(box, "4. Verbinden")
+	UiKit.hint(box, "Eigene Reihenfolge: „Kreis lösen“, beim Hauptgem beginnen, Gems anklicken, mit dem Hauptgem schließen. Rechtsklick: zurück.")
+	var mode_group := ButtonGroup.new()
+	var mode_row := UiKit.row(box)
+	_mode_place = UiKit.toggle_button(mode_row, "Setzen [1]", mode_group)
+	_mode_place.button_pressed = true
+	_mode_place.pressed.connect(_set_mode.bind(FocusCanvas.Mode.PLACE))
+	_mode_connect = UiKit.toggle_button(mode_row, "Verbinden [2]", mode_group)
+	_mode_connect.pressed.connect(_set_mode.bind(FocusCanvas.Mode.CONNECT))
+	var edit_row := UiKit.row(box)
+	UiKit.button(edit_row, "Zurück", func() -> void: _canvas.undo_connection())
+	UiKit.button(edit_row, "Kreis lösen", func() -> void: _canvas.clear_loop())
+	UiKit.button(box, "Alle Gems entfernen", func() -> void: _canvas.clear_gems())
+
+	UiKit.header(box, "Anzeige")
+	UiKit.check(box, "Einflussbereiche", true, _set_display.bind(&"show_sectors"))
+	UiKit.check(box, "Reichweite immer zeigen", false, _set_display.bind(&"show_radii"))
+	UiKit.check(box, "Freie Punkte zeigen", true, _set_display.bind(&"show_free_dots"))
+
+	UiKit.header(box, "Speichern und Laden")
+	_build_save(box)
+
+	UiKit.header(box, "Kampf")
+	UiKit.button(box, "Zur Arena", func() -> void: get_tree().change_scene_to_file(ARENA_SCENE))
+	return scroll
+
+
+func _build_fill(box: VBoxContainer) -> void:
+	var base_row := UiKit.row(box)
 	var base_label := Label.new()
 	base_label.text = "Neutrale Essenz"
-	base_label.tooltip_text = "Füllt den Fokus automatisch bis zur Gesamtkapazität auf."
-	base_label.mouse_filter = Control.MOUSE_FILTER_PASS
 	base_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	base_row.add_child(base_label)
 	_base_value = Label.new()
 	base_row.add_child(_base_value)
-	_small_label(box, "Wird automatisch bis zum Maximum aufgefüllt.")
-
-	_small_label(box, "Essenzen")
+	UiKit.hint(box, "Füllt den Rest bis zur Kapazität auf.")
 	for element in CONTENT.elements:
-		var row := HBoxContainer.new()
-		box.add_child(row)
-		# Symbol des Elements in Elementfarbe (sonst ein Farbquadrat)
+		var row := UiKit.row(box)
 		var swatch: Control
 		if element.icon != null:
 			var icon := TextureRect.new()
@@ -208,27 +205,19 @@ func _build_left_panel() -> Control:
 		swatch.custom_minimum_size = Vector2(22, 22)
 		swatch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		row.add_child(swatch)
-		var name_label := _rich_label(row, tooltips.linkify(element.display_name), 16)
+		var name_label := UiKit.rich_label(row, tooltips.linkify(element.display_name), 16, tooltips)
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		name_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		var spin := SpinBox.new()
 		spin.value_changed.connect(_on_element_changed.bind(element.id))
 		row.add_child(spin)
 		_element_spins[element.id] = spin
-	_element_total = _small_label(box, "")
+	_element_total = UiKit.hint(box, "")
+	UiKit.button(box, "Punkte neu würfeln [R]", _reroll)
 
-	var reroll := Button.new()
-	reroll.text = "Punkte neu würfeln  [R]"
-	reroll.pressed.connect(_reroll)
-	box.add_child(reroll)
 
-	# Gem-Bibliothek
-	_header(box, "3. Gems setzen")
-	_small_label(box, "Gravur, Größe und Spitz wählen, dann in den Fokus klicken – die Vorschau zeigt, welche Punkte das Gem einsammeln würde. Die Gravur bestimmt, ob es ein Hauptgem oder Nebengem ist. Klick auf ein gesetztes Gem = übernimmt Gravur, Größe und Spitz. Gems ziehen = verschieben, Rechtsklick = entfernen.")
-	_check(box, "Automatisch verbinden", true, _set_auto_connect)
-
-	var engraving_row := HBoxContainer.new()
-	box.add_child(engraving_row)
+func _build_gem_choice(box: VBoxContainer) -> void:
+	var engraving_row := UiKit.row(box)
 	var engraving_label := Label.new()
 	engraving_label.text = "Gravur"
 	engraving_row.add_child(engraving_label)
@@ -243,64 +232,30 @@ func _build_left_panel() -> Control:
 	engraving_row.add_child(_engraving_select)
 	_engraving_select.select(1)  # erste Hauptgravur (Index 0 = Überschrift)
 
-	var size_row := HBoxContainer.new()
-	box.add_child(size_row)
+	var size_row := UiKit.row(box)
 	var size_group := ButtonGroup.new()
 	for size in GemDef.Size.values():
-		var button := _toggle_button(size_row, GemDef.SIZE_NAMES[size].capitalize(), size_group)
-		button.button_pressed = size == GemDef.Size.MITTEL
+		var button := UiKit.toggle_button(size_row, GemDef.SIZE_NAMES[size].capitalize(), size_group)
+		button.button_pressed = size == _selected_size
 		button.pressed.connect(_on_size_selected.bind(size))
 		_size_buttons.append(button)
-	_spitz_check = CheckBox.new()
-	_spitz_check.text = "Spitz (Innenwinkel, Essenzen zählen ×2)"
-	_spitz_check.toggled.connect(_on_gem_selection_changed.unbind(1))
-	box.add_child(_spitz_check)
-	_gem_info = _rich_label(box, "", 12)
+	_spitz_check = UiKit.check(box, "Spitz (Innenwinkel, zählt ×2)", false, _on_gem_selection_changed.unbind(1))
+	_gem_info = UiKit.rich_label(box, "", 12, tooltips)
 
-	# Verbinden
-	_header(box, "4. Verbinden")
-	_small_label(box, "Für eine eigene Reihenfolge: „Kreis lösen“, dann beim Hauptgem beginnen, Gems nacheinander anklicken und mit Klick auf das Hauptgem schließen. Rechtsklick = zurück.")
-	var mode_group := ButtonGroup.new()
-	var mode_row := HBoxContainer.new()
-	box.add_child(mode_row)
-	_mode_place = _toggle_button(mode_row, "Setzen  [1]", mode_group)
-	_mode_place.button_pressed = true
-	_mode_place.pressed.connect(_set_mode.bind(FocusCanvas.Mode.PLACE))
-	_mode_connect = _toggle_button(mode_row, "Verbinden  [2]", mode_group)
-	_mode_connect.pressed.connect(_set_mode.bind(FocusCanvas.Mode.CONNECT))
-	var edit_row := HBoxContainer.new()
-	box.add_child(edit_row)
-	_button(edit_row, "Zurück", func() -> void: _canvas.undo_connection())
-	_button(edit_row, "Kreis lösen", func() -> void: _canvas.clear_loop())
-	_button(box, "Alle Gems entfernen", func() -> void: _canvas.clear_gems())
 
-	# Anzeige / Balancing
-	_header(box, "Anzeige & Balancing")
-	_check(box, "Einflussbereiche", true, _set_display.bind(&"show_sectors"))
-	_check(box, "Reichweite immer zeigen", false, _set_display.bind(&"show_radii"))
-	_check(box, "Freie Punkte zeigen", true, _set_display.bind(&"show_free_dots"))
-
-	# Speichern / Laden
-	_header(box, "Speichern & Laden")
+func _build_save(box: VBoxContainer) -> void:
 	_save_name = LineEdit.new()
 	_save_name.placeholder_text = "Name des Fokus"
 	box.add_child(_save_name)
-	var save_row := HBoxContainer.new()
-	box.add_child(save_row)
-	_button(save_row, "Speichern", _save_focus)
-	_button(save_row, "Neu", _reset_focus)
+	var save_row := UiKit.row(box)
+	UiKit.button(save_row, "Speichern", _save_focus)
+	UiKit.button(save_row, "Neu", _reset_focus)
 	_save_select = OptionButton.new()
 	box.add_child(_save_select)
-	var load_row := HBoxContainer.new()
-	box.add_child(load_row)
-	_button(load_row, "Laden", _load_focus)
-	_button(load_row, "Löschen", _delete_focus)
-	_button(box, "Beispiel laden", _on_example_pressed)
-
-	# Kampf
-	_header(box, "Kampf")
-	_small_label(box, "Gespeicherte Foki in der Arena gegeneinander antreten lassen.")
-	_button(box, "Zur Arena", func() -> void: get_tree().change_scene_to_file("res://ui/arena/arena.tscn"))
+	var load_row := UiKit.row(box)
+	UiKit.button(load_row, "Laden", _load_focus)
+	UiKit.button(load_row, "Löschen", _delete_focus)
+	UiKit.button(box, "Beispiel laden", _on_example_pressed)
 	_delete_dialog = ConfirmationDialog.new()
 	_delete_dialog.title = "Fokus löschen"
 	_delete_dialog.ok_button_text = "Löschen"
@@ -308,102 +263,27 @@ func _build_left_panel() -> Control:
 	_delete_dialog.confirmed.connect(_on_delete_confirmed)
 	add_child(_delete_dialog)
 
-	return scroll
-
 
 func _build_right_panel() -> Control:
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size.x = 360
-	var margin := _margin(panel)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
-	margin.add_child(box)
+	UiKit.margin(panel).add_child(box)
 
 	_status = Label.new()
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_status.add_theme_color_override("font_color", Color(1, 0.85, 0.4))
+	_status.add_theme_color_override("font_color", UiKit.COLOR_STATUS)
 	box.add_child(_status)
 
 	_result_text = RichTextLabel.new()
 	_result_text.bbcode_enabled = true
-	_result_text.meta_underlined = false
 	_result_text.meta_clicked.connect(_on_result_meta_clicked)
 	tooltips.register(_result_text)
-	_result_text.fit_content = false
 	_result_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_child(_result_text)
+	UiKit.hint(box, KEY_HELP)
 	return panel
-
-
-# --- kleine UI-Helfer -------------------------------------------------------
-
-func _margin(parent: Control) -> MarginContainer:
-	var margin := MarginContainer.new()
-	margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 10)
-	parent.add_child(margin)
-	return margin
-
-
-func _header(parent: Control, text: String) -> void:
-	var label := Label.new()
-	label.text = text
-	label.add_theme_font_size_override("font_size", 17)
-	label.add_theme_color_override("font_color", Color(0.7, 0.8, 1.0))
-	parent.add_child(label)
-
-
-func _small_label(parent: Control, text: String) -> Label:
-	var label := Label.new()
-	label.text = text
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_font_size_override("font_size", 12)
-	label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.75))
-	parent.add_child(label)
-	return label
-
-
-## Text mit Begriffs-Tooltips (BBCode), Höhe passt sich dem Inhalt an.
-func _rich_label(parent: Control, bbcode: String, font_size: int) -> RichTextLabel:
-	var label := RichTextLabel.new()
-	label.bbcode_enabled = true
-	label.fit_content = true
-	label.scroll_active = false
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_font_size_override("normal_font_size", font_size)
-	label.add_theme_font_size_override("bold_font_size", font_size)
-	label.text = bbcode
-	tooltips.register(label)
-	parent.add_child(label)
-	return label
-
-
-func _button(parent: Control, text: String, callback: Callable) -> Button:
-	var button := Button.new()
-	button.text = text
-	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	button.pressed.connect(callback)
-	parent.add_child(button)
-	return button
-
-
-func _toggle_button(parent: Control, text: String, group: ButtonGroup) -> Button:
-	var button := Button.new()
-	button.text = text
-	button.toggle_mode = true
-	button.button_group = group
-	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	parent.add_child(button)
-	return button
-
-
-func _check(parent: Control, text: String, value: bool, callback: Callable) -> void:
-	var check := CheckBox.new()
-	check.text = text
-	check.button_pressed = value
-	check.toggled.connect(callback)
-	parent.add_child(check)
 
 
 ## Überträgt die Auswahl (Gravur, Größe, Spitz) auf das zu setzende Gem.
@@ -419,12 +299,13 @@ func _update_placing() -> void:
 	var gem := CONTENT.find_gem(engraving.role, _selected_size, angle)
 	_canvas.placing_engraving = engraving
 	_canvas.placing_gem = gem
-	var lines := PackedStringArray([engraving.description])
+	var text := engraving.description
 	if gem != null:
-		lines.append("%s: Radius %d, %s, Essenzen zählen ×%s, max. %d neutrale Essenz und %d Essenzen" % [
-			gem.display_name, int(PlacedGem.radius_of(gem, engraving)), "Innenwinkel" if gem.is_inner() else "Außenwinkel",
-			_format_number(gem.get_multiplier()), gem.max_base, gem.max_element])
-	_gem_info.text = "[color=#b3b3bf]%s[/color]" % tooltips.linkify("\n".join(lines))
+		text += "\n%s · Radius %d · %s ×%s · bis %d neutrale Essenz, %d Essenzen" % [
+			gem.display_name, int(PlacedGem.radius_of(gem, engraving)),
+			"Innenwinkel" if gem.is_inner() else "Außenwinkel", TextFormat.number(gem.get_multiplier()),
+			gem.max_base, gem.max_element]
+	_gem_info.text = "[color=#b3b3bf]%s[/color]" % tooltips.linkify(text)
 	_canvas.update_preview()
 	_canvas.queue_redraw()
 
@@ -465,10 +346,6 @@ func _on_gem_selection_changed() -> void:
 	_update_placing()
 
 
-func _evaluate(target: FocusInstance) -> SpellResult:
-	return SpellEvaluator.evaluate(target, CONTENT.elements)
-
-
 func _set_auto_connect(on: bool) -> void:
 	_canvas.auto_connect = on
 	_canvas.update_preview()
@@ -492,10 +369,6 @@ func _on_preview_changed(preview: SpellResult) -> void:
 	_update_result_text()
 
 
-func _on_drag_started() -> void:
-	_drag_baseline = result
-
-
 func _on_drag_ended() -> void:
 	_drag_baseline = null
 	_update_result_text()
@@ -516,9 +389,7 @@ func _on_focus_type_selected(index: int) -> void:
 	# Essenzen auf erlaubte Elemente und die neue Kapazität kürzen
 	var remaining := def.max_element_dots
 	for element in CONTENT.elements:
-		var count := mini(int(focus.element_fill.get(element.id, 0)), remaining)
-		if not def.allows_element(element.id):
-			count = 0
+		var count := mini(int(focus.element_fill.get(element.id, 0)), remaining) if def.allows_element(element.id) else 0
 		remaining -= count
 		if count > 0:
 			focus.element_fill[element.id] = count
@@ -560,9 +431,17 @@ func _sync_fill_ui() -> void:
 		_focus_select.select(index)
 
 
+func _update_fill_labels() -> void:
+	var def := focus.focus_def
+	_focus_info.text = "Bis %d Gems · Kapazität %d, davon bis %d Essenzen\nEssenzen: %s" % [
+		def.max_gems, def.max_dots, def.max_element_dots, _allowed_text(def)]
+	_element_total.text = "Essenzen: %d / %d" % [focus.get_element_total(), def.max_element_dots]
+	_base_value.text = str(focus.get_base_count())
+
+
 func _allowed_text(def: FocusDef) -> String:
 	if def.max_element_dots <= 0:
-		return "keine (nur neutrale Essenz)"
+		return "keine"
 	if def.allowed_elements.is_empty():
 		return "alle"
 	var names := PackedStringArray()
@@ -572,94 +451,29 @@ func _allowed_text(def: FocusDef) -> String:
 	return "nur " + ", ".join(names)
 
 
-func _update_fill_labels() -> void:
-	var def := focus.focus_def
-	_focus_info.text = "Form: %s   ·   Gems: %d / %d\nKapazität: %d (davon max. %d Essenzen)\nErlaubte Essenzen: %s" % [
-		def.shape.get_shape_name(), focus.gems.size(), def.max_gems,
-		def.max_dots, def.max_element_dots, _allowed_text(def)]
-	_element_total.text = "Essenzen: %d / %d" % [focus.get_element_total(), def.max_element_dots]
-	_base_value.text = str(focus.get_base_count())
-
-
 # --- Ergebnis ---------------------------------------------------------------
 
-func _element_bbcode(element_id: StringName) -> String:
-	if element_id == &"":
-		return "[color=#bbbbbb]neutral[/color]"
-	var element := CONTENT.get_element(element_id)
-	if element == null:
-		return String(element_id)
-	return "[color=#%s]%s[/color]" % [element.color.to_html(false), element.display_name]
-
-
-func _counts_text(counts: Dictionary) -> String:
-	if counts.is_empty():
-		return "–"
-	var parts := PackedStringArray()
-	for element in CONTENT.elements:
-		if counts.has(element.id):
-			parts.append("%s %s" % [_element_bbcode(element.id), _format_number(float(counts[element.id]))])
-	return ", ".join(parts)
-
-
-## Vergleich zweier Auswertungen als BBCode ("vorher -> nachher").
-func _diff_text(before: SpellResult, after: SpellResult) -> String:
-	if not after.valid:
-		var invalid_text := "[color=#ff9090]Der Spell wäre ungültig:[/color]\n"
-		for error in after.errors:
-			invalid_text += "[color=#ff9090]  • %s[/color]\n" % error
-		return invalid_text
-
-	var t := ""
-	if not before.valid:
-		t += "[color=#80ff90]Der Spell wird gültig: %s[/color]\n" % after.engraving.display_name
-	elif before.engraving != after.engraving:
-		t += "Spell: %s → %s\n" % [before.engraving.display_name, after.engraving.display_name]
-
-	var old_cast := before.cast_time if before.valid else 0.0
-	var old_mana := before.mana_cost if before.valid else 0.0
-	t += _diff_line("Cast-Zeit (s)", old_cast, after.cast_time, false)
-	t += _diff_line("Mana", old_mana, after.mana_cost, false)
-
-	var stat_names := after.stats.keys()
-	if before.valid:
-		for stat: StringName in before.stats:
-			if not stat_names.has(stat):
-				stat_names.append(stat)
-	for stat: StringName in stat_names:
-		var old_value: float = before.stats.get(stat, 0.0) if before.valid else 0.0
-		t += _diff_line(STAT_NAMES.get(stat, String(stat)), old_value, after.stats.get(stat, 0.0), true)
-	return t
-
-
-## Eine Zeile "Name: alt → neu (+x)"; grün = besser, rot = schlechter.
-func _diff_line(label: String, old_value: float, new_value: float, higher_is_better: bool) -> String:
-	var delta := new_value - old_value
-	if is_zero_approx(delta):
-		return "[color=#999999]%s: %s[/color]\n" % [label, _format_number(new_value)]
-	var better := (delta > 0.0) == higher_is_better
-	var color := "#80ff90" if better else "#ff9090"
-	var prefix := "+" if delta > 0.0 else ""
-	return "%s: %s → [b]%s[/b] [color=%s](%s%s)[/color]\n" % [
-		label, _format_number(old_value), _format_number(new_value), color, prefix, _format_number(delta)]
+## Anzeigename eines Spell-Werts.
+static func value_name(stat: StringName) -> String:
+	if VALUE_NAMES.has(stat):
+		return VALUE_NAMES[stat]
+	return Status.name_of(stat)
 
 
 func _update_result_text() -> void:
 	var t := ""
 	if _preview_result != null:
-		var title := "Vorschau: Gem ändern" if _canvas.is_replace_preview() else "Vorschau: mit neuem Gem"
-		t += "[font_size=18][b][color=#fff2a0]%s[/color][/b][/font_size]\n" % title
-		t += _diff_text(result, _preview_result) + "\n[color=#555555]────────────[/color]\n\n"
+		var title := "Vorschau: Gem ändern" if _canvas.is_replace_preview() else "Vorschau: neues Gem"
+		t += _section(title, _diff_text(result, _preview_result))
 	elif _drag_baseline != null:
-		t += "[font_size=18][b][color=#fff2a0]Änderung durch Verschieben[/color][/b][/font_size]\n"
-		t += _diff_text(_drag_baseline, result) + "\n[color=#555555]────────────[/color]\n\n"
+		t += _section("Änderung durch Verschieben", _diff_text(_drag_baseline, result))
 	if result.valid:
 		t += "[font_size=22][b]%s[/b][/font_size]\n" % result.engraving.display_name
 		t += "[color=#aaaaaa]%s[/color]\n\n" % result.engraving.description
-		t += "Cast-Zeit: [b]%.2f s[/b]\nMana: [b]%.1f[/b]\n\n" % [result.cast_time, result.mana_cost]
-		t += "[b]Werte[/b]\n"
+		t += "Cast-Zeit: [b]%s s[/b] · Mana: [b]%s[/b]\n\n" % [
+			TextFormat.number(result.cast_time), TextFormat.number(result.mana_cost, 1)]
 		for stat: StringName in result.stats:
-			t += "  %s: %s\n" % [STAT_NAMES.get(stat, String(stat)), _format_number(result.stats[stat])]
+			t += "%s: %s\n" % [value_name(stat), TextFormat.number(result.stats[stat])]
 		var arrow := "▾" if _show_gem_details else "▸"
 		t += "\n[url=toggle_gems][b]%s Gems (%d)[/b][/url]\n" % [arrow, result.gem_results.size()]
 		if _show_gem_details:
@@ -667,43 +481,94 @@ func _update_result_text() -> void:
 	else:
 		t += "[font_size=18][b]Noch kein gültiger Spell[/b][/font_size]\n\n"
 		for error in result.errors:
-			t += "[color=#ff9090]• %s[/color]\n" % error
-		var connected := focus.loop.size()
+			t += "[color=%s]• %s[/color]\n" % [COLOR_BAD, error]
 		t += "\nKreis: %d von %d Gems verbunden%s\n" % [
-			connected, focus.gems.size(), " (geschlossen)" if focus.loop_closed else ""]
-
-	t += "\n[color=#888888][font_size=12]Gems ziehen = verschieben (in beiden Modi). "
-	t += "Tasten: 1 = Setzen, 2 = Verbinden, R = neu würfeln, "
-	t += "Rücktaste = Verbindung zurück[/font_size][/color]"
+			focus.loop.size(), focus.gems.size(), " (geschlossen)" if focus.loop_closed else ""]
 	_result_text.text = tooltips.linkify(t)
+
+
+func _section(title: String, body: String) -> String:
+	return "[font_size=18][b][color=#fff2a0]%s[/color][/b][/font_size]\n%s\n[color=#555555]────────────[/color]\n\n" % [title, body]
+
+
+## Vergleich zweier Auswertungen als BBCode ("vorher → nachher").
+func _diff_text(before: SpellResult, after: SpellResult) -> String:
+	if not after.valid:
+		var invalid := "[color=%s]Der Spell wäre ungültig:[/color]\n" % COLOR_BAD
+		for error in after.errors:
+			invalid += "[color=%s]  • %s[/color]\n" % [COLOR_BAD, error]
+		return invalid
+
+	var t := ""
+	if not before.valid:
+		t += "[color=%s]Der Spell wird gültig: %s[/color]\n" % [COLOR_GOOD, after.engraving.display_name]
+	elif before.engraving != after.engraving:
+		t += "Spell: %s → %s\n" % [before.engraving.display_name, after.engraving.display_name]
+	t += _diff_line("Cast-Zeit (s)", before.cast_time if before.valid else 0.0, after.cast_time, false)
+	t += _diff_line("Mana", before.mana_cost if before.valid else 0.0, after.mana_cost, false)
+	var stat_names := after.stats.keys()
+	if before.valid:
+		for stat: StringName in before.stats:
+			if not stat_names.has(stat):
+				stat_names.append(stat)
+	for stat: StringName in stat_names:
+		var old_value: float = before.stats.get(stat, 0.0) if before.valid else 0.0
+		t += _diff_line(value_name(stat), old_value, after.stats.get(stat, 0.0), true)
+	return t
+
+
+## Eine Zeile "Name: alt → neu (+x)"; grün = besser, rot = schlechter.
+func _diff_line(label: String, old_value: float, new_value: float, higher_is_better: bool) -> String:
+	var delta := snappedf(new_value - old_value, 0.01)
+	if is_zero_approx(delta):
+		return "[color=#999999]%s: %s[/color]\n" % [label, TextFormat.number(new_value, 1)]
+	var color := COLOR_GOOD if (delta > 0.0) == higher_is_better else COLOR_BAD
+	return "%s: %s → [b]%s[/b] [color=%s](%s%s)[/color]\n" % [
+		label, TextFormat.number(old_value, 1), TextFormat.number(new_value, 1), color,
+		"+" if delta > 0.0 else "", TextFormat.number(delta, 1)]
 
 
 func _gem_details_text() -> String:
 	var t := ""
 	for gr in result.gem_results:
 		var gem := gr.placed.gem
-		var title := "★ " if gr.is_main() else ""
-		var multiplier := "" if is_equal_approx(gr.multiplier, 1.0) else "  ×" + _format_number(gr.multiplier)
-		t += "%s%s · %s%s\n" % [title, gem.display_name, gr.placed.engraving.display_name, multiplier]
-		var details := "eingesammelt: neutrale Essenz %d/%d, Essenzen %d/%d%s" % [
+		var multiplier := "" if is_equal_approx(gr.multiplier, 1.0) else " ×" + TextFormat.number(gr.multiplier)
+		t += "%s%s · %s%s\n" % ["★ " if gr.is_main() else "", gem.display_name, gr.placed.engraving.display_name, multiplier]
+		var details := "Gesammelt: neutrale Essenz %d/%d, Essenzen %d/%d%s" % [
 			gr.base_count, gem.max_base, gr.get_element_total(), gem.max_element,
 			"" if gr.element_counts.is_empty() else " (%s)" % _counts_text(gr.element_counts)]
-		if not is_equal_approx(gr.multiplier, 1.0):
-			details += "\nzählt: %s" % _essence_text(gr.effective_base, gr.effective_elements)
+		if not is_equal_approx(gr.effective_base + _sum(gr.effective_elements), gr.base_count + gr.get_element_total()):
+			details += "\nZählt: %s" % _essence_text(gr.effective_base, gr.effective_elements)
 		if gr.is_main() and (gr.received_base > 0.0 or not gr.received_elements.is_empty()):
-			details += "\nübertragen: %s" % _essence_text(gr.received_base, gr.received_elements)
+			details += "\nErhalten: %s" % _essence_text(gr.received_base, gr.received_elements)
 		if not gr.placed.engraving.transfer_to_main:
-			details += "\nPunkte für die Gravur: %s" % _format_number(gr.points)
+			details += "\nPunkte: %s" % TextFormat.number(gr.points)
 		t += "[indent][color=#bbbbbb]%s[/color][/indent]\n" % details
 	return t
 
 
+static func _sum(counts: Dictionary) -> float:
+	var total := 0.0
+	for value: float in counts.values():
+		total += value
+	return total
+
+
 ## "neutrale Essenz 12, Feuer 3, Luft 1"
 func _essence_text(base: float, counts: Dictionary) -> String:
-	var text := "neutrale Essenz %s" % _format_number(base)
+	var text := "neutrale Essenz %s" % TextFormat.number(base)
 	if not counts.is_empty():
 		text += ", " + _counts_text(counts)
 	return text
+
+
+func _counts_text(counts: Dictionary) -> String:
+	var parts := PackedStringArray()
+	for element in CONTENT.elements:
+		if counts.has(element.id):
+			parts.append("[color=#%s]%s[/color] %s" % [
+				element.color.to_html(false), element.display_name, TextFormat.number(float(counts[element.id]))])
+	return ", ".join(parts)
 
 
 func _on_result_meta_clicked(meta: Variant) -> void:
@@ -712,13 +577,8 @@ func _on_result_meta_clicked(meta: Variant) -> void:
 		_update_result_text()
 
 
-func _format_number(value: float) -> String:
-	return str(int(value)) if is_equal_approx(value, roundf(value)) else "%.2f" % value
+# --- Speichern und Laden (FocusStore: JSON mit IDs in user://foci/) ---------
 
-
-# --- Speichern / Laden ------------------------------------------------------
-
-## Speicherstände: siehe FocusStore (JSON mit IDs in user://foci/).
 func _refresh_save_list() -> void:
 	_save_select.clear()
 	for focus_name in FocusStore.list_names():
@@ -726,9 +586,7 @@ func _refresh_save_list() -> void:
 
 
 func _selected_save_name() -> String:
-	if _save_select.selected < 0:
-		return ""
-	return _save_select.get_item_text(_save_select.selected)
+	return _save_select.get_item_text(_save_select.selected) if _save_select.selected >= 0 else ""
 
 
 func _save_focus() -> void:
@@ -761,10 +619,9 @@ func _load_focus() -> void:
 	_save_name.text = file_name
 	_sync_fill_ui()
 	_refresh()
-	var text := "Geladen: %s" % file_name
-	if not warnings.is_empty():
-		text += "\n" + "\n".join(warnings)
-	_show_status(text)
+	var lines := PackedStringArray(["Geladen: %s" % file_name])
+	lines.append_array(warnings)
+	_show_status("\n".join(lines))
 
 
 func _delete_focus() -> void:

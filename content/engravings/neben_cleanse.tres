@@ -9,9 +9,9 @@
 script = ExtResource("4_qe3xn")
 id = &"neben_cleanse"
 display_name = "Cleanse"
-element_ids = Array[StringName]([&"water"])
+description = "Cleanse"
 icon = ExtResource("2_hob7d")
-description = "Entfernt alle Debuffs vom Ziel des Spells (Cleanse)"
+element_ids = Array[StringName]([&"water"])
 base_stats = {
 &"cleanse": 1.0
 }

@@ -63,6 +63,7 @@ func register(label: RichTextLabel, level := 0) -> void:
 
 
 ## Macht bekannte Begriffe zu Links; BBCode-Tags und vorhandene Links bleiben unberührt.
+## Text in [nolink]...[/nolink] wird nicht verlinkt (die Markierung selbst fällt weg).
 func linkify(bbcode: String, exclude_id := "") -> String:
 	if _regex == null:
 		return bbcode
@@ -80,11 +81,12 @@ func linkify(bbcode: String, exclude_id := "") -> String:
 			result += bbcode.substr(tag_start)
 			break
 		var tag := bbcode.substr(tag_start, tag_end - tag_start + 1)
-		if tag.begins_with("[url"):
+		if tag.begins_with("[url") or tag == "[nolink]":
 			in_url += 1
-		elif tag == "[/url]":
+		elif tag == "[/url]" or tag == "[/nolink]":
 			in_url = maxi(0, in_url - 1)
-		result += tag
+		if not tag.ends_with("nolink]"):
+			result += tag
 		pos = tag_end + 1
 	return result
 

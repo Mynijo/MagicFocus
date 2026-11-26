@@ -22,7 +22,6 @@ enum Mode { PLACE, CONNECT }
 
 const GEM_PICK_RADIUS := 20.0   # Bildschirm-Pixel
 const DRAG_THRESHOLD := 5.0      # Bildschirm-Pixel, ab denen ein Klick zum Ziehen wird
-const MIN_GEM_DISTANCE := 25.0  # Fokus-Einheiten
 const SLIDE_ATTEMPTS := 4       # Versuche, ein gezogenes Gem aus fremden Reichweiten zu schieben
 const MAIN_GEM_SIZE := 24.0     # Bildschirm-Pixel (halbe Bildgröße)
 const MINOR_GEM_SIZE := 17.0
@@ -193,13 +192,6 @@ func _gui_input(event: InputEvent) -> void:
 
 # --- Gems setzen / verschieben / entfernen --------------------------------
 
-func _too_close(target: FocusInstance, pos: Vector2, ignore: int) -> bool:
-	for i in target.gems.size():
-		if i != ignore and target.gems[i].position.distance_to(pos) < MIN_GEM_DISTANCE:
-			return true
-	return false
-
-
 ## Gems dürfen nicht in der Reichweite eines anderen Gems liegen, in beide Richtungen:
 ## Abstand mindestens der größere der beiden Radien. Gibt den Index des ersten
 ## störenden Gems zurück, sonst -1. Geprüft nur beim Setzen, Verschieben und Ändern.
@@ -233,8 +225,6 @@ func place_error(gem: GemDef, pos: Vector2) -> String:
 		return "Es gibt bereits ein Hauptgem."
 	if gem.role == GemDef.Role.MINOR and not has_main:
 		return "Setze zuerst ein Hauptgem."
-	if _too_close(focus, pos, -1):
-		return "Zu nah an einem anderen Gem."
 	return _radius_error(PlacedGem.radius_of(gem, placing_engraving), pos, -1)
 
 
@@ -309,8 +299,7 @@ func _slide_position(idx: int, pos: Vector2) -> Variant:
 		if direction.length() < 0.001:
 			direction = focus.gems[idx].position - other
 		target = other + direction.normalized() * (maxf(radius, focus.gems[blocker].get_radius()) + 0.01)
-	if radius_conflict(radius, target, idx) >= 0 or _too_close(focus, target, idx) \
-			or not focus.focus_def.shape.contains(target):
+	if radius_conflict(radius, target, idx) >= 0 or not focus.focus_def.shape.contains(target):
 		return null
 	return target
 
@@ -355,7 +344,7 @@ func _last_in_loop() -> int:
 ## Leer = Verbindung zu `idx` ist erlaubt, sonst der Grund.
 func connect_error(idx: int) -> String:
 	if focus.loop_closed:
-		return "Der Kreis ist geschlossen. Rechtsklick nimmt die letzte Verbindung zurück."
+		return "Der Kreis ist geschlossen. Rechtsklick: letzte Verbindung zurück."
 	if focus.loop.is_empty():
 		if focus.gems[idx].gem.role == GemDef.Role.MAIN:
 			return ""
@@ -483,13 +472,7 @@ func _compute_preview() -> void:
 		if _preview_error != "":
 			return
 
-	var copy := FocusInstance.new()
-	copy.focus_def = focus.focus_def
-	copy.element_fill = focus.element_fill
-	copy.dot_seed = focus.dot_seed
-	copy.gems = focus.gems.duplicate()
-	copy.loop = focus.loop.duplicate()
-	copy.loop_closed = focus.loop_closed
+	var copy := focus.copy()
 	if _replace_index >= 0:
 		_replace_gem(copy, _replace_index)
 		_preview_index = _replace_index
@@ -668,8 +651,7 @@ static func _gem_label(gem: GemDef, engraving: EngravingDef) -> String:
 	var multiplier := gem.get_multiplier()
 	if is_equal_approx(multiplier, 1.0):
 		return engraving_name  # ×1 wird nicht angezeigt
-	var number := str(int(multiplier)) if is_equal_approx(multiplier, roundf(multiplier)) else String.num(multiplier, 2)
-	return "%s ×%s" % [engraving_name, number]
+	return "%s ×%s" % [engraving_name, TextFormat.number(multiplier)]
 
 
 func _draw_sector(rr: GemResult, fill_alpha: float, border: Color, px: float) -> void:
@@ -903,10 +885,7 @@ func _draw_preview_edges(px: float) -> void:
 static func _count_text(count: int, multiplier: float) -> String:
 	if is_equal_approx(multiplier, 1.0):
 		return str(count)
-	var m := str(int(multiplier)) if is_equal_approx(multiplier, roundf(multiplier)) else String.num(multiplier, 2)
-	var total := count * multiplier
-	var t := str(int(total)) if is_equal_approx(total, roundf(total)) else String.num(total, 2)
-	return "%d ×%s = %s" % [count, m, t]
+	return "%d ×%s = %s" % [count, TextFormat.number(multiplier), TextFormat.number(count * multiplier)]
 
 
 ## Ring um einen hervorgehobenen Punkt.

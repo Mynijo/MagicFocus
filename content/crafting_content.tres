@@ -88,33 +88,33 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/element_earth.png" id="86_ed2qg"]
 [ext_resource type="Texture2D" path="res://assets/sprites/element_air.png" id="87_hh12o"]
 [ext_resource type="Texture2D" path="res://assets/sprites/element_lightning.png" id="88_oq37p"]
-[ext_resource type="Texture2D" path="res://assets/sprites/engraving_status_bleed.png" id="89_6u04t"]
-[ext_resource type="Texture2D" path="res://assets/sprites/engraving_slow.png" id="90_sttmv"]
-[ext_resource type="Texture2D" path="res://assets/sprites/engraving_hasted.png" id="91_w3040"]
-[ext_resource type="Texture2D" path="res://assets/sprites/engraving_mana_burn.png" id="92_g8bn4"]
-[ext_resource type="Texture2D" path="res://assets/sprites/engraving_armor.png" id="93_bi3pr"]
-[ext_resource type="Texture2D" path="res://assets/sprites/engraving_status_schock.png" id="94_rnyfn"]
-[ext_resource type="Texture2D" path="res://assets/sprites/engraving_status_nass.png" id="95_82c63"]
-[ext_resource type="Texture2D" path="res://assets/sprites/engraving_freeze.png" id="96_oiesj"]
-[ext_resource type="Texture2D" path="res://assets/sprites/engraving_status_burn.png" id="97_3k51r"]
-[ext_resource type="Texture2D" path="res://assets/sprites/engraving_leben_reg.png" id="98_5bj24"]
-[ext_resource type="Texture2D" path="res://assets/sprites/engraving_mana_reg.png" id="99_buwc3"]
-[ext_resource type="Texture2D" path="res://assets/sprites/engraving_status_armor_break.png" id="100_tedi0"]
-[ext_resource type="Texture2D" path="res://assets/sprites/engraving_crit.png" id="101_qf4i7"]
-[ext_resource type="Texture2D" path="res://assets/sprites/engraving_permanent_burn.png" id="102_1w0a0"]
-[ext_resource type="Texture2D" path="res://assets/sprites/engraving_accelerated_burn.png" id="103_08kwt"]
-[ext_resource type="Texture2D" path="res://assets/sprites/engraving_bless.png" id="104_wwwad"]
-[ext_resource type="Texture2D" path="res://assets/sprites/engraving_thorns.png" id="105_bjxqb"]
-[ext_resource type="Texture2D" path="res://assets/sprites/engraving_mana_absorption.png" id="106_va580"]
-[ext_resource type="Texture2D" path="res://assets/sprites/engraving_damage_reduction.png" id="107_mwfnp"]
-[ext_resource type="Texture2D" path="res://assets/sprites/engraving_life_rewind.png" id="108_kf5hb"]
-[ext_resource type="Texture2D" path="res://assets/sprites/engraving_cleanse.png" id="109_v8gim"]
-[ext_resource type="Texture2D" path="res://assets/sprites/engraving_dispel.png" id="110_vdjcu"]
-[ext_resource type="Texture2D" path="res://assets/sprites/engraving_critical_chance.png" id="111_6ecqk"]
-[ext_resource type="Texture2D" path="res://assets/sprites/engraving_blood_thinner.png" id="112_e55j2"]
-[ext_resource type="Texture2D" path="res://assets/sprites/engraving_cauterized.png" id="113_mkia2"]
-[ext_resource type="Texture2D" path="res://assets/sprites/engraving_max_health.png" id="114_ajftg"]
-[ext_resource type="Texture2D" path="res://assets/sprites/engraving_rot.png" id="115_qfkba"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_status_burn.png" id="89_6u04t"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_status_bleed.png" id="90_sttmv"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_status_nass.png" id="91_w3040"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_status_schock.png" id="92_g8bn4"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_slow.png" id="93_bi3pr"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_mana_burn.png" id="94_rnyfn"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_freeze.png" id="95_82c63"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_permanent_burn.png" id="96_oiesj"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_accelerated_burn.png" id="97_3k51r"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_blood_thinner.png" id="98_5bj24"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_cauterized.png" id="99_buwc3"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_rot.png" id="100_tedi0"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_armor.png" id="101_qf4i7"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_hasted.png" id="102_1w0a0"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_leben_reg.png" id="103_08kwt"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_mana_reg.png" id="104_wwwad"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_bless.png" id="105_bjxqb"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_thorns.png" id="106_va580"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_mana_absorption.png" id="107_mwfnp"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_damage_reduction.png" id="108_kf5hb"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_life_rewind.png" id="109_v8gim"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_critical_chance.png" id="110_vdjcu"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_max_health.png" id="111_6ecqk"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_crit.png" id="112_e55j2"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_status_armor_break.png" id="113_mkia2"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_cleanse.png" id="114_ajftg"]
+[ext_resource type="Texture2D" path="res://assets/sprites/engraving_dispel.png" id="115_qfkba"]
 [ext_resource type="Script" path="res://core/data/crafting_content.gd" id="116_ngk4v"]
 
 [sub_resource type="Resource" id="Resource_lp6gv"]
@@ -124,8 +124,9 @@ title = "Feuer"
 words = PackedStringArray("Feuer", "Feuer-Essenz")
 icon = ExtResource("84_knhwa")
 icon_color = Color(0.95, 0.35, 0.15, 1)
-text = "Ein Element. Eine Feuer-Essenz zählt 5 Punkte für Gravuren mit diesem Element, für andere Gravuren nichts (außer Magischer Bolzen). Erzeugt: Burn, Crit, Perma-Burn, Accelerated Burn, Critical Chance.
-Gravuren: Feuerball, Meteor, Fire Rain, Permanent Burn, Accelerated Burn, Critical Chance, Crit, Burn."
+text = "Element. 1 Feuer-Essenz = 5 Punkte, nur für Gravuren mit Feuer.
+Erzeugt: Burn, Perma-Burn, Accelerated Burn, Critical Chance, Crit.
+Gravuren: [nolink]Feuerball, Meteor, Fire Rain, Permanent Burn, Accelerated Burn, Critical Chance, Crit, Burn[/nolink]."
 
 [sub_resource type="Resource" id="Resource_2d31c"]
 script = ExtResource("83_ve5ej")
@@ -134,8 +135,9 @@ title = "Wasser"
 words = PackedStringArray("Wasser", "Wasser-Essenz")
 icon = ExtResource("85_2ftak")
 icon_color = Color(0.2, 0.55, 1, 1)
-text = "Ein Element. Eine Wasser-Essenz zählt 5 Punkte für Gravuren mit diesem Element, für andere Gravuren nichts (außer Magischer Bolzen). Erzeugt: Nass, Leben-Reg, Bless, Life Rewind, Max Health, Blood Thinner.
-Gravuren: Freeze, Heal, Leben-Reg, Wasser-Detonation, Water Rain, Cleanse, Bless, Life Rewind, Mana Absorption, Blood Thinner, Vampire, Max Health, Mana-Reduktion, Nass, Mana Efficiency, Quick Cast, Regeneration."
+text = "Element. 1 Wasser-Essenz = 5 Punkte, nur für Gravuren mit Wasser.
+Erzeugt: Leben-Reg, Nass, Cleanse, Bless, Life Rewind, Armor, Mana Absorption, Blood Thinner, Max Health.
+Gravuren: [nolink]Freeze, Heal, Leben-Reg, Wasser-Detonation, Water Rain, Cleanse, Bless, Life Rewind, Mana Absorption, Blood Thinner, Vampire, Max Health, Mana-Reduktion, Nass, Mana Efficiency, Quick Cast, Regeneration[/nolink]."
 
 [sub_resource type="Resource" id="Resource_1gw52"]
 script = ExtResource("83_ve5ej")
@@ -144,8 +146,9 @@ title = "Erde"
 words = PackedStringArray("Erde", "Erde-Essenz", "Erd-Essenz")
 icon = ExtResource("86_ed2qg")
 icon_color = Color(0.62, 0.45, 0.25, 1)
-text = "Ein Element. Eine Erde-Essenz zählt 5 Punkte für Gravuren mit diesem Element, für andere Gravuren nichts (außer Magischer Bolzen). Erzeugt: Armor, Armor Break, Thorns, Damage Reduction, Mana Absorption, Rotten, Blood Thinner.
-Gravuren: Schutz, Kanone, Bulwark, Damage Reduction, Mana Absorption, Blood Thinner, Rot, Armor, Armor Break, Radius Expansion, Thorns."
+text = "Element. 1 Erd-Essenz = 5 Punkte, nur für Gravuren mit Erde.
+Erzeugt: Armor, Armor Break, Damage Reduction, Mana Absorption, Blood Thinner, Rotten, Thorns.
+Gravuren: [nolink]Schutz, Kanone, Bulwark, Damage Reduction, Mana Absorption, Blood Thinner, Rot, Armor, Armor Break, Radius Expansion, Thorns[/nolink]."
 
 [sub_resource type="Resource" id="Resource_fired"]
 script = ExtResource("83_ve5ej")
@@ -154,8 +157,9 @@ title = "Luft"
 words = PackedStringArray("Luft", "Luft-Essenz")
 icon = ExtResource("87_hh12o")
 icon_color = Color(0.7, 0.95, 0.9, 1)
-text = "Ein Element. Eine Luft-Essenz zählt 5 Punkte für Gravuren mit diesem Element, für andere Gravuren nichts (außer Magischer Bolzen). Erzeugt: Bleed, Slowed, Hasted, Accelerated Burn.
-Gravuren: Freeze, Slow, Hasted, Luftklinge, Accelerated Burn, Cast-Speed, Bleed, Mana Efficiency, Quick Cast."
+text = "Element. 1 Luft-Essenz = 5 Punkte, nur für Gravuren mit Luft.
+Erzeugt: Slowed, Hasted, Bleed, Accelerated Burn, Burn.
+Gravuren: [nolink]Freeze, Slow, Hasted, Luftklinge, Accelerated Burn, Cast-Speed, Bleed, Mana Efficiency, Quick Cast[/nolink]."
 
 [sub_resource type="Resource" id="Resource_e3hj6"]
 script = ExtResource("83_ve5ej")
@@ -164,251 +168,253 @@ title = "Blitz"
 words = PackedStringArray("Blitz", "Blitz-Essenz")
 icon = ExtResource("88_oq37p")
 icon_color = Color(1, 0.88, 0.2, 1)
-text = "Ein Element. Eine Blitz-Essenz zählt 5 Punkte für Gravuren mit diesem Element, für andere Gravuren nichts (außer Magischer Bolzen). Erzeugt: Schock, Mana Burn, Mana-Reg.
-Gravuren: Mana-Reg, Blitzschlag, Dispel, Thunderstorm, Mana Burn, Schock, Critical Damage."
+text = "Element. 1 Blitz-Essenz = 5 Punkte, nur für Gravuren mit Blitz.
+Erzeugt: Mana-Reg, Schock, Dispel, Mana Burn.
+Gravuren: [nolink]Mana-Reg, Blitzschlag, Dispel, Thunderstorm, Mana Burn, Schock, Critical Damage[/nolink]."
 
 [sub_resource type="Resource" id="Resource_cf3ep"]
 script = ExtResource("83_ve5ej")
-id = &"bleed"
-title = "Bleed"
-words = PackedStringArray("Bleed")
-icon = ExtResource("89_6u04t")
-text = "Verursacht pro Stack X Schaden pro Sekunde. Verliert 1 Stack pro Sekunde. Entsteht aus Luft-Essenz.
-(Kampfregel, wirkt ab dem Auto-Battler.)"
+id = &"debuff"
+title = "Debuff"
+words = PackedStringArray("Debuff", "Debuffs")
+text = "Schadet dem Träger; Cleanse entfernt alle: Burn, Bleed, Nass, Schock, Slowed, Mana Burn, Eis, Perma-Burn, Accelerated Burn, Blood Thinner, Cauterized, Rotten."
 
 [sub_resource type="Resource" id="Resource_ykw7k"]
 script = ExtResource("83_ve5ej")
-id = &"slowed"
-title = "Slowed"
-words = PackedStringArray("Slowed", "Slow")
-icon = ExtResource("90_sttmv")
-text = "Verlängert die Cast-Zeit des Gegners um X Sekunden. Verliert 1 Stack pro Sekunde, höchstens 10 Stacks. Slowed und Hasted heben sich 1 : 1 auf.
-(Kampfregel, wirkt ab dem Auto-Battler.)"
+id = &"buff"
+title = "Buff"
+words = PackedStringArray("Buff", "Buffs")
+text = "Hilft dem Träger; Dispel entfernt sie: Armor, Hasted, Leben-Reg, Mana-Reg, Bless, Thorns, Mana Absorption, Damage Reduction, Life Rewind, Critical Chance, Max Health."
 
 [sub_resource type="Resource" id="Resource_pos0j"]
-script = ExtResource("83_ve5ej")
-id = &"hasted"
-title = "Hasted"
-words = PackedStringArray("Hasted")
-icon = ExtResource("91_w3040")
-text = "Verkürzt die eigene Cast-Zeit um X Sekunden. Verliert 1 Stack pro Sekunde, höchstens 10 Stacks. Hasted und Slowed heben sich 1 : 1 auf.
-(Kampfregel, wirkt ab dem Auto-Battler.)"
-
-[sub_resource type="Resource" id="Resource_twvyk"]
-script = ExtResource("83_ve5ej")
-id = &"mana_burn"
-title = "Mana Burn"
-words = PackedStringArray("Mana Burn")
-icon = ExtResource("92_g8bn4")
-text = "Senkt die Mana-Reg des Gegners um X pro Sekunde. Verliert 1 Stack pro gesenkter Mana-Reg. Entsteht aus Blitz-Essenz.
-(Kampfregel, wirkt ab dem Auto-Battler.)"
-
-[sub_resource type="Resource" id="Resource_eef25"]
-script = ExtResource("83_ve5ej")
-id = &"armor"
-title = "Armor"
-words = PackedStringArray("Armor")
-icon = ExtResource("93_bi3pr")
-text = "Verhindert X Schaden. Verliert 1 Stack pro verhindertem Schaden. Armor Break hebt Armor im Verhältnis 1 : 5 auf.
-(Kampfregel, wirkt ab dem Auto-Battler.)"
-
-[sub_resource type="Resource" id="Resource_4q6eo"]
-script = ExtResource("83_ve5ej")
-id = &"schock"
-title = "Schock"
-words = PackedStringArray("Schock")
-icon = ExtResource("94_rnyfn")
-text = "Verursacht 1 Schaden pro Mana, das der Gegner verbraucht (höchstens so viel wie Stacks). Verliert 1 Stack pro verbrauchtem Mana. Nass verstärkt den Schaden. Entsteht aus Blitz-Essenz.
-(Kampfregel, wirkt ab dem Auto-Battler.)"
-
-[sub_resource type="Resource" id="Resource_yyblq"]
-script = ExtResource("83_ve5ej")
-id = &"nass"
-title = "Nass"
-words = PackedStringArray("Nass")
-icon = ExtResource("95_82c63")
-text = "Erhöht den Schaden von Schock um X. Nass und Burn heben sich 1 : 1 auf. Freeze wandelt 100 Nass in 1 Eis. Entsteht aus Wasser-Essenz.
-(Kampfregel, wirkt ab dem Auto-Battler.)"
-
-[sub_resource type="Resource" id="Resource_kywfh"]
-script = ExtResource("83_ve5ej")
-id = &"eis"
-title = "Eis"
-words = PackedStringArray("Eis")
-icon = ExtResource("96_oiesj")
-text = "Betäubt X Sekunden: Der Gegner kann nicht zaubern. Verliert 1 Stack pro Sekunde. Entsteht, wenn Freeze Nass umwandelt.
-(Kampfregel, wirkt ab dem Auto-Battler.)"
-
-[sub_resource type="Resource" id="Resource_6togp"]
 script = ExtResource("83_ve5ej")
 id = &"burn"
 title = "Burn"
 words = PackedStringArray("Burn")
-icon = ExtResource("97_3k51r")
-text = "Verursacht X Schaden pro Sekunde. Verliert 1 Stack pro Sekunde. Nass und Burn heben sich 1 : 1 auf. Entsteht aus Feuer-Essenz.
-(Kampfregel, wirkt ab dem Auto-Battler.)"
+icon = ExtResource("89_6u04t")
+text = "Debuff. 2 Schaden pro Stack und Sekunde, danach -1 Stack. Hebt sich 1 : 1 mit Nass auf; mit Bleed entsteht Cauterized."
+
+[sub_resource type="Resource" id="Resource_twvyk"]
+script = ExtResource("83_ve5ej")
+id = &"bleed"
+title = "Bleed"
+words = PackedStringArray("Bleed")
+icon = ExtResource("90_sttmv")
+text = "Debuff. 2 Schaden pro Stack und Sekunde, danach -1 Stack. Mit Burn entsteht Cauterized."
+
+[sub_resource type="Resource" id="Resource_eef25"]
+script = ExtResource("83_ve5ej")
+id = &"wet"
+title = "Nass"
+words = PackedStringArray("Nass")
+icon = ExtResource("91_w3040")
+text = "Debuff. +1 Schock-Schaden pro Stack. Hebt sich 1 : 1 mit Burn auf. Freeze wandelt Nass in Eis."
+
+[sub_resource type="Resource" id="Resource_4q6eo"]
+script = ExtResource("83_ve5ej")
+id = &"shock"
+title = "Schock"
+words = PackedStringArray("Schock")
+icon = ExtResource("92_g8bn4")
+text = "Debuff. Gibt der Träger Mana aus: 1 Schaden und -1 Stack pro Mana (höchstens alle Stacks). Nass verstärkt den Schaden."
+
+[sub_resource type="Resource" id="Resource_yyblq"]
+script = ExtResource("83_ve5ej")
+id = &"slow"
+title = "Slowed"
+words = PackedStringArray("Slowed", "Slow")
+icon = ExtResource("93_bi3pr")
+text = "Debuff. Nächster Cast +0,1 s pro Stack; dabei werden alle Stacks verbraucht. Höchstens 10 Stacks, hebt sich 1 : 1 mit Hasted auf."
+
+[sub_resource type="Resource" id="Resource_kywfh"]
+script = ExtResource("83_ve5ej")
+id = &"mana_burn"
+title = "Mana Burn"
+words = PackedStringArray("Mana Burn")
+icon = ExtResource("94_rnyfn")
+text = "Debuff. Senkt die Mana-Reg um 1 pro Stack und Sekunde; die genutzten Stacks werden verbraucht."
+
+[sub_resource type="Resource" id="Resource_6togp"]
+script = ExtResource("83_ve5ej")
+id = &"ice"
+title = "Eis"
+words = PackedStringArray("Eis")
+icon = ExtResource("95_82c63")
+text = "Debuff. Betäubt: kein neuer Cast, ein laufender pausiert. -1 Stack pro Sekunde."
 
 [sub_resource type="Resource" id="Resource_60l5b"]
-script = ExtResource("83_ve5ej")
-id = &"leben_reg"
-title = "Leben-Reg"
-words = PackedStringArray("Leben-Reg")
-icon = ExtResource("98_5bj24")
-text = "Heilt 1 Leben pro Sekunde und Stack. Verliert 1 Stack pro Sekunde. Entsteht aus Wasser-Essenz.
-(Kampfregel, wirkt ab dem Auto-Battler.)"
-
-[sub_resource type="Resource" id="Resource_dsovf"]
-script = ExtResource("83_ve5ej")
-id = &"mana_reg"
-title = "Mana-Reg"
-words = PackedStringArray("Mana-Reg")
-icon = ExtResource("99_buwc3")
-text = "Gibt 1 Mana pro Sekunde und Stack. Verliert 1 Stack pro Sekunde. Mana Burn senkt sie. Entsteht aus Blitz-Essenz.
-(Kampfregel, wirkt ab dem Auto-Battler.)"
-
-[sub_resource type="Resource" id="Resource_hmfx2"]
-script = ExtResource("83_ve5ej")
-id = &"armor_break"
-title = "Armor Break"
-words = PackedStringArray("Armor Break")
-icon = ExtResource("100_tedi0")
-text = "Hebt Armor im Verhältnis 1 : 5 auf. Entsteht aus Erd-Essenz.
-(Kampfregel, wirkt ab dem Auto-Battler.)"
-
-[sub_resource type="Resource" id="Resource_vahik"]
-script = ExtResource("83_ve5ej")
-id = &"crit"
-title = "Crit"
-words = PackedStringArray("Crit")
-icon = ExtResource("101_qf4i7")
-text = "1 Crit = 1 % Chance auf einen kritischen Treffer. Ein kritischer Treffer macht 200 % Schaden. Entsteht aus Feuer-Essenz.
-(Kampfregel, wirkt ab dem Auto-Battler.)"
-
-[sub_resource type="Resource" id="Resource_101t7"]
 script = ExtResource("83_ve5ej")
 id = &"perma_burn"
 title = "Perma-Burn"
 words = PackedStringArray("Perma-Burn")
-icon = ExtResource("102_1w0a0")
-text = "Debuff. Erzeugt pro Stack jede Sekunde Burn. Baut sich nicht ab; nur Cleanse entfernt ihn.
-(Kampfregel, wirkt ab dem Auto-Battler.)"
+icon = ExtResource("96_oiesj")
+text = "Debuff. Erzeugt pro Stack 1 Burn pro Sekunde. Baut sich nicht ab, nur Cleanse entfernt ihn."
 
-[sub_resource type="Resource" id="Resource_c5c5k"]
+[sub_resource type="Resource" id="Resource_dsovf"]
 script = ExtResource("83_ve5ej")
 id = &"accelerated_burn"
 title = "Accelerated Burn"
 words = PackedStringArray("Accelerated Burn")
-icon = ExtResource("103_08kwt")
-text = "Debuff. Solange er wirkt, tickt Burn zweimal pro Sekunde: gleicher Gesamtschaden in der halben Zeit. Verliert 1 Stack pro Sekunde.
-(Kampfregel, wirkt ab dem Auto-Battler.)"
+icon = ExtResource("97_3k51r")
+text = "Debuff. Burn tickt zweimal pro Sekunde: gleicher Schaden in halber Zeit. -1 Stack pro Sekunde."
 
-[sub_resource type="Resource" id="Resource_dhp4a"]
-script = ExtResource("83_ve5ej")
-id = &"bless"
-title = "Bless"
-words = PackedStringArray("Bless")
-icon = ExtResource("104_wwwad")
-text = "Buff. Jede erhaltene Heilung (auch Leben-Reg) heilt pro Stack X mehr und verbraucht 1 Stack.
-(Kampfregel, wirkt ab dem Auto-Battler.)"
-
-[sub_resource type="Resource" id="Resource_xjdh7"]
-script = ExtResource("83_ve5ej")
-id = &"thorns"
-title = "Thorns"
-words = PackedStringArray("Thorns")
-icon = ExtResource("105_bjxqb")
-text = "Buff. Wird der Träger von einem Spell getroffen, erhält der Angreifer pro Stack X Schaden; verbraucht 1 Stack pro Treffer.
-(Kampfregel, wirkt ab dem Auto-Battler.)"
-
-[sub_resource type="Resource" id="Resource_pcw08"]
-script = ExtResource("83_ve5ej")
-id = &"mana_absorption"
-title = "Mana Absorption"
-words = PackedStringArray("Mana Absorption")
-icon = ExtResource("106_va580")
-text = "Buff. Wird der Träger von einem Spell getroffen, erhält er pro Stack X Mana; verbraucht 1 Stack pro Treffer.
-(Kampfregel, wirkt ab dem Auto-Battler.)"
-
-[sub_resource type="Resource" id="Resource_rbbfg"]
-script = ExtResource("83_ve5ej")
-id = &"damage_reduction"
-title = "Damage Reduction"
-words = PackedStringArray("Damage Reduction")
-icon = ExtResource("107_mwfnp")
-text = "Buff. Halbiert den Schaden des nächsten gegnerischen Spells (alle Treffer); 1 Stack pro Spell.
-(Kampfregel, wirkt ab dem Auto-Battler.)"
-
-[sub_resource type="Resource" id="Resource_witpl"]
-script = ExtResource("83_ve5ej")
-id = &"life_rewind"
-title = "Life Rewind"
-words = PackedStringArray("Life Rewind")
-icon = ExtResource("108_kf5hb")
-text = "Buff. Speichert das aktuelle Leben; nach 10 Sekunden wird das Leben auf diesen Wert gesetzt, auch nach unten. Tödlicher Schaden tötet trotzdem.
-(Kampfregel, wirkt ab dem Auto-Battler.)"
-
-[sub_resource type="Resource" id="Resource_11ro5"]
-script = ExtResource("83_ve5ej")
-id = &"cleanse"
-title = "Cleanse"
-words = PackedStringArray("Cleanse")
-icon = ExtResource("109_v8gim")
-text = "Entfernt alle Debuffs vom Ziel: Burn, Bleed, Nass, Schock, Slowed, Mana Burn, Eis, Perma-Burn, Accelerated Burn, Blood Thinner, Cauterized, Rotten.
-(Kampfregel, wirkt ab dem Auto-Battler.)"
-
-[sub_resource type="Resource" id="Resource_14mf6"]
-script = ExtResource("83_ve5ej")
-id = &"dispel"
-title = "Dispel"
-words = PackedStringArray("Dispel")
-icon = ExtResource("110_vdjcu")
-text = "Pro Stack wird ein Buff des Ziels mit allen seinen Stacks entfernt, der mit den meisten Stacks zuerst. Buffs: Armor, Hasted, Leben-Reg, Mana-Reg, Bless, Thorns, Mana Absorption, Damage Reduction, Life Rewind, Critical Chance, Max Health.
-(Kampfregel, wirkt ab dem Auto-Battler.)"
-
-[sub_resource type="Resource" id="Resource_160co"]
-script = ExtResource("83_ve5ej")
-id = &"critical_chance"
-title = "Critical Chance"
-words = PackedStringArray("Critical Chance")
-icon = ExtResource("111_6ecqk")
-text = "Buff. +1 % Crit-Chance pro Stack auf die eigenen Spells. Bleibt bis zum nächsten Crit, dann werden alle Stacks verbraucht.
-(Kampfregel, wirkt ab dem Auto-Battler.)"
-
-[sub_resource type="Resource" id="Resource_18ksk"]
+[sub_resource type="Resource" id="Resource_hmfx2"]
 script = ExtResource("83_ve5ej")
 id = &"blood_thinner"
 title = "Blood Thinner"
 words = PackedStringArray("Blood Thinner")
-icon = ExtResource("112_e55j2")
-text = "Debuff. Solange er wirkt, tickt Bleed zweimal pro Sekunde: gleicher Gesamtschaden in der halben Zeit. Verliert 1 Stack pro Sekunde.
-(Kampfregel, wirkt ab dem Auto-Battler.)"
+icon = ExtResource("98_5bj24")
+text = "Debuff. Bleed tickt zweimal pro Sekunde: gleicher Schaden in halber Zeit. -1 Stack pro Sekunde."
 
-[sub_resource type="Resource" id="Resource_xunj5"]
+[sub_resource type="Resource" id="Resource_vahik"]
 script = ExtResource("83_ve5ej")
 id = &"cauterized"
 title = "Cauterized"
 words = PackedStringArray("Cauterized")
-icon = ExtResource("113_mkia2")
-text = "Debuff. Entsteht, wenn jemand Bleed und Burn zugleich hat: je 1 Bleed und 1 Burn werden zu 1 Cauterized. Verhindert die nächste Heilung (auch Leben-Reg) und verliert dabei 1 Stack.
-(Kampfregel, wirkt ab dem Auto-Battler.)"
+icon = ExtResource("99_buwc3")
+text = "Debuff. Entsteht aus je 1 Bleed und 1 Burn. Verhindert die nächste Heilung und verliert dabei 1 Stack."
 
-[sub_resource type="Resource" id="Resource_282b6"]
-script = ExtResource("83_ve5ej")
-id = &"max_health"
-title = "Max Health"
-words = PackedStringArray("Max Health")
-icon = ExtResource("114_ajftg")
-text = "Buff. +X maximales Leben pro Stack. Hebt nur das Maximum, nicht das aktuelle Leben. Baut sich nicht ab.
-(Kampfregel, wirkt ab dem Auto-Battler.)"
-
-[sub_resource type="Resource" id="Resource_jpsvq"]
+[sub_resource type="Resource" id="Resource_101t7"]
 script = ExtResource("83_ve5ej")
 id = &"rotten"
 title = "Rotten"
 words = PackedStringArray("Rotten")
+icon = ExtResource("100_tedi0")
+text = "Debuff. -1 maximales Leben pro Stack; das Leben sinkt mit. Baut sich nicht ab."
+
+[sub_resource type="Resource" id="Resource_c5c5k"]
+script = ExtResource("83_ve5ej")
+id = &"armor"
+title = "Armor"
+words = PackedStringArray("Armor")
+icon = ExtResource("101_qf4i7")
+text = "Buff. Fängt 1 Schaden pro Stack ab und verliert dabei den Stack. Armor Break entfernt ihn."
+
+[sub_resource type="Resource" id="Resource_dhp4a"]
+script = ExtResource("83_ve5ej")
+id = &"hasted"
+title = "Hasted"
+words = PackedStringArray("Hasted")
+icon = ExtResource("102_1w0a0")
+text = "Buff. Nächster Cast -0,1 s pro Stack; dabei werden alle Stacks verbraucht. Höchstens 10 Stacks, hebt sich 1 : 1 mit Slowed auf."
+
+[sub_resource type="Resource" id="Resource_xjdh7"]
+script = ExtResource("83_ve5ej")
+id = &"life_regen"
+title = "Leben-Reg"
+words = PackedStringArray("Leben-Reg")
+icon = ExtResource("103_08kwt")
+text = "Buff. 1 Heilung pro Stack und Sekunde, danach -1 Stack."
+
+[sub_resource type="Resource" id="Resource_pcw08"]
+script = ExtResource("83_ve5ej")
+id = &"mana_regen"
+title = "Mana-Reg"
+words = PackedStringArray("Mana-Reg")
+icon = ExtResource("104_wwwad")
+text = "Buff. +1 Mana pro Stack und Sekunde (zu den 25 Grund-Mana), danach -1 Stack."
+
+[sub_resource type="Resource" id="Resource_rbbfg"]
+script = ExtResource("83_ve5ej")
+id = &"bless"
+title = "Bless"
+words = PackedStringArray("Bless")
+icon = ExtResource("105_bjxqb")
+text = "Buff. Jede erhaltene Heilung +5 pro Stack; verbraucht 1 Stack."
+
+[sub_resource type="Resource" id="Resource_witpl"]
+script = ExtResource("83_ve5ej")
+id = &"thorns"
+title = "Thorns"
+words = PackedStringArray("Thorns")
+icon = ExtResource("106_va580")
+text = "Buff. Trifft ein gegnerischer Spell: 3 Schaden pro Stack an den Angreifer; verbraucht 1 Stack."
+
+[sub_resource type="Resource" id="Resource_11ro5"]
+script = ExtResource("83_ve5ej")
+id = &"mana_absorption"
+title = "Mana Absorption"
+words = PackedStringArray("Mana Absorption")
+icon = ExtResource("107_mwfnp")
+text = "Buff. Trifft ein gegnerischer Spell: +5 Mana pro Stack; verbraucht 1 Stack."
+
+[sub_resource type="Resource" id="Resource_14mf6"]
+script = ExtResource("83_ve5ej")
+id = &"damage_reduction"
+title = "Damage Reduction"
+words = PackedStringArray("Damage Reduction")
+icon = ExtResource("108_kf5hb")
+text = "Buff. Der nächste gegnerische Spell macht nur 50 % Schaden (alle Treffer); verbraucht 1 Stack."
+
+[sub_resource type="Resource" id="Resource_160co"]
+script = ExtResource("83_ve5ej")
+id = &"life_rewind"
+title = "Life Rewind"
+words = PackedStringArray("Life Rewind")
+icon = ExtResource("109_v8gim")
+text = "Buff. Merkt sich das Leben; nach 10 s wird es darauf gesetzt, auch nach unten. Tod ist endgültig."
+
+[sub_resource type="Resource" id="Resource_18ksk"]
+script = ExtResource("83_ve5ej")
+id = &"critical_chance"
+title = "Critical Chance"
+words = PackedStringArray("Critical Chance")
+icon = ExtResource("110_vdjcu")
+text = "Buff. +1 % Crit-Chance pro Stack. Beim nächsten Crit werden alle Stacks verbraucht."
+
+[sub_resource type="Resource" id="Resource_xunj5"]
+script = ExtResource("83_ve5ej")
+id = &"max_health"
+title = "Max Health"
+words = PackedStringArray("Max Health")
+icon = ExtResource("111_6ecqk")
+text = "Buff. +2 maximales Leben pro Stack (nicht das aktuelle Leben). Baut sich nicht ab."
+
+[sub_resource type="Resource" id="Resource_282b6"]
+script = ExtResource("83_ve5ej")
+id = &"crit"
+title = "Crit"
+words = PackedStringArray("Crit")
+icon = ExtResource("112_e55j2")
+text = "Spell-Wert. 1 Crit = 1 % Chance pro Treffer auf 200 % Schaden."
+
+[sub_resource type="Resource" id="Resource_jpsvq"]
+script = ExtResource("83_ve5ej")
+id = &"armor_break"
+title = "Armor Break"
+words = PackedStringArray("Armor Break")
+icon = ExtResource("113_mkia2")
+text = "Spell-Wert. Entfernt beim Treffer 5 Armor pro Stack."
+
+[sub_resource type="Resource" id="Resource_gh71o"]
+script = ExtResource("83_ve5ej")
+id = &"cleanse"
+title = "Cleanse"
+words = PackedStringArray("Cleanse")
+icon = ExtResource("114_ajftg")
+text = "Spell-Wert. Entfernt alle Debuffs des Ziels."
+
+[sub_resource type="Resource" id="Resource_giws7"]
+script = ExtResource("83_ve5ej")
+id = &"dispel"
+title = "Dispel"
+words = PackedStringArray("Dispel")
 icon = ExtResource("115_qfkba")
-text = "Debuff. -X maximales Leben pro Stack; das Leben sinkt mit, wenn es darüber liegt. Baut sich nicht ab; nur Cleanse entfernt ihn.
-(Kampfregel, wirkt ab dem Auto-Battler.)"
+text = "Spell-Wert. Pro Stack wird ein Buff des Ziels ganz entfernt, der mit den meisten Stacks zuerst."
+
+[sub_resource type="Resource" id="Resource_urxhd"]
+script = ExtResource("83_ve5ej")
+id = &"points"
+title = "Punkte"
+words = PackedStringArray("Punkte")
+text = "Grundlage jeder Gravur: neutrale Essenz zählt 1, eine Essenz ihren Faktor, aber nur für Gravuren mit ihrem Element. Sonst zählt sie nichts."
+
+[sub_resource type="Resource" id="Resource_hjs4h"]
+script = ExtResource("83_ve5ej")
+id = &"spitz"
+title = "Spitz"
+words = PackedStringArray("Spitz")
+text = "Gem-Form: sammelt im Innenwinkel, alles Eingesammelte zählt doppelt. Grob sammelt im Außenwinkel einfach."
 
 [resource]
 script = ExtResource("116_ngk4v")
@@ -416,4 +422,4 @@ elements = Array[ExtResource("1_crm6a")]([ExtResource("2_3iem6"), ExtResource("3
 gems = Array[ExtResource("70_kd5jn")]([ExtResource("71_2nnae"), ExtResource("72_r81in"), ExtResource("73_ba3fe"), ExtResource("74_wiiuh"), ExtResource("75_jy1lq"), ExtResource("76_vepx0"), ExtResource("77_ody56"), ExtResource("78_ph71b"), ExtResource("79_0so1c"), ExtResource("80_12udj"), ExtResource("81_2lygm"), ExtResource("82_l3e3i")])
 engravings = Array[ExtResource("7_6r2yy")]([ExtResource("8_gf8ny"), ExtResource("9_0kqce"), ExtResource("10_fg612"), ExtResource("11_p2b4g"), ExtResource("12_euito"), ExtResource("13_ysfbb"), ExtResource("14_j3unl"), ExtResource("15_43i4d"), ExtResource("16_jwfnl"), ExtResource("17_1qywr"), ExtResource("18_specj"), ExtResource("19_rdlix"), ExtResource("20_y27gf"), ExtResource("21_botgx"), ExtResource("22_35n1c"), ExtResource("23_oob6m"), ExtResource("24_7yt70"), ExtResource("25_ebna8"), ExtResource("26_mmobe"), ExtResource("27_jct8f"), ExtResource("28_er5lf"), ExtResource("29_rgplo"), ExtResource("30_cp5h5"), ExtResource("31_lhmy4"), ExtResource("32_u16vp"), ExtResource("33_oh1r2"), ExtResource("34_s2pax"), ExtResource("35_k0ktl"), ExtResource("36_u2e3j"), ExtResource("37_f3i8g"), ExtResource("38_vqfps"), ExtResource("39_um50i"), ExtResource("40_88nw1"), ExtResource("41_wcbni"), ExtResource("42_sxtuk"), ExtResource("43_f81s4"), ExtResource("44_8brif"), ExtResource("45_ejcqa"), ExtResource("46_vj0yu"), ExtResource("47_nqmpx"), ExtResource("48_6udlh"), ExtResource("49_aa8s0"), ExtResource("50_mtql7"), ExtResource("51_8yyhn"), ExtResource("52_hq7yt"), ExtResource("53_1xyw2"), ExtResource("54_56qtw"), ExtResource("55_5f56c"), ExtResource("56_2ytku"), ExtResource("57_rt088"), ExtResource("58_5hyl8"), ExtResource("59_0rtxd"), ExtResource("60_anhmq")])
 foci = Array[ExtResource("61_raaer")]([ExtResource("62_2h44g"), ExtResource("63_63onx"), ExtResource("64_ehjyv"), ExtResource("65_8shhr"), ExtResource("66_tgboq"), ExtResource("67_kwagr"), ExtResource("68_6p2ro"), ExtResource("69_hojm4")])
-glossary = Array[ExtResource("83_ve5ej")]([SubResource("Resource_lp6gv"), SubResource("Resource_2d31c"), SubResource("Resource_1gw52"), SubResource("Resource_fired"), SubResource("Resource_e3hj6"), SubResource("Resource_cf3ep"), SubResource("Resource_ykw7k"), SubResource("Resource_pos0j"), SubResource("Resource_twvyk"), SubResource("Resource_eef25"), SubResource("Resource_4q6eo"), SubResource("Resource_yyblq"), SubResource("Resource_kywfh"), SubResource("Resource_6togp"), SubResource("Resource_60l5b"), SubResource("Resource_dsovf"), SubResource("Resource_hmfx2"), SubResource("Resource_vahik"), SubResource("Resource_101t7"), SubResource("Resource_c5c5k"), SubResource("Resource_dhp4a"), SubResource("Resource_xjdh7"), SubResource("Resource_pcw08"), SubResource("Resource_rbbfg"), SubResource("Resource_witpl"), SubResource("Resource_11ro5"), SubResource("Resource_14mf6"), SubResource("Resource_160co"), SubResource("Resource_18ksk"), SubResource("Resource_xunj5"), SubResource("Resource_282b6"), SubResource("Resource_jpsvq")])
+glossary = Array[ExtResource("83_ve5ej")]([SubResource("Resource_lp6gv"), SubResource("Resource_2d31c"), SubResource("Resource_1gw52"), SubResource("Resource_fired"), SubResource("Resource_e3hj6"), SubResource("Resource_cf3ep"), SubResource("Resource_ykw7k"), SubResource("Resource_pos0j"), SubResource("Resource_twvyk"), SubResource("Resource_eef25"), SubResource("Resource_4q6eo"), SubResource("Resource_yyblq"), SubResource("Resource_kywfh"), SubResource("Resource_6togp"), SubResource("Resource_60l5b"), SubResource("Resource_dsovf"), SubResource("Resource_hmfx2"), SubResource("Resource_vahik"), SubResource("Resource_101t7"), SubResource("Resource_c5c5k"), SubResource("Resource_dhp4a"), SubResource("Resource_xjdh7"), SubResource("Resource_pcw08"), SubResource("Resource_rbbfg"), SubResource("Resource_witpl"), SubResource("Resource_11ro5"), SubResource("Resource_14mf6"), SubResource("Resource_160co"), SubResource("Resource_18ksk"), SubResource("Resource_xunj5"), SubResource("Resource_282b6"), SubResource("Resource_jpsvq"), SubResource("Resource_gh71o"), SubResource("Resource_giws7"), SubResource("Resource_urxhd"), SubResource("Resource_hjs4h")])

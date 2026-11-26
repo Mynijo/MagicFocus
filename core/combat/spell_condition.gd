@@ -77,7 +77,7 @@ func describe() -> String:
 	if uses_percent(type):
 		text += " %d %%" % int(percent)
 	elif uses_amount(type):
-		text += " %d %s" % [amount, Combat.STATUS_NAMES.get(status, status)]
+		text += " %d %s" % [amount, Status.name_of(status)]
 	elif uses_status(type):
-		text += " " + str(Combat.STATUS_NAMES.get(status, status))
+		text += " " + Status.name_of(status)
 	return text

@@ -15,11 +15,11 @@ script = ExtResource("4_aodp6")
 id = &"cleanse"
 display_name = "Cleanse"
 role = 0
-element_ids = Array[StringName]([&"water"])
+description = "Cleanse. 1 Heilung pro Punkt. Ziel: selbst. Punkte: neutrale Essenz ×1, Wasser-Essenz ×5"
 icon = ExtResource("2_12afr")
-description = "Entfernt alle eigenen Debuffs (Cleanse). 1 Heilung pro Punkt. Punkte: neutrale Essenz 1, Wasser-Essenz 5, andere Essenz 0"
+element_ids = Array[StringName]([&"water"])
+target = 1
 base_stats = {
 &"cleanse": 1.0
 }
 rules = Array[ExtResource("3_gbddc")]([SubResource("Resource_ipwas")])
-target = 1

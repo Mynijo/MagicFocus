@@ -17,9 +17,9 @@ script = ExtResource("4_jumga")
 id = &"thunderstorm"
 display_name = "Thunderstorm"
 role = 0
-element_ids = Array[StringName]([&"lightning"])
+description = "30 Schaden pro Treffer; 1 Treffer pro volle 50 Punkte (mindestens 1). Ziel: Gegner. Punkte: Blitz-Essenz ×5"
 icon = ExtResource("2_j1wy2")
-description = "30 Schaden pro Treffer, 1 Treffer pro volle 50 Punkte aus Blitz-Essenz (mindestens 1). Jeder Treffer würfelt Crit. Punkte: Blitz-Essenz 5, andere Essenz 0, neutrale Essenz 0"
+element_ids = Array[StringName]([&"lightning"])
 base_stats = {
 &"damage": 30.0
 }

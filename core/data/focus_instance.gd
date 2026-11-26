@@ -37,6 +37,18 @@ func get_base_count() -> int:
 	return maxi(0, focus_def.max_dots - get_element_total())
 
 
+## Flache Kopie für die Vorschau: eigene Gem-Liste und Verbindungen, gleiche Gems und Füllung.
+func copy() -> FocusInstance:
+	var result := FocusInstance.new()
+	result.focus_def = focus_def
+	result.element_fill = element_fill
+	result.dot_seed = dot_seed
+	result.gems = gems.duplicate()
+	result.loop = loop.duplicate()
+	result.loop_closed = loop_closed
+	return result
+
+
 func get_main_gem_index() -> int:
 	for i in gems.size():
 		if gems[i] != null and gems[i].gem != null and gems[i].gem.role == GemDef.Role.MAIN:

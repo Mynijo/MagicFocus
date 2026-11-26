@@ -10,16 +10,6 @@ const SPEED_NAMES := ["Pause", "1×", "2×", "4×"]
 const SIDE_COLORS := ["#8fc8ff", "#ffb08f"]
 const EMPTY_SLOT := "– leer –"
 const STAT_BAR_LENGTH := 24  # Zeichen für 100 % im Schadensmesser
-## Kampf-Status -> Begriff (für Symbol und Tooltip)
-const STATUS_TERMS := {
-	&"burn": &"burn", &"bleed": &"bleed", &"wet": &"nass", &"shock": &"schock", &"slow": &"slowed",
-	&"mana_burn": &"mana_burn", &"armor": &"armor", &"hasted": &"hasted", &"life_regen": &"leben_reg",
-	&"mana_regen": &"mana_reg", &"ice": &"eis", &"perma_burn": &"perma_burn", &"accelerated_burn": &"accelerated_burn",
-	&"bless": &"bless", &"thorns": &"thorns", &"mana_absorption": &"mana_absorption",
-	&"damage_reduction": &"damage_reduction", &"life_rewind": &"life_rewind",
-	&"critical_chance": &"critical_chance", &"blood_thinner": &"blood_thinner", &"cauterized": &"cauterized",
-	&"max_health": &"max_health", &"rotten": &"rotten",
-}
 
 ## Auswahl bleibt erhalten, wenn man zwischendurch in die Werkstatt wechselt.
 static var _saved_slots := [[], []]
@@ -62,31 +52,21 @@ func _ready() -> void:
 # --- Aufbau -----------------------------------------------------------------
 
 func _build_ui() -> void:
-	var background := ColorRect.new()
-	background.color = Color(0.12, 0.12, 0.15)
-	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(background)
-
-	var margin := MarginContainer.new()
+	UiKit.background(self)
+	var margin := UiKit.margin(self, 12)
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 12)
-	add_child(margin)
 	var root := VBoxContainer.new()
 	root.add_theme_constant_override("separation", 10)
 	margin.add_child(root)
 
 	# Kopfzeile
-	var top := HBoxContainer.new()
-	top.add_theme_constant_override("separation", 8)
-	root.add_child(top)
-	_button(top, "← Werkstatt", func() -> void: get_tree().change_scene_to_file(WORKSHOP_SCENE))
-	_button(top, "Kampf starten", _start_combat)
+	var top := UiKit.row(root, 8)
+	UiKit.button(top, "← Werkstatt", func() -> void: get_tree().change_scene_to_file(WORKSHOP_SCENE), false)
+	UiKit.button(top, "Kampf starten", _start_combat, false)
 	var speed_group := ButtonGroup.new()
 	for i in SPEEDS.size():
-		var b := _button(top, SPEED_NAMES[i], _set_speed.bind(i))
-		b.toggle_mode = true
-		b.button_group = speed_group
+		var b := UiKit.toggle_button(top, SPEED_NAMES[i], speed_group, false)
+		b.pressed.connect(_set_speed.bind(i))
 		_speed_buttons.append(b)
 	var seed_label := Label.new()
 	seed_label.text = "  Seed"
@@ -95,10 +75,10 @@ func _build_ui() -> void:
 	_seed.max_value = 999999
 	_seed.value = 1
 	top.add_child(_seed)
-	_button(top, "Neuer Seed", func() -> void: _seed.value = randi() % 1000000)
+	UiKit.button(top, "Neuer Seed", func() -> void: _seed.value = randi() % 1000000, false)
 	_result = Label.new()
 	_result.add_theme_font_size_override("font_size", 18)
-	_result.add_theme_color_override("font_color", Color(1, 0.85, 0.4))
+	_result.add_theme_color_override("font_color", UiKit.COLOR_STATUS)
 	top.add_child(_result)
 
 	# Zwei Magier nebeneinander, Log darunter
@@ -147,8 +127,8 @@ func _build_side(side: int) -> Control:
 
 	var names := FocusStore.list_names()
 	if names.is_empty():
-		_small(box, "Noch keine gespeicherten Foki. Speichere zuerst welche in der Werkstatt.")
-	_small(box, "Spells in Cast-Reihenfolge (bis zu %d):" % CombatMage.MAX_SPELLS)
+		UiKit.hint(box, "Noch keine gespeicherten Foki: erst in der Werkstatt speichern.")
+	UiKit.hint(box, "Spells in Cast-Reihenfolge, je mit Bedingung:")
 	for slot in CombatMage.MAX_SPELLS:
 		var row := HBoxContainer.new()
 		box.add_child(row)
@@ -205,23 +185,6 @@ func _bar_label(bar: ProgressBar) -> Label:
 	label.add_theme_constant_override("outline_size", 4)
 	bar.add_child(label)
 	return label
-
-
-func _button(parent: Control, text: String, callback: Callable) -> Button:
-	var button := Button.new()
-	button.text = text
-	button.pressed.connect(callback)
-	parent.add_child(button)
-	return button
-
-
-func _small(parent: Control, text: String) -> void:
-	var label := Label.new()
-	label.text = text
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_font_size_override("font_size", 12)
-	label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.75))
-	parent.add_child(label)
 
 
 # --- Kampf ------------------------------------------------------------------
@@ -319,8 +282,8 @@ func _statistics_text(side: int) -> String:
 	var total := Combat.total(damage)
 	var color: String = SIDE_COLORS[side]
 	var t := "[font_size=17][b][color=%s]%s[/color][/b][/font_size]\n" % [color, mage.mage_name]
-	t += "Schaden gesamt: [b]%d[/b]   ·   Kampfzeit %d s   ·   %s pro Sekunde\n\n" % [
-		int(total), int(combat.time), _num(total / maxf(combat.time, 0.1))]
+	t += "Schaden: [b]%d[/b] · Kampfzeit %d s · %s pro Sekunde\n\n" % [
+		int(total), int(combat.time), TextFormat.number(total / maxf(combat.time, 0.1), 1)]
 	if damage.is_empty():
 		t += "[color=#777777]noch kein Schaden[/color]\n"
 	else:
@@ -349,22 +312,18 @@ func _statistics_text(side: int) -> String:
 	return tooltips.linkify(t)
 
 
-static func _num(value: float) -> String:
-	return "%.1f" % value
-
-
 ## Status als Symbole mit Stacks, z. B. "[Burn-Symbol] Burn 3".
 func _status_text(mage: CombatMage) -> String:
 	var parts := PackedStringArray()
-	for stat: StringName in STATUS_TERMS:
+	for stat: StringName in Status.NAMES:
 		var n := mage.stacks(stat)
 		if n <= 0:
 			continue
-		var term := CONTENT.get_term(STATUS_TERMS[stat])
+		var term := CONTENT.get_term(stat)
 		var icon := ""
 		if term != null and term.icon != null:
 			icon = "[img width=22 height=22]%s[/img] " % term.icon.resource_path
-		parts.append("%s%s %d" % [icon, Combat.STATUS_NAMES[stat], n])
+		parts.append("%s%s %d" % [icon, Status.name_of(stat), n])
 	if parts.is_empty():
 		return "[color=#777777]keine Status[/color]"
 	return tooltips.linkify("   ".join(parts))
@@ -380,7 +339,7 @@ func _build_condition(row: HBoxContainer, side: int, slot: int) -> Dictionary:
 	for type_name in SpellCondition.TYPE_NAMES:
 		type_select.add_item(type_name)
 	type_select.select(int(saved.get("type", SpellCondition.Type.ALWAYS)))
-	type_select.tooltip_text = "Wann darf dieser Spell gecastet werden? Sonst wird er übersprungen."
+	type_select.tooltip_text = "Ist die Bedingung nicht erfüllt, wird der Spell übersprungen."
 	row.add_child(type_select)
 	var percent := SpinBox.new()
 	percent.min_value = 1
@@ -395,8 +354,8 @@ func _build_condition(row: HBoxContainer, side: int, slot: int) -> Dictionary:
 	amount.value = float(saved.get("amount", 1))
 	row.add_child(amount)
 	var status := OptionButton.new()
-	for id: StringName in Combat.STATUS_NAMES:
-		status.add_item(Combat.STATUS_NAMES[id])
+	for id: StringName in Status.NAMES:
+		status.add_item(Status.name_of(id))
 		status.set_item_metadata(status.item_count - 1, id)
 		if id == StringName(saved.get("status", "burn")):
 			status.select(status.item_count - 1)

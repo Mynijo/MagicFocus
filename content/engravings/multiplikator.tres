@@ -9,8 +9,8 @@
 script = ExtResource("4_cvk2w")
 id = &"multiplikator"
 display_name = "Multiplikator"
+description = "Wie Power Transfer, aber Radius ×0,8; im inneren Ring (Stein + 0,3 × Radius) zählt alles doppelt. Nur klein und mittel"
 icon = ExtResource("2_2ah8r")
-description = "Gibt seine neutrale Essenz und Essenzen an das Hauptgem weiter (wie Power Transfer). Sammelt mit 0,8-fachem Radius; was im inneren Ring (0,3-facher Radius) liegt, zählt doppelt. Nur kleine und mittlere Gems"
 transfer_to_main = true
 radius_factor = 0.8
 inner_radius_factor = 0.3

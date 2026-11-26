@@ -9,41 +9,15 @@ extends RefCounted
 ##      übersprungen; fehlt Mana, wartet der Magier. Mana wird beim Cast-Start
 ##      bezahlt (löst Schock aus). Slowed und Hasted wirken auf diesen Cast und
 ##      werden dabei verbraucht.
-##   2. Fertige Spells beider Magier wirken gleichzeitig.
-##   3. Einmal pro Sekunde: Status-Puls (Bleed, Burn, Leben-Reg, Mana-Reg mit Mana
-##      Burn, Abbau von Eis).
+##   2. Fertige Spells beider Magier wirken (Echo wiederholt sie sofort).
+##   3. Zur halben Sekunde: Extra-Tick für Accelerated Burn und Blood Thinner.
+##      Einmal pro Sekunde: Status-Puls (Bleed, Burn, Perma-Burn, Life Rewind,
+##      Leben-Reg, Mana mit Mana-Reg und Mana Burn, Abbau von Eis).
 ##   4. Ende, wenn ein Magier kein Leben mehr hat (beide: unentschieden)
 ##      oder rules.max_duration erreicht ist (unentschieden).
 ##
 ## Ziel: Die Hauptgravur bestimmt das Ziel (Gegner, selbst oder beide). Alle Werte
 ## des Spells, auch die der Nebengravuren, gehen auf dieses Ziel.
-
-## Wert-ID des Spells -> Status beim Ziel (Slow aus der Gravur wird zu Slowed)
-const SPELL_STATUS := {
-	&"burn": &"burn", &"bleed": &"bleed", &"wet": &"wet", &"shock": &"shock",
-	&"slow": &"slow", &"mana_burn": &"mana_burn",
-	&"armor": &"armor", &"hasted": &"hasted", &"life_regen": &"life_regen", &"mana_regen": &"mana_regen",
-	&"perma_burn": &"perma_burn", &"accelerated_burn": &"accelerated_burn", &"bless": &"bless",
-	&"thorns": &"thorns", &"mana_absorption": &"mana_absorption", &"damage_reduction": &"damage_reduction",
-	&"critical_chance": &"critical_chance", &"blood_thinner": &"blood_thinner",
-	&"max_health": &"max_health", &"rotten": &"rotten",
-}
-## Anzeigenamen der Status (entsprechen den Begriffen der Tooltips)
-const STATUS_NAMES := {
-	&"burn": "Burn", &"bleed": "Bleed", &"wet": "Nass", &"shock": "Schock", &"slow": "Slowed",
-	&"mana_burn": "Mana Burn", &"armor": "Armor", &"hasted": "Hasted", &"life_regen": "Leben-Reg",
-	&"mana_regen": "Mana-Reg", &"ice": "Eis", &"perma_burn": "Perma-Burn",
-	&"accelerated_burn": "Accelerated Burn", &"bless": "Bless", &"thorns": "Thorns",
-	&"mana_absorption": "Mana Absorption", &"damage_reduction": "Damage Reduction", &"life_rewind": "Life Rewind",
-	&"critical_chance": "Critical Chance", &"blood_thinner": "Blood Thinner", &"cauterized": "Cauterized",
-	&"max_health": "Max Health", &"rotten": "Rotten",
-}
-## Cleanse entfernt diese Status vom Ziel (eigene Debuffs) ...
-const DEBUFFS := [&"burn", &"bleed", &"wet", &"shock", &"slow", &"mana_burn", &"ice", &"perma_burn", &"accelerated_burn",
-	&"blood_thinner", &"cauterized", &"rotten"]
-## ... Dispel diese (Buffs des Gegners).
-const BUFFS := [&"armor", &"hasted", &"life_regen", &"mana_regen", &"bless", &"thorns", &"mana_absorption",
-	&"damage_reduction", &"life_rewind", &"critical_chance", &"max_health"]
 
 var rules: CombatRules
 var mages: Array[CombatMage] = []
@@ -217,65 +191,73 @@ func _finish_spell(i: int, index: int) -> void:
 		_apply_spell(i, index)
 
 
+## Reihenfolge je Ziel: Cleanse/Dispel, Schaden, Heilung, Life Rewind, Status, Armor Break, Freeze.
 func _apply_spell(i: int, index: int) -> void:
-	var caster := mages[i]
-	var spell := caster.spells[index]
-	var spell_name := caster.spell_names[index]
-	var damage := spell.get_stat(&"damage")
-	# Mehrfach-Treffer (z. B. Thunderstorm): `damage` gilt pro Treffer, jeder würfelt Crit
-	var hits := maxi(1, int(spell.get_stat(&"hits")))
-	# Critical Damage erhöht den Crit-Schaden dieses Spells (in Prozentpunkten)
-	var crit_multiplier := rules.crit_multiplier + spell.get_stat(&"crit_damage") / 100.0
-
+	var spell := mages[i].spells[index]
+	var spell_name := mages[i].spell_names[index]
 	for t in targets_of(i, spell):
-		var target := mages[t]
 		# Cleanse und Dispel zuerst, damit die Status dieses Spells danach bleiben
 		if spell.get_stat(&"cleanse") > 0.0:
-			_remove_all(t, DEBUFFS, "Cleanse")
-		if spell.get_stat(&"dispel") > 0.0:
-			_dispel(t, int(spell.get_stat(&"dispel")))
-		if damage > 0.0:
-			# Damage Reduction halbiert den ganzen Spell (alle Treffer), 1 Stack pro Spell
-			var reduced := t != i and target.remove_stacks(&"damage_reduction", 1) > 0
-			for h in hits:
-				var amount := damage
-				# Critical Chance (Status des Casters) zählt mit und wird beim Crit verbraucht
-				var chance := spell.get_stat(&"crit") + caster.stacks(&"critical_chance")
-				var crit := _rng.randf() * 100.0 < chance
-				if crit:
-					amount *= crit_multiplier
-					_count(statistics[i].crits, spell_name, 1.0)
-					var used := caster.remove_stacks(&"critical_chance", caster.stacks(&"critical_chance"))
-					if used > 0:
-						_log(i, "%s: %d Critical Chance verbraucht." % [caster.mage_name, used])
-				if reduced:
-					amount *= rules.damage_reduction_factor
-				var label := spell_name + (" (Crit)" if crit else "") + (" (halbiert)" if reduced else "")
-				_spell_hit(i, t, amount, label, spell_name)
-		var heal := spell.get_stat(&"heal")
-		if heal > 0.0:
-			_heal(t, heal, spell_name)
+			_remove_all(t, Status.DEBUFFS, "Cleanse")
+		_dispel(t, int(spell.get_stat(&"dispel")))
+		_spell_damage(i, t, spell, spell_name)
+		if spell.get_stat(&"heal") > 0.0:
+			_heal(t, spell.get_stat(&"heal"), spell_name)
 		if spell.get_stat(&"life_rewind") > 0.0:
-			target.status.erase(&"life_rewind")
-			target.add_stacks(&"life_rewind", int(ceil(target.hp)))
-			target.rewind_time_left = rules.life_rewind_seconds
-			_log(t, "%s: Life Rewind speichert %d Leben (in %s s)." % [
-				target.mage_name, target.stacks(&"life_rewind"), _num(rules.life_rewind_seconds)])
-		for stat: StringName in SPELL_STATUS:
-			_add_status(t, SPELL_STATUS[stat], int(spell.get_stat(stat)))
+			_start_life_rewind(t)
+		for stat: StringName in Status.NAMES:
+			if Status.from_spell_value(stat):
+				_add_status(t, stat, int(spell.get_stat(stat)))
 		# Vampire: Leben-Reg in Höhe der Bleed-Stacks des Gegners des Casters
-		var vampire := spell.get_stat(&"vampire")
-		if vampire > 0.0:
-			_add_status(t, &"life_regen", int(mages[1 - i].stacks(&"bleed") * vampire))
+		_add_status(t, &"life_regen", int(mages[1 - i].stacks(&"bleed") * spell.get_stat(&"vampire")))
 		_update_max_hp(t)
 		_armor_break(t, int(spell.get_stat(&"armor_break")))
-		# Freeze: wandelt Nass des Ziels in Eis (nach dem Nass dieses Spells)
-		var conversion := spell.get_stat(&"freeze_conversion")
-		if conversion > 0.0:
-			var ice := int(floor(target.stacks(&"wet") / conversion))
-			if ice > 0:
-				target.remove_stacks(&"wet", int(ice * conversion))
-				_add_status(t, &"ice", ice)
+		_freeze(t, spell.get_stat(&"freeze_conversion"))
+
+
+## Schaden eines Spells: `hits` Treffer (mindestens 1), jeder würfelt Crit.
+## Critical Chance des Casters zählt mit und wird beim Crit verbraucht;
+## Damage Reduction des Ziels halbiert alle Treffer dieses Spells.
+func _spell_damage(i: int, t: int, spell: SpellResult, spell_name: String) -> void:
+	var damage := spell.get_stat(&"damage")
+	if damage <= 0.0:
+		return
+	var caster := mages[i]
+	var crit_multiplier := rules.crit_multiplier + spell.get_stat(&"crit_damage") / 100.0
+	var reduced := t != i and mages[t].remove_stacks(&"damage_reduction", 1) > 0
+	for h in maxi(1, int(spell.get_stat(&"hits"))):
+		var amount := damage
+		var crit := _rng.randf() * 100.0 < spell.get_stat(&"crit") + caster.stacks(&"critical_chance")
+		if crit:
+			amount *= crit_multiplier
+			_count(statistics[i].crits, spell_name, 1.0)
+			var used := caster.remove_stacks(&"critical_chance", caster.stacks(&"critical_chance"))
+			if used > 0:
+				_log(i, "%s: %d Critical Chance verbraucht." % [caster.mage_name, used])
+		if reduced:
+			amount *= rules.damage_reduction_factor
+		var label := spell_name + (" (Crit)" if crit else "") + (" (halbiert)" if reduced else "")
+		_spell_hit(i, t, amount, label, spell_name)
+
+
+## Life Rewind: speichert das Leben als Stacks; nach rules.life_rewind_seconds zurück darauf.
+func _start_life_rewind(t: int) -> void:
+	var target := mages[t]
+	target.status.erase(&"life_rewind")
+	target.add_stacks(&"life_rewind", int(ceil(target.hp)))
+	target.rewind_time_left = rules.life_rewind_seconds
+	_log(t, "%s: Life Rewind speichert %d Leben (in %s s)." % [
+		target.mage_name, target.stacks(&"life_rewind"), _num(rules.life_rewind_seconds)])
+
+
+## Freeze: wandelt je `conversion` Nass des Ziels in 1 Eis (nach dem Nass dieses Spells).
+func _freeze(t: int, conversion: float) -> void:
+	if conversion <= 0.0:
+		return
+	var ice := int(floor(mages[t].stacks(&"wet") / conversion))
+	if ice > 0:
+		mages[t].remove_stacks(&"wet", int(ice * conversion))
+		_add_status(t, &"ice", ice)
 
 
 ## Ein Spell-Treffer: Schaden, dann Reaktionen des Getroffenen (Thorns, Mana Absorption).
@@ -303,7 +285,7 @@ func _remove_all(t: int, statuses: Array, source: String) -> void:
 	for stat: StringName in statuses:
 		var n := target.remove_stacks(stat, target.stacks(stat))
 		if n > 0:
-			removed.append("%d %s" % [n, STATUS_NAMES.get(stat, String(stat))])
+			removed.append("%d %s" % [n, Status.name_of(stat)])
 	if statuses.has(&"life_rewind"):
 		target.rewind_time_left = 0.0
 	if not removed.is_empty():
@@ -316,7 +298,7 @@ func _dispel(t: int, count: int) -> void:
 	var target := mages[t]
 	for n in count:
 		var best: StringName = &""
-		for stat: StringName in BUFFS:
+		for stat: StringName in Status.BUFFS:
 			if target.stacks(stat) > 0 and (best == &"" or target.stacks(stat) > target.stacks(best)):
 				best = stat
 		if best == &"":
@@ -374,12 +356,11 @@ func _add_status(target_index: int, stat: StringName, amount: int) -> void:
 	if amount <= 0:
 		return
 	var target := mages[target_index]
-	var opposite := { &"wet": &"burn", &"burn": &"wet", &"slow": &"hasted", &"hasted": &"slow" }
-	if opposite.has(stat):
-		var cancelled := target.remove_stacks(opposite[stat], amount)
+	if Status.OPPOSITES.has(stat):
+		var cancelled := target.remove_stacks(Status.OPPOSITES[stat], amount)
 		if cancelled > 0:
 			_log(target_index, "%s: %s hebt %d %s auf." % [
-				target.mage_name, STATUS_NAMES[stat], cancelled, STATUS_NAMES[opposite[stat]]])
+				target.mage_name, Status.name_of(stat), cancelled, Status.name_of(Status.OPPOSITES[stat])])
 		amount -= cancelled
 	if amount <= 0:
 		return
@@ -388,7 +369,7 @@ func _add_status(target_index: int, stat: StringName, amount: int) -> void:
 		if amount <= 0:
 			return
 	target.add_stacks(stat, amount)
-	_log(target_index, "%s erhält %d %s." % [target.mage_name, amount, STATUS_NAMES.get(stat, String(stat))])
+	_log(target_index, "%s erhält %d %s." % [target.mage_name, amount, Status.name_of(stat)])
 	# Cauterized: je 1 Bleed und 1 Burn werden zu 1 Cauterized
 	if stat == &"bleed" or stat == &"burn":
 		var pairs := mini(target.stacks(&"bleed"), target.stacks(&"burn"))
@@ -512,4 +493,4 @@ func _log(mage_index: int, text: String) -> void:
 
 
 static func _num(value: float) -> String:
-	return str(int(value)) if is_equal_approx(value, roundf(value)) else "%.1f" % value
+	return TextFormat.number(value, 1)

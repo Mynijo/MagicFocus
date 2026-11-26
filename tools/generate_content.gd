@@ -50,11 +50,11 @@ const ENGRAVINGS := [
 		desc = "+1 Schaden pro Punkt",
 		rules = [["P", 1, &"damage", 1.0]] },
 	{ id = &"freeze", name = "Freeze", role = MAIN, el = [&"water", &"air"],
-		desc = "Wandelt 100 Nass in 1 Eis. +1 Schaden pro Punkt",
+		desc = "Wandelt je 100 Nass in 1 Eis. +1 Schaden pro Punkt",
 		stats = { &"freeze_conversion": 100.0 },
 		rules = [["P", 1, &"damage", 1.0]] },
 	{ id = &"slow", name = "Slow", role = MAIN, el = &"air",
-		desc = "1 Slow pro 20 Punkte",
+		desc = "1 Slowed pro 20 Punkte",
 		rules = [["P", 20, &"slow", 1.0]] },
 	{ id = &"heal", name = "Heal", role = MAIN, el = &"water", target = SELF,
 		desc = "5 Heilung pro Punkt",
@@ -88,37 +88,37 @@ const ENGRAVINGS := [
 		rules = [["P", 1, &"damage", 1.0], [&"lightning", 10, &"shock", 1.0]] },
 	# Spell-Paket 2026-11-26, Etappe 3
 	{ id = &"meteor", name = "Meteor", role = MAIN, el = &"fire",
-		desc = "150 Schaden pro volle 50 Punkte aus Feuer-Essenz, dazwischen kein Schaden",
+		desc = "150 Schaden pro volle 50 Punkte",
 		rules = [[&"fire", 50, &"damage", 150.0]] },
 	{ id = &"fire_rain", name = "Fire Rain", role = MAIN, el = &"fire", target = BOTH,
-		desc = "Trifft beide Magier. 1 Burn pro 5 Punkte aus Feuer-Essenz",
+		desc = "1 Burn pro 5 Punkte",
 		rules = [[&"fire", 5, &"burn", 1.0]] },
 	{ id = &"permanent_burn", name = "Permanent Burn", role = MAIN, el = &"fire",
-		desc = "1 Perma-Burn pro 25 Punkte aus Feuer-Essenz",
+		desc = "1 Perma-Burn pro 25 Punkte",
 		rules = [[&"fire", 25, &"perma_burn", 1.0]] },
 	{ id = &"water_rain", name = "Water Rain", role = MAIN, el = &"water", target = BOTH,
-		desc = "Trifft beide Magier. 1 Nass pro 5 Punkte aus Wasser-Essenz",
+		desc = "1 Nass pro 5 Punkte",
 		rules = [[&"water", 5, &"wet", 1.0]] },
 	{ id = &"cleanse", name = "Cleanse", role = MAIN, el = &"water", target = SELF,
-		desc = "Entfernt alle eigenen Debuffs (Cleanse). 1 Heilung pro Punkt",
+		desc = "Cleanse. 1 Heilung pro Punkt",
 		stats = { &"cleanse": 1.0 },
 		rules = [["P", 1, &"heal", 1.0]] },
 	{ id = &"bless", name = "Bless", role = MAIN, el = &"water", target = SELF,
 		desc = "1 Bless pro 10 Punkte",
 		rules = [["P", 10, &"bless", 1.0]] },
 	{ id = &"life_rewind", name = "Life Rewind", role = MAIN, el = &"water", target = SELF,
-		desc = "Ab 50 Punkten aus Wasser-Essenz: speichert das aktuelle Leben (Life Rewind); nach 10 Sekunden wird das Leben darauf gesetzt. Mehr Essenz verstärkt nichts",
+		desc = "Life Rewind ab 50 Punkten (mehr bringt nichts)",
 		rules = [[&"water", 50, &"life_rewind", 1.0, 0, 1.0]] },
 	{ id = &"dispel", name = "Dispel", role = MAIN, el = &"lightning",
 		desc = "1 Dispel, +1 pro 50 Punkte. +1 Schaden pro 2 Punkte",
 		stats = { &"dispel": 1.0 },
 		rules = [["P", 50, &"dispel", 1.0], ["P", 2, &"damage", 1.0]] },
 	{ id = &"thunderstorm", name = "Thunderstorm", role = MAIN, el = &"lightning",
-		desc = "30 Schaden pro Treffer, 1 Treffer pro volle 50 Punkte aus Blitz-Essenz (mindestens 1). Jeder Treffer würfelt Crit",
+		desc = "30 Schaden pro Treffer; 1 Treffer pro volle 50 Punkte (mindestens 1)",
 		stats = { &"damage": 30.0 },
 		rules = [[&"lightning", 50, &"hits", 1.0]] },
 	{ id = &"bulwark", name = "Bulwark", role = MAIN, el = &"earth", target = SELF,
-		desc = "Erst ab 50 Punkten aus Erd-Essenz: 8 Armor pro Punkt aus Erd-Essenz",
+		desc = "Ab 50 Punkten: 8 Armor pro Punkt",
 		rules = [[&"earth", 1, &"armor", 8.0, 50]] },
 	{ id = &"damage_reduction", name = "Damage Reduction", role = MAIN, el = &"earth", target = SELF,
 		desc = "1 Damage Reduction, +1 pro 50 Punkte",
@@ -138,7 +138,7 @@ const ENGRAVINGS := [
 		desc = "1 Blood Thinner pro 10 Punkte",
 		rules = [["P", 10, &"blood_thinner", 1.0]] },
 	{ id = &"vampire", name = "Vampire", role = MAIN, el = &"water", target = SELF,
-		desc = "1 Leben-Reg pro Bleed-Stack des Gegners, +1 pro Bleed-Stack je 100 Punkte",
+		desc = "1 Leben-Reg pro Bleed-Stack des Gegners; +1 pro Stack je 100 Punkte",
 		stats = { &"vampire": 1.0 },
 		rules = [["P", 100, &"vampire", 1.0]] },
 	{ id = &"max_health", name = "Max Health", role = MAIN, el = &"water", target = SELF,
@@ -150,10 +150,10 @@ const ENGRAVINGS := [
 	# --- Nebengravuren ---
 	# ID "standard" bleibt (gespeicherte Foki), Name ist Power Transfer
 	{ id = &"standard", name = "Power Transfer", role = MINOR, radius = 0.5,
-		desc = "Gibt seine neutrale Essenz und Essenzen an das Hauptgem weiter. Dort zählen sie nach den Regeln des Hauptgems. Das Gem sammelt nur mit halbem Radius",
+		desc = "Gibt alles Eingesammelte an das Hauptgem weiter (zählt dort nach dessen Gravur). Halber Radius",
 		transfer = true, rules = [] },
 	{ id = &"crit", name = "Crit", role = MINOR, el = &"fire",
-		desc = "+1 % Crit-Chance pro 2 Punkte. Ein Crit macht 200 % Schaden",
+		desc = "+1 Crit pro 2 Punkte",
 		rules = [["P", 2, &"crit", 1.0]] },
 	{ id = &"mana_reduktion", name = "Mana-Reduktion", role = MINOR, el = &"water",
 		desc = "-1 Mana pro 2 Punkte",
@@ -180,120 +180,86 @@ const ENGRAVINGS := [
 		desc = "1 Schock pro 5 Punkte", rules = [[&"lightning", 5, &"shock", 1.0]] },
 	# Spell-Paket 2026-11-26, Etappe 4
 	{ id = &"echo", name = "Echo", role = MINOR, el = ALL,
-		desc = "Wiederholt den Spell sofort: 1 Mal pro volle 100 Punkte aus Essenz. Jede Wiederholung kostet das Mana erneut, aber keine Cast-Zeit",
+		desc = "Wiederholt den Spell sofort, 1-mal pro volle 100 Punkte; jedes Mal Mana, keine Cast-Zeit",
 		rules = [["E", 100, &"echo", 1.0]] },
 	{ id = &"mana_efficiency", name = "Mana Efficiency", role = MINOR, el = [&"water", &"air"],
-		desc = "-1 Mana pro Punkt aus Wasser-Essenz. Dafür +1 s Cast-Zeit; Luft-Essenz senkt die Erhöhung um 0,1 s pro 5 Punkte (höchstens ganz)",
+		desc = "-1 Mana pro Punkt aus Wasser-Essenz. +1 s Cast-Zeit, minus 0,1 s pro 5 Punkte aus Luft-Essenz (bis 0)",
 		stats = { &"cast_time_reduction": -1.0 },
 		rules = [[&"water", 1, &"mana_reduction", 1.0], [&"air", 5, &"cast_time_reduction", 0.1, 0, 1.0]] },
 	{ id = &"quick_cast", name = "Quick Cast", role = MINOR, el = [&"water", &"air"],
-		desc = "-1 s Cast-Zeit pro 5 Punkte aus Luft-Essenz. Dafür +10 Mana; Wasser-Essenz senkt die Erhöhung um 1 pro 2 Punkte (höchstens ganz)",
+		desc = "-1 s Cast-Zeit pro 5 Punkte aus Luft-Essenz. +10 Mana, minus 1 pro 2 Punkte aus Wasser-Essenz (bis 0)",
 		stats = { &"mana_reduction": -10.0 },
 		rules = [[&"air", 5, &"cast_time_reduction", 1.0], [&"water", 2, &"mana_reduction", 1.0, 0, 10.0]] },
 	{ id = &"radius_expansion", name = "Radius Expansion", role = MINOR, el = &"earth",
-		desc = "Radius des Hauptgems +1 pro 2 Punkte aus Erd-Essenz",
+		desc = "+1 Radius des Hauptgems pro 2 Punkte",
 		rules = [[&"earth", 2, &"radius_bonus", 1.0]] },
 	{ id = &"thorns", name = "Thorns", role = MINOR, el = &"earth",
 		desc = "1 Thorns pro 5 Punkte", rules = [[&"earth", 5, &"thorns", 1.0]] },
 	# Paket 2
 	{ id = &"neben_cleanse", name = "Cleanse", role = MINOR, el = &"water",
-		desc = "Entfernt alle Debuffs vom Ziel des Spells (Cleanse)",
+		desc = "Cleanse",
 		stats = { &"cleanse": 1.0 }, rules = [] },
 	{ id = &"regeneration", name = "Regeneration", role = MINOR, el = &"water",
 		desc = "1 Leben-Reg pro 5 Punkte", rules = [[&"water", 5, &"life_regen", 1.0]] },
 	{ id = &"neben_dispel", name = "Dispel", role = MINOR, el = &"lightning",
-		desc = "1 Dispel pro 25 Punkte (wirkt auf das Ziel des Spells)",
+		desc = "1 Dispel pro 25 Punkte",
 		rules = [[&"lightning", 25, &"dispel", 1.0]] },
 	{ id = &"critical_damage", name = "Critical Damage", role = MINOR, el = &"lightning",
-		desc = "+10 % Crit-Schaden des Spells pro 5 Punkte", rules = [[&"lightning", 5, &"crit_damage", 10.0]] },
+		desc = "+10 % Crit-Schaden pro 5 Punkte", rules = [[&"lightning", 5, &"crit_damage", 10.0]] },
 	{ id = &"status_slow", name = "Slow", role = MINOR, el = &"air",
 		desc = "1 Slowed pro 5 Punkte", rules = [[&"air", 5, &"slow", 1.0]] },
 	# Etappe 5: Multiplikator
 	{ id = &"multiplikator", name = "Multiplikator", role = MINOR, radius = 0.8, inner = 0.3, max_size = GemDef.Size.MITTEL,
-		desc = "Gibt seine neutrale Essenz und Essenzen an das Hauptgem weiter (wie Power Transfer). Sammelt mit 0,8-fachem Radius; was im inneren Ring (0,3-facher Radius) liegt, zählt doppelt. Nur kleine und mittlere Gems",
+		desc = "Wie Power Transfer, aber Radius ×0,8; im inneren Ring (Stein + 0,3 × Radius) zählt alles doppelt. Nur klein und mittel",
 		transfer = true, rules = [] },
 ]
 
 
-## Status-Begriffe für die Tooltips (Kampfregeln aus der Tabelle des Nutzers, M6).
-## [id, Titel, Wörter im Text, Erklärung]. Begriffe in der Erklärung werden selbst
-## wieder zu Tooltips. X = Wert kommt mit dem Kampfsystem.
-const STATUS_TERMS := [
-	[&"bleed", "Bleed", ["Bleed"],
-		"Verursacht pro Stack X Schaden pro Sekunde. Verliert 1 Stack pro Sekunde. Entsteht aus Luft-Essenz."],
-	[&"slowed", "Slowed", ["Slowed", "Slow"],
-		"Verlängert die Cast-Zeit des Gegners um X Sekunden. Verliert 1 Stack pro Sekunde, höchstens 10 Stacks. Slowed und Hasted heben sich 1 : 1 auf."],
-	[&"hasted", "Hasted", ["Hasted"],
-		"Verkürzt die eigene Cast-Zeit um X Sekunden. Verliert 1 Stack pro Sekunde, höchstens 10 Stacks. Hasted und Slowed heben sich 1 : 1 auf."],
-	[&"mana_burn", "Mana Burn", ["Mana Burn"],
-		"Senkt die Mana-Reg des Gegners um X pro Sekunde. Verliert 1 Stack pro gesenkter Mana-Reg. Entsteht aus Blitz-Essenz."],
-	[&"armor", "Armor", ["Armor"],
-		"Verhindert X Schaden. Verliert 1 Stack pro verhindertem Schaden. Armor Break hebt Armor im Verhältnis 1 : 5 auf."],
-	[&"schock", "Schock", ["Schock"],
-		"Verursacht 1 Schaden pro Mana, das der Gegner verbraucht (höchstens so viel wie Stacks). Verliert 1 Stack pro verbrauchtem Mana. Nass verstärkt den Schaden. Entsteht aus Blitz-Essenz."],
-	[&"nass", "Nass", ["Nass"],
-		"Erhöht den Schaden von Schock um X. Nass und Burn heben sich 1 : 1 auf. Freeze wandelt 100 Nass in 1 Eis. Entsteht aus Wasser-Essenz."],
-	[&"eis", "Eis", ["Eis"],
-		"Betäubt X Sekunden: Der Gegner kann nicht zaubern. Verliert 1 Stack pro Sekunde. Entsteht, wenn Freeze Nass umwandelt."],
-	[&"burn", "Burn", ["Burn"],
-		"Verursacht X Schaden pro Sekunde. Verliert 1 Stack pro Sekunde. Nass und Burn heben sich 1 : 1 auf. Entsteht aus Feuer-Essenz."],
-	[&"leben_reg", "Leben-Reg", ["Leben-Reg"],
-		"Heilt 1 Leben pro Sekunde und Stack. Verliert 1 Stack pro Sekunde. Entsteht aus Wasser-Essenz."],
-	[&"mana_reg", "Mana-Reg", ["Mana-Reg"],
-		"Gibt 1 Mana pro Sekunde und Stack. Verliert 1 Stack pro Sekunde. Mana Burn senkt sie. Entsteht aus Blitz-Essenz."],
-	[&"armor_break", "Armor Break", ["Armor Break"],
-		"Hebt Armor im Verhältnis 1 : 5 auf. Entsteht aus Erd-Essenz."],
-	[&"crit", "Crit", ["Crit"],
-		"1 Crit = 1 % Chance auf einen kritischen Treffer. Ein kritischer Treffer macht 200 % Schaden. Entsteht aus Feuer-Essenz."],
-	[&"perma_burn", "Perma-Burn", ["Perma-Burn"],
-		"Debuff. Erzeugt pro Stack jede Sekunde Burn. Baut sich nicht ab; nur Cleanse entfernt ihn."],
-	[&"accelerated_burn", "Accelerated Burn", ["Accelerated Burn"],
-		"Debuff. Solange er wirkt, tickt Burn zweimal pro Sekunde: gleicher Gesamtschaden in der halben Zeit. Verliert 1 Stack pro Sekunde."],
-	[&"bless", "Bless", ["Bless"],
-		"Buff. Jede erhaltene Heilung (auch Leben-Reg) heilt pro Stack X mehr und verbraucht 1 Stack."],
-	[&"thorns", "Thorns", ["Thorns"],
-		"Buff. Wird der Träger von einem Spell getroffen, erhält der Angreifer pro Stack X Schaden; verbraucht 1 Stack pro Treffer."],
-	[&"mana_absorption", "Mana Absorption", ["Mana Absorption"],
-		"Buff. Wird der Träger von einem Spell getroffen, erhält er pro Stack X Mana; verbraucht 1 Stack pro Treffer."],
-	[&"damage_reduction", "Damage Reduction", ["Damage Reduction"],
-		"Buff. Halbiert den Schaden des nächsten gegnerischen Spells (alle Treffer); 1 Stack pro Spell."],
-	[&"life_rewind", "Life Rewind", ["Life Rewind"],
-		"Buff. Speichert das aktuelle Leben; nach 10 Sekunden wird das Leben auf diesen Wert gesetzt, auch nach unten. Tödlicher Schaden tötet trotzdem."],
-	[&"cleanse", "Cleanse", ["Cleanse"],
-		"Entfernt alle Debuffs vom Ziel: Burn, Bleed, Nass, Schock, Slowed, Mana Burn, Eis, Perma-Burn, Accelerated Burn, Blood Thinner, Cauterized, Rotten."],
-	[&"dispel", "Dispel", ["Dispel"],
-		"Pro Stack wird ein Buff des Ziels mit allen seinen Stacks entfernt, der mit den meisten Stacks zuerst. Buffs: Armor, Hasted, Leben-Reg, Mana-Reg, Bless, Thorns, Mana Absorption, Damage Reduction, Life Rewind, Critical Chance, Max Health."],
-	[&"critical_chance", "Critical Chance", ["Critical Chance"],
-		"Buff. +1 % Crit-Chance pro Stack auf die eigenen Spells. Bleibt bis zum nächsten Crit, dann werden alle Stacks verbraucht."],
-	[&"blood_thinner", "Blood Thinner", ["Blood Thinner"],
-		"Debuff. Solange er wirkt, tickt Bleed zweimal pro Sekunde: gleicher Gesamtschaden in der halben Zeit. Verliert 1 Stack pro Sekunde."],
-	[&"cauterized", "Cauterized", ["Cauterized"],
-		"Debuff. Entsteht, wenn jemand Bleed und Burn zugleich hat: je 1 Bleed und 1 Burn werden zu 1 Cauterized. Verhindert die nächste Heilung (auch Leben-Reg) und verliert dabei 1 Stack."],
-	[&"max_health", "Max Health", ["Max Health"],
-		"Buff. +X maximales Leben pro Stack. Hebt nur das Maximum, nicht das aktuelle Leben. Baut sich nicht ab."],
-	[&"rotten", "Rotten", ["Rotten"],
-		"Debuff. -X maximales Leben pro Stack; das Leben sinkt mit, wenn es darüber liegt. Baut sich nicht ab; nur Cleanse entfernt ihn."],
-]
-## Symbol je Status: Gravur-Symbol, das ihn erzeugt (Dateiname ohne "engraving_").
-const STATUS_ICONS := {
-	&"bleed": "status_bleed", &"slowed": "slow", &"hasted": "hasted", &"mana_burn": "mana_burn",
-	&"armor": "armor", &"schock": "status_schock", &"nass": "status_nass", &"eis": "freeze",
-	&"burn": "status_burn", &"leben_reg": "leben_reg", &"mana_reg": "mana_reg",
-	&"armor_break": "status_armor_break", &"crit": "crit",
-	&"perma_burn": "permanent_burn", &"accelerated_burn": "accelerated_burn", &"bless": "bless",
-	&"thorns": "thorns", &"mana_absorption": "mana_absorption", &"damage_reduction": "damage_reduction",
-	&"life_rewind": "life_rewind", &"cleanse": "cleanse", &"dispel": "dispel",
-	&"critical_chance": "critical_chance", &"blood_thinner": "blood_thinner", &"max_health": "max_health",
-	&"rotten": "rot", &"cauterized": "cauterized",
+## Begriffe für die Tooltips: ID -> [Titel, weitere Wörter, Text]. Leerer Titel = Name aus
+## `Status.NAMES`. Bei Status ist die ID die Status-ID. `{name}` im Text wird durch den
+## Wert aus content/combat_rules.tres ersetzt (siehe `_rule_values`).
+const TERMS := {
+	&"burn": ["", [], "Debuff. {burn_damage} Schaden pro Stack und Sekunde, danach -1 Stack. Hebt sich 1 : 1 mit Nass auf; mit Bleed entsteht Cauterized."],
+	&"bleed": ["", [], "Debuff. {bleed_damage} Schaden pro Stack und Sekunde, danach -1 Stack. Mit Burn entsteht Cauterized."],
+	&"wet": ["", [], "Debuff. +{wet_shock_bonus} Schock-Schaden pro Stack. Hebt sich 1 : 1 mit Burn auf. Freeze wandelt Nass in Eis."],
+	&"shock": ["", [], "Debuff. Gibt der Träger Mana aus: 1 Schaden und -1 Stack pro Mana (höchstens alle Stacks). Nass verstärkt den Schaden."],
+	&"slow": ["", ["Slow"], "Debuff. Nächster Cast +{slowed_seconds} s pro Stack; dabei werden alle Stacks verbraucht. Höchstens {max_slowed_hasted} Stacks, hebt sich 1 : 1 mit Hasted auf."],
+	&"mana_burn": ["", [], "Debuff. Senkt die Mana-Reg um {mana_burn_per_stack} pro Stack und Sekunde; die genutzten Stacks werden verbraucht."],
+	&"ice": ["", [], "Debuff. Betäubt: kein neuer Cast, ein laufender pausiert. -1 Stack pro Sekunde."],
+	&"perma_burn": ["", [], "Debuff. Erzeugt pro Stack {perma_burn_rate} Burn pro Sekunde. Baut sich nicht ab, nur Cleanse entfernt ihn."],
+	&"accelerated_burn": ["", [], "Debuff. Burn tickt zweimal pro Sekunde: gleicher Schaden in halber Zeit. -1 Stack pro Sekunde."],
+	&"blood_thinner": ["", [], "Debuff. Bleed tickt zweimal pro Sekunde: gleicher Schaden in halber Zeit. -1 Stack pro Sekunde."],
+	&"cauterized": ["", [], "Debuff. Entsteht aus je 1 Bleed und 1 Burn. Verhindert die nächste Heilung und verliert dabei 1 Stack."],
+	&"rotten": ["", [], "Debuff. -{rotten_per_stack} maximales Leben pro Stack; das Leben sinkt mit. Baut sich nicht ab."],
+	&"armor": ["", [], "Buff. Fängt 1 Schaden pro Stack ab und verliert dabei den Stack. Armor Break entfernt ihn."],
+	&"hasted": ["", [], "Buff. Nächster Cast -{hasted_seconds} s pro Stack; dabei werden alle Stacks verbraucht. Höchstens {max_slowed_hasted} Stacks, hebt sich 1 : 1 mit Slowed auf."],
+	&"life_regen": ["", [], "Buff. 1 Heilung pro Stack und Sekunde, danach -1 Stack."],
+	&"mana_regen": ["", [], "Buff. +1 Mana pro Stack und Sekunde (zu den {mana_regen} Grund-Mana), danach -1 Stack."],
+	&"bless": ["", [], "Buff. Jede erhaltene Heilung +{bless_heal} pro Stack; verbraucht 1 Stack."],
+	&"thorns": ["", [], "Buff. Trifft ein gegnerischer Spell: {thorns_damage} Schaden pro Stack an den Angreifer; verbraucht 1 Stack."],
+	&"mana_absorption": ["", [], "Buff. Trifft ein gegnerischer Spell: +{mana_absorption_mana} Mana pro Stack; verbraucht 1 Stack."],
+	&"damage_reduction": ["", [], "Buff. Der nächste gegnerische Spell macht nur {damage_reduction_percent} % Schaden (alle Treffer); verbraucht 1 Stack."],
+	&"life_rewind": ["", [], "Buff. Merkt sich das Leben; nach {life_rewind_seconds} s wird es darauf gesetzt, auch nach unten. Tod ist endgültig."],
+	&"critical_chance": ["", [], "Buff. +1 % Crit-Chance pro Stack. Beim nächsten Crit werden alle Stacks verbraucht."],
+	&"max_health": ["", [], "Buff. +{max_health_per_stack} maximales Leben pro Stack (nicht das aktuelle Leben). Baut sich nicht ab."],
+	&"crit": ["Crit", [], "Spell-Wert. 1 Crit = 1 % Chance pro Treffer auf {crit_percent} % Schaden."],
+	&"armor_break": ["Armor Break", [], "Spell-Wert. Entfernt beim Treffer {armor_break_ratio} Armor pro Stack."],
+	&"cleanse": ["Cleanse", [], "Spell-Wert. Entfernt alle Debuffs des Ziels."],
+	&"dispel": ["Dispel", [], "Spell-Wert. Pro Stack wird ein Buff des Ziels ganz entfernt, der mit den meisten Stacks zuerst."],
+	&"points": ["Punkte", [], "Grundlage jeder Gravur: neutrale Essenz zählt 1, eine Essenz ihren Faktor, aber nur für Gravuren mit ihrem Element. Sonst zählt sie nichts."],
+	&"spitz": ["Spitz", [], "Gem-Form: sammelt im Innenwinkel, alles Eingesammelte zählt doppelt. Grob sammelt im Außenwinkel einfach."],
 }
-## Welche Status ein Element erzeugt (für die Element-Erklärung).
-const ELEMENT_STATUS := {
-	&"fire": ["Burn", "Crit", "Perma-Burn", "Accelerated Burn", "Critical Chance"],
-	&"water": ["Nass", "Leben-Reg", "Bless", "Life Rewind", "Max Health", "Blood Thinner"],
-	&"earth": ["Armor", "Armor Break", "Thorns", "Damage Reduction", "Mana Absorption", "Rotten", "Blood Thinner"],
-	&"air": ["Bleed", "Slowed", "Hasted", "Accelerated Burn"],
-	&"lightning": ["Schock", "Mana Burn", "Mana-Reg"],
+## Symbol eines Begriffs: Gravur-Symbol (Dateiname ohne "engraving_").
+const TERM_ICONS := {
+	&"burn": "status_burn", &"bleed": "status_bleed", &"wet": "status_nass", &"shock": "status_schock",
+	&"slow": "slow", &"mana_burn": "mana_burn", &"ice": "freeze", &"perma_burn": "permanent_burn",
+	&"accelerated_burn": "accelerated_burn", &"blood_thinner": "blood_thinner", &"cauterized": "cauterized",
+	&"rotten": "rot", &"armor": "armor", &"hasted": "hasted", &"life_regen": "leben_reg", &"mana_regen": "mana_reg",
+	&"bless": "bless", &"thorns": "thorns", &"mana_absorption": "mana_absorption", &"damage_reduction": "damage_reduction",
+	&"life_rewind": "life_rewind", &"critical_chance": "critical_chance", &"max_health": "max_health",
+	&"crit": "crit", &"armor_break": "status_armor_break", &"cleanse": "cleanse", &"dispel": "dispel",
 }
+
 
 
 func _init() -> void:
@@ -340,7 +306,7 @@ func _init() -> void:
 		var icon_path := "res://assets/sprites/engraving_%s.png" % data.id
 		if ResourceLoader.exists(icon_path):
 			engraving.icon = load(icon_path)
-		engraving.description = data.desc + _points_text(data, content.elements)
+		engraving.description = data.desc + _target_text(data) + _points_text(data, content.elements)
 		engraving.base_stats = data.get("stats", {})
 		engraving.transfer_to_main = data.get("transfer", false)
 		engraving.radius_factor = data.get("radius", 1.0)
@@ -392,30 +358,6 @@ func _save(resource: Resource, path: String) -> void:
 		push_error("Speichern fehlgeschlagen: %s (%d)" % [path, error])
 
 
-## Zusatz zur Beschreibung: wie viele Punkte welche Essenz bringt.
-## Neutrale Essenz wird nur genannt, wenn eine Regel sie zählt.
-func _points_text(data: Dictionary, elements: Array[ElementDef]) -> String:
-	if data.rules.is_empty():
-		return ""
-	var counts_base := false
-	for r: Array in data.rules:
-		counts_base = counts_base or r[0] == "P" or r[0] == "N"
-	var parts := PackedStringArray()
-	if counts_base:
-		parts.append("neutrale Essenz 1")
-	var ids := _element_ids(data)
-	for element in elements:
-		if ids.has(element.id):
-			parts.append("%s-Essenz %s" % [element.display_name, _number(element.factor)])
-	if ids.is_empty():
-		parts.append("Essenz 0")
-	elif ids.size() < elements.size():
-		parts.append("andere Essenz 0")
-	if not counts_base:
-		parts.append("neutrale Essenz 0")
-	return ". Punkte: " + ", ".join(parts)
-
-
 ## `el` aus der Tabelle als Liste: einzelne ID, Liste oder nichts.
 func _element_ids(data: Dictionary) -> Array[StringName]:
 	var ids: Array[StringName] = []
@@ -428,37 +370,125 @@ func _element_ids(data: Dictionary) -> Array[StringName]:
 	return ids
 
 
-func _number(value: float) -> String:
-	return str(int(value)) if is_equal_approx(value, roundf(value)) else str(value)
+
+## Zusatz für Hauptgravuren: wen der Spell trifft.
+func _target_text(data: Dictionary) -> String:
+	if data.role != MAIN:
+		return ""
+	return ". Ziel: " + ["Gegner", "selbst", "beide"][data.get("target", ENEMY)]
 
 
-## Begriffe: Status aus STATUS_TERMS, Elemente aus Faktor und Gravuren erzeugt.
+## Zusatz zur Beschreibung: welche Essenz wie viele Punkte bringt (fehlende zählen 0),
+## z. B. ". Punkte: neutrale Essenz ×1, Feuer-Essenz ×5".
+func _points_text(data: Dictionary, elements: Array[ElementDef]) -> String:
+	if data.rules.is_empty():
+		return ""
+	var parts := PackedStringArray()
+	for r: Array in data.rules:
+		if (r[0] == "P" or r[0] == "N") and parts.is_empty():
+			parts.append("neutrale Essenz ×1")
+	var ids := _element_ids(data)
+	if ids.size() == elements.size():
+		parts.append("jede Essenz ×%s" % TextFormat.number(elements[0].factor))
+	else:
+		for element in elements:
+			if ids.has(element.id):
+				parts.append("%s-Essenz ×%s" % [_essence_word(element), TextFormat.number(element.factor)])
+	return ". Punkte: " + ", ".join(parts)
+
+
+## "Feuer", "Erd" (für "Erd-Essenz"), "Luft", ...
+static func _essence_word(element: ElementDef) -> String:
+	return element.display_name.trim_suffix("e")
+
+
+## Werte aus den Kampfregeln für die Platzhalter in TERMS.
+func _rule_values() -> Dictionary:
+	var rules: CombatRules = load("res://content/combat_rules.tres")
+	var values := {}
+	for property in rules.get_property_list():
+		if property.usage & PROPERTY_USAGE_SCRIPT_VARIABLE:
+			var value: Variant = rules.get(property.name)
+			if value is float or value is int:
+				values[property.name] = TextFormat.number(value)
+	values["damage_reduction_percent"] = TextFormat.number(rules.damage_reduction_factor * 100.0)
+	values["crit_percent"] = TextFormat.number(rules.crit_multiplier * 100.0)
+	return values
+
+
+## Begriffe: Elemente (aus Faktor und Gravuren), Buff und Debuff (aus `Status`), TERMS.
 func _build_glossary(content: CraftingContent) -> void:
 	for element in content.elements:
+		content.glossary.append(_element_term(element, content))
+	content.glossary.append(_group_term(&"debuff", "Debuff", Status.DEBUFFS, "Schadet dem Träger; Cleanse entfernt alle"))
+	content.glossary.append(_group_term(&"buff", "Buff", Status.BUFFS, "Hilft dem Träger; Dispel entfernt sie"))
+	var values := _rule_values()
+	for id: StringName in TERMS:
+		var row: Array = TERMS[id]
 		var term := GlossaryTerm.new()
-		term.id = element.id
-		term.title = element.display_name
-		term.icon = element.icon
-		term.icon_color = element.color
-		var words := PackedStringArray([element.display_name, element.display_name + "-Essenz"])
-		if not words.has(element.display_name.trim_suffix("e") + "-Essenz"):
-			words.append(element.display_name.trim_suffix("e") + "-Essenz")  # "Erd-Essenz"
-		term.words = words
-		var engravings := PackedStringArray()
-		for engraving in content.engravings:
-			if engraving.element_ids.has(element.id) and engraving.element_ids.size() < content.elements.size() \
-					and not engravings.has(engraving.display_name):
-				engravings.append(engraving.display_name)
-		term.text = "Ein Element. Eine %s-Essenz zählt %s Punkte für Gravuren mit diesem Element, für andere Gravuren nichts (außer Magischer Bolzen). Erzeugt: %s.\nGravuren: %s." % [
-			element.display_name, _number(element.factor), ", ".join(ELEMENT_STATUS.get(element.id, [])), ", ".join(engravings)]
-		content.glossary.append(term)
-	for row: Array in STATUS_TERMS:
-		var term := GlossaryTerm.new()
-		term.id = row[0]
-		term.title = row[1]
-		term.words = PackedStringArray(row[2])
-		var icon_path := "res://assets/sprites/engraving_%s.png" % STATUS_ICONS.get(row[0], "")
+		term.id = id
+		term.title = row[0] if row[0] != "" else Status.name_of(id)
+		term.words = PackedStringArray([term.title] + row[1])
+		var icon_path := "res://assets/sprites/engraving_%s.png" % TERM_ICONS.get(id, "")
 		if ResourceLoader.exists(icon_path):
 			term.icon = load(icon_path)
-		term.text = row[3] + "\n(Kampfregel, wirkt ab dem Auto-Battler.)"
+		term.text = String(row[2]).format(values)
 		content.glossary.append(term)
+
+
+## Element: Punkte, erzeugte Effekte und Gravuren (aus den Gravuren berechnet).
+func _element_term(element: ElementDef, content: CraftingContent) -> GlossaryTerm:
+	var term := GlossaryTerm.new()
+	term.id = element.id
+	term.title = element.display_name
+	term.icon = element.icon
+	term.icon_color = element.color
+	term.words = PackedStringArray([element.display_name, element.display_name + "-Essenz"])
+	if element.display_name != _essence_word(element):
+		term.words.append(_essence_word(element) + "-Essenz")  # "Erd-Essenz"
+	var engravings := PackedStringArray()
+	var effects := PackedStringArray()
+	for engraving in content.engravings:
+		if not engraving.element_ids.has(element.id) or engraving.element_ids.size() == content.elements.size():
+			continue
+		if not engravings.has(engraving.display_name):
+			engravings.append(engraving.display_name)
+		for stat: StringName in _stats_of(engraving):
+			var title := _term_title(stat)
+			if title != "" and not effects.has(title):
+				effects.append(title)
+	term.text = "Element. 1 %s-Essenz = %s Punkte, nur für Gravuren mit %s.\nErzeugt: %s.\nGravuren: [nolink]%s[/nolink]." % [
+		_essence_word(element), TextFormat.number(element.factor), element.display_name,
+		", ".join(effects), ", ".join(engravings)]
+	return term
+
+
+func _group_term(id: StringName, title: String, statuses: Array[StringName], text: String) -> GlossaryTerm:
+	var term := GlossaryTerm.new()
+	term.id = id
+	term.title = title
+	term.words = PackedStringArray([title, title + "s"])
+	var names := PackedStringArray()
+	for status in statuses:
+		names.append(Status.name_of(status))
+	term.text = "%s: %s." % [text, ", ".join(names)]
+	return term
+
+
+## Alle Werte, die eine Gravur erzeugt (Regeln und feste Werte).
+static func _stats_of(engraving: EngravingDef) -> Array[StringName]:
+	var stats: Array[StringName] = []
+	for rule in engraving.rules:
+		stats.append(rule.stat)
+	for stat: StringName in engraving.base_stats:
+		stats.append(stat)
+	return stats
+
+
+## Titel des Begriffs zu einem Spell-Wert ("" ohne Begriff).
+static func _term_title(stat: StringName) -> String:
+	if Status.NAMES.has(stat):
+		return Status.name_of(stat)
+	if TERMS.has(stat):
+		return TERMS[stat][0]
+	return ""

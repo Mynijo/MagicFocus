@@ -12,15 +12,15 @@ Kommunikation mit dem Nutzer auf **Deutsch**.
 | Ordner | Inhalt |
 |---|---|
 | `core/data/` | Ressourcen-Klassen: `FocusStore` (gespeicherte Foki als JSON), `GlossaryTerm`, `ElementDef`, `GemDef` (Form), `EngravingDef` (Gravur), `ScalingRule`, `FocusDef`, `FocusShape` (+ `CircleFocusShape`, `PolygonFocusShape` → `StarFocusShape`, `DropFocusShape`), `FocusInstance`, `PlacedGem`, `GemEffect`, `CraftingContent` |
-| `core/logic/` | Reine Logik ohne Physik/Szenen: `SpellEvaluator` (Auswertung in 6 Phasen), `FocusGeometry`, `DotField` (Punkte aus Seed), `SpellResult`, `GemResult`, `EnergyDot` |
-| `core/combat/` | Kampf (M6), reine Logik: `Combat` (Ablauf, Status, Log), `CombatMage` (Zustand, `from_foci`), `CombatRules` (Zahlen, Inhalt in `content/combat_rules.tres`) |
+| `core/logic/` | Reine Logik ohne Physik/Szenen: `SpellEvaluator` (Auswertung in 6 Phasen), `FocusGeometry`, `DotField` (Punkte aus Seed), `SpellResult`, `GemResult`, `EnergyDot`, `TextFormat` (Zahlen für Texte) |
+| `core/combat/` | Kampf (M6), reine Logik: `Combat` (Ablauf, Log, Statistik), `Status` (**einzige Status-Tabelle**: Namen, Buffs, Debuffs; ID = Spell-Wert = Begriff im Glossar), `CombatMage` (Zustand, `from_foci`), `CombatRules` (Zahlen, Inhalt in `content/combat_rules.tres`), `SpellCondition` |
 | `content/` | Inhalte als `.tres`: `elements/`, `gems/`, `engravings/`, `foci/`. `crafting_content.tres` listet alles (Reihenfolge = Reihenfolge in der UI) |
 | `tools/` | `generate_content.gd`: erzeugt Gems, Gravuren und `crafting_content.tres` aus Tabellen. **Werte dort ändern und neu erzeugen**, nicht die `.tres` von Hand. `prepare_assets.gd`: schneidet und verkleinert generierte Bilder nach `assets/sprites/` (Gravur-Symbole: alle PNGs aus `assets/engravings/<gravur-id>.png`, danach Generator neu laufen lassen) |
 | `assets/` | Bilder (vom Nutzer mit ChatGPT erzeugt): Originale in `gems/`, `essences/`, `textures/`, `engravings/<gravur-id>.png`, `elements/element_<id>.png`; Spiel nutzt `sprites/` (aufbereitet, Mipmaps an). Jedes Element hat eine eigene Punktform (`ElementDef.dot_texture`, im Generator gesetzt), neutrale Essenz ist eine Kugel. Gravuren zeigen auf dem Gem ihr Symbol (`EngravingDef.icon`); ohne Symbol die Form ihres Elements (nur bei genau einem Element). Elemente haben ein Symbol (`ElementDef.icon`) für Befüllen-Liste und Tooltips; Status-Tooltips nutzen das Symbol der erzeugenden Gravur (`STATUS_ICONS` im Generator). Neue Bilder kommen in `input/` und werden von Claude einsortiert |
 | `ui/arena/` | Arena: zwei Magier aus gespeicherten Foki (bis zu 5 Spells), Balken, Status-Symbole, Log, Tempo 1×/2×/4× |
-| `ui/common/` | `term_tooltips.gd`: verschachtelte Tooltips für Begriffe (Elemente, Status) in RichTextLabels: `linkify()` + `register()` |
+| `ui/common/` | `term_tooltips.gd`: verschachtelte Tooltips (`linkify()` + `register()`, `[nolink]…[/nolink]` verhindert Links); `ui_kit.gd`: Bausteine für die im Code gebauten Oberflächen |
 | `ui/workshop/` | Fokus-Werkstatt (Hauptszene): `workshop.gd` (Panels, im Code aufgebaut), `focus_canvas.gd` (Zeichnen und Mausbedienung) |
-| `tests/` | `run_tests.gd` (headless Testsuite), `preview_snapshot.tscn` (Render-Check der Werkstatt), `arena_snapshot.tscn` (Render-Check der Arena) |
+| `tests/` | `run_tests.gd` (Runner: ruft jede Methode `test_*` aller Dateien in `suites/` auf; Skriptfehler zählen als Fehler), `test_suite.gd` (Basis mit `check` und Helfern), `suites/test_*.gd` (nach Thema), `preview_snapshot.tscn` (Render-Check der Werkstatt), `arena_snapshot.tscn` (Render-Check der Arena) |
 | `FocusCraft/`, `FocusLexicon/` | **Altcode** (Prototyp 2023/24, physikbasiert). Nicht weiterentwickeln, nur Referenz |
 
 ## Architekturregeln
@@ -45,7 +45,7 @@ Kommunikation mit dem Nutzer auf **Deutsch**.
 - **Punkte und Element-Faktor:** Gravuren rechnen mit **Punkten** = N-E + E × Faktor des Elements (`ElementDef.factor`, zurzeit überall 5). Eine Gravur zählt **nur E ihrer Elemente** (`EngravingDef.element_ids`, z. B. Heal = Wasser), **fremde E zählen gar nicht**. **Gravuren ohne Element zählen keine E** (nur N-E). Der **Magische Bolzen hat alle Elemente**. Jede Gravur hat **eine Rate pro Wert** (z. B. Heal 5 pro Punkt); Regeln mit Quelle `POINTS`. Die Beschreibung bekommt im Generator automatisch den Zusatz „Punkte: …“.
 - **Status** (Burn, Nass, Bleed, Armor Break, Schock) entsteht **nur aus E des passenden Elements** (gewichtet), nie aus N-E. Pro Status gibt es eine eigene Nebengravur (Burn, Nass, Bleed, Armor Break, Schock) mit dem passenden Element.
 - Die Hauptgravur bestimmt die Art des Spells. Gems verfärben sich nicht; es gibt keine Resistenz und nur einen Schadenstyp. Power Transfer überträgt rohe N-E und E; das Hauptgem wendet seine Regeln (und seinen Elementfilter) an.
-- **Tooltips:** Element- und Status-Wörter in Texten sind Begriffe (`CraftingContent.glossary`, Texte in `STATUS_TERMS` im Generator, Element-Texte automatisch). Hovern zeigt den Tooltip, nach ca. 1 s ist er festgepinnt; Begriffe darin öffnen weitere Tooltips. Neue UI-Texte mit Begriffen: `tooltips.linkify()` und Label mit `tooltips.register()` anmelden.
+- **Tooltips:** Element- und Status-Wörter in Texten sind Begriffe (`CraftingContent.glossary`, Texte in `TERMS` im Generator mit `{wert}`-Platzhaltern aus `CombatRules`, Element-, Buff- und Debuff-Texte automatisch). Hovern zeigt den Tooltip, nach ca. 1 s ist er festgepinnt; Begriffe darin öffnen weitere Tooltips. Neue UI-Texte mit Begriffen: `tooltips.linkify()` und Label mit `tooltips.register()` anmelden.
 - In der Werkstatt werden E-Punkte größer gezeichnet als N-E (`FocusCanvas.ELEMENT_DOT_SCALE`); doppelt zählende Punkte (Spitz) haben eine versetzte Schattenkopie, die Gem-Liste zeigt „Punkte für die Gravur“. Beim Darüberfahren (und Ziehen) zeigt ein Gem seine eingesammelten Punkte mit Linien und „Sammelt: …“.
 - **Crit:** 1 Crit = 1 % Crit-Chance. Ein Crit macht 200 % Schaden (Auswirkung erst im Kampf, M6).
 - **Speicherstände** liegen als JSON in `user://foci/` und enthalten nur IDs (`FocusInstance.to_dict()` / `from_dict()`). Unbekannte IDs werden beim Laden entfernt und gemeldet; fehlt ein Gem, wird der Kreis gelöst. **IDs von Gems, Gravuren, Foki und Elementen nicht leichtfertig umbenennen**, sonst gehen gespeicherte Gems verloren.
@@ -119,6 +119,13 @@ godot --path . --write-movie out.png --quit-after 3 --fixed-fps 30 -- --example
 # Render-Check der Arena (Beispiel-Magier, nicht aus user://)
 godot --path . res://tests/arena_snapshot.tscn --write-movie out.png --quit-after 4 --fixed-fps 30 -- [--seconds=N] [--stats]
 ```
+
+## Konventionen im Code
+
+- Zahlen in Texten über `TextFormat.number()` (Dezimalkomma, keine unnötigen Nachkommastellen).
+- Neue Status nur in `Status` eintragen (plus Begriff in `TERMS` im Generator); Arena, Bedingungen und Werkstatt lesen von dort.
+- Neue Tests: Methode `test_*` in einer Datei unter `tests/suites/` (erbt `TestSuite`), keine Liste pflegen.
+- Beschreibungen der Gravuren: kurzer Text im Generator; Ziel (Hauptgravur) und „Punkte: …“ hängt der Generator an.
 
 ## Arbeitsweise
 

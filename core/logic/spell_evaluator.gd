@@ -9,8 +9,10 @@ extends RefCounted
 ##   3. Einsammeln     Hauptgem zuerst, dann Nebengems in Platzierungsreihenfolge;
 ##                     jedes nimmt die nächsten freien Punkte bis zu seiner Kapazität
 ##   4. Multiplizieren Eingesammeltes × Flächen-Multiplikator der Gem-Form
-##   5. Übertragen     Standard-Gems geben ihre effektiven Essenzen an das Hauptgem
+##   5. Übertragen     Power Transfer und Multiplikator geben ihr Eingesammeltes an das Hauptgem
 ##   6. Spell          Regeln der Gravuren, Effekte, Cast-Zeit, Mana
+## Essenz unter einem Gem-Stein zählt für niemanden. Radius Expansion löst einen
+## zweiten Durchlauf der Phasen 2 bis 6 mit größerem Hauptgem-Radius aus.
 
 const MIN_GEMS := 3
 const CAST_TIME_PER_GEM := 1.0

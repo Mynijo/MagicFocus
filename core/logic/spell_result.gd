@@ -38,7 +38,7 @@ func describe() -> String:
 
 	var lines := PackedStringArray()
 	lines.append(engraving.display_name)
-	lines.append("Cast-Zeit: %.2f s   Mana: %.1f" % [cast_time, mana_cost])
+	lines.append("Cast-Zeit: %s s, Mana: %s" % [TextFormat.number(cast_time), TextFormat.number(mana_cost, 1)])
 
 	var stat_names := stats.keys()
 	stat_names.sort_custom(func(a: StringName, b: StringName) -> bool: return String(a) < String(b))
@@ -47,7 +47,7 @@ func describe() -> String:
 
 	lines.append("")
 	for gr in gem_results:
-		lines.append("%s %d (%s, %s, x%.2f): %d N-E, %s" % [
+		lines.append("%s %d (%s, %s, ×%s): neutrale Essenz %d, Essenzen %s" % [
 			"Hauptgem" if gr.is_main() else "Gem", gr.index, gr.placed.gem.display_name,
-			gr.placed.engraving.display_name, gr.multiplier, gr.base_count, str(gr.element_counts)])
+			gr.placed.engraving.display_name, TextFormat.number(gr.multiplier), gr.base_count, str(gr.element_counts)])
 	return "\n".join(lines)
