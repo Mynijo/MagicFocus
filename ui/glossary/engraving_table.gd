@@ -19,6 +19,8 @@ var _tree: Tree
 var _group := Group.ELEMENT
 var _sort_column := -1  # -1 = Reihenfolge der Inhalte
 var _sort_descending := false
+## Titel zugeklappter Gruppen (bleiben beim Sortieren, Suchen und Neuaufbau zu)
+var _collapsed := {}
 ## Spalten: 0 = Aufklapp-Pfeil der Gruppen, 1..n Elemente, dann diese
 var _col_neutral: int
 var _col_name: int
@@ -61,6 +63,9 @@ func setup(p_content: CraftingContent) -> void:
 	_setup_column(_col_target, "Ziel", 80)
 	_setup_column(_col_effect, "Wirkung", 300, true)
 	_tree.column_title_clicked.connect(_on_title_clicked)
+	_tree.item_collapsed.connect(func(item: TreeItem) -> void:
+		if item.get_child_count() > 0:
+			_collapsed[item.get_text(_col_name)] = item.collapsed)
 	add_child(_tree)
 	refresh()
 
@@ -107,6 +112,7 @@ func refresh() -> void:
 			parent = _tree.create_item(root)
 			parent.set_text(_col_name, group[0])
 			parent.set_custom_color(_col_name, group[1])
+			parent.collapsed = _collapsed.get(group[0], false)
 			for c in _tree.columns:
 				parent.set_selectable(c, false)
 		for e: EngravingDef in group[2]:
@@ -127,13 +133,9 @@ func _groups(list: Array[EngravingDef]) -> Array:
 			for element in content.elements:
 				result.append([element.display_name, element.color, list.filter(func(e: EngravingDef) -> bool:
 					return e.element_factors.size() == 1 and e.counts_element(element.id))])
-			var total := content.elements.size()
-			result.append(["Mehrere Elemente", Color.WHITE, list.filter(func(e: EngravingDef) -> bool:
-				return e.element_factors.size() > 1 and e.element_factors.size() < total)])
-			result.append(["Alle Elemente", Color.WHITE, list.filter(func(e: EngravingDef) -> bool:
-				return e.element_factors.size() == total)])
-			result.append(["Ohne Element", Color.WHITE, list.filter(func(e: EngravingDef) -> bool:
-				return e.element_factors.is_empty())])
+			# mehrere, alle oder keine Elemente
+			result.append(["Sonstige", Color.WHITE, list.filter(func(e: EngravingDef) -> bool:
+				return e.element_factors.size() != 1)])
 	return result.filter(func(g: Array) -> bool: return not g[2].is_empty())
 
 

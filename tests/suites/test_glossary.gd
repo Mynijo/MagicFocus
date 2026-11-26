@@ -39,3 +39,15 @@ func test_engraving_table_sort_and_groups() -> void:
 	table.refresh()
 	check(table._tree.get_root().get_child_count() == 2, "Zwei Gruppen nach Rolle")
 	table.free()
+
+
+func test_engraving_table_keeps_collapsed_groups() -> void:
+	var table := EngravingTable.new()
+	table.setup(content)
+	var group := table._tree.get_root().get_first_child()
+	var title := group.get_text(table._col_name)
+	group.collapsed = true  # löst item_collapsed aus
+	table._on_title_clicked(2, MOUSE_BUTTON_LEFT)  # neu sortieren
+	var again := table._tree.get_root().get_first_child()
+	check(again.get_text(table._col_name) == title and again.collapsed, "Gruppe %s bleibt nach dem Sortieren zu" % title)
+	table.free()
