@@ -316,3 +316,23 @@ func test_tooltip_pinning() -> void:
 	tips._close_from(0)
 	check(tips.open_count() == 0, "Schließen einer Ebene schließt alle darüber")
 	tips.queue_free()
+
+
+## Beim Ziehen: Änderung der Punkte bzw. der Weitergabe je Gem.
+func test_gem_change_while_dragging() -> void:
+	var near := dots_line(MINOR_POS, MINOR_OUTER, 4)
+	var before := evaluate(lab(make_gem(MAIN, GROB, 80), engraving(&"magischer_bolzen"), make_gem(MINOR, GROB, 80), engraving(&"standard")), [])
+	var after := evaluate(lab(make_gem(MAIN, GROB, 80), engraving(&"magischer_bolzen"), make_gem(MINOR, GROB, 80), engraving(&"standard")), near)
+	var change := FocusCanvas.gem_change(before.gem_results[1], after.gem_results[1])
+	check(change.text == "Weitergabe 0 → 4 (+4)" and change.better, "Weitergabe des Power Transfer: %s" % change.text)
+	change = FocusCanvas.gem_change(before.gem_results[0], after.gem_results[0])
+	check(change.text == "Punkte 0 → 4 (+4)", "Punkte des Hauptgems: %s" % change.text)
+	change = FocusCanvas.gem_change(after.gem_results[0], before.gem_results[0])
+	check(not change.better and change.text.contains("(-4)"), "Verlust ist schlechter: %s" % change.text)
+	check(FocusCanvas.gem_change(after.gem_results[2], after.gem_results[2]).text == "", "Ohne Änderung kein Text")
+
+
+func test_roman_numerals() -> void:
+	var expected := { 2: "II", 3: "III", 4: "IV", 6: "VI", 9: "IX", 12: "XII", 40: "XL" }
+	for value: int in expected:
+		check(FocusCanvas.roman(value) == expected[value], "%d = %s, war %s" % [value, expected[value], FocusCanvas.roman(value)])

@@ -97,13 +97,13 @@ func test_radius_expansion() -> void:
 func test_multiplier_engraving() -> void:
 	var multi := engraving(&"multiplikator")
 	var gem := make_gem(MINOR, GROB, 100)
-	# Radius 80, innerer Ring 30: Punkte bei 10..78 = 18, davon 6 innen (10..30) zählen doppelt
+	# Radius 80, innerer Ring 30: Punkte bei 10..78 = 18, davon 6 innen (10..30) zählen dreifach
 	var r := evaluate(lab(make_gem(MAIN, GROB, 5), engraving(&"magischer_bolzen"), gem, multi),
 		dots_line(MINOR_POS, MINOR_OUTER, 20))
 	check(r.valid, "gültig: %s" % [r.errors])
 	check(r.gem_results[1].base_count == 18, "0,8-facher Radius: 18 Punkte, waren %d" % r.gem_results[1].base_count)
-	check(is_equal_approx(r.gem_results[1].effective_base, 24.0), "6 innen ×2 + 12 außen = 24, war %s" % r.gem_results[1].effective_base)
-	check_stat(r, &"damage", 24.0)  # an das Hauptgem übertragen
+	check(is_equal_approx(r.gem_results[1].effective_base, 30.0), "6 innen ×3 + 12 außen = 30, war %s" % r.gem_results[1].effective_base)
+	check_stat(r, &"damage", 30.0)  # an das Hauptgem übertragen
 	gem.size = GemDef.Size.GROSS
 	r = evaluate(lab(make_gem(MAIN, GROB, 5), engraving(&"magischer_bolzen"), gem, multi), [])
 	check(not r.valid, "Multiplikator passt nicht auf große Gems")

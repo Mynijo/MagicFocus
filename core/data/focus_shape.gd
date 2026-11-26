@@ -25,6 +25,18 @@ func random_point(_rng: RandomNumberGenerator) -> Vector2:
 	return Vector2.ZERO
 
 
+## Zufallspunkt mit mindestens `margin` Abstand zum Rand (geprüft in vier Richtungen).
+## Gibt nach vielen Fehlversuchen einen Punkt ohne Abstand zurück (sehr kleine Formen).
+func random_point_inset(rng: RandomNumberGenerator, margin: float) -> Vector2:
+	var point := random_point(rng)
+	for attempt in 100:
+		if contains(point + Vector2(margin, 0)) and contains(point - Vector2(margin, 0)) \
+				and contains(point + Vector2(0, margin)) and contains(point - Vector2(0, margin)):
+			return point
+		point = random_point(rng)
+	return point
+
+
 ## Umriss zum Zeichnen.
 func get_outline() -> PackedVector2Array:
 	return PackedVector2Array()

@@ -159,7 +159,7 @@ const ENGRAVINGS := [
 	{ id = &"critical_damage", name = "Critical Damage", role = MINOR, el = &"lightning", rules = [[&"lightning", 5, &"crit_damage", 10.0]] },
 	{ id = &"status_slow", name = "Slow", role = MINOR, el = &"air", rules = [[&"air", 5, &"slow", 1.0]] },
 	# Etappe 5: Multiplikator
-	{ id = &"multiplikator", name = "Multiplikator", role = MINOR, radius = 0.8, inner = 0.3, max_size = GemDef.Size.MITTEL,
+	{ id = &"multiplikator", name = "Multiplikator", role = MINOR, radius = 0.8, inner = 0.3, inner_mult = 3.0, max_size = GemDef.Size.MITTEL,
 		transfer = true, rules = [] },
 ]
 
@@ -211,6 +211,7 @@ func _init() -> void:
 		engraving.transfer_to_main = data.get("transfer", false)
 		engraving.radius_factor = data.get("radius", 1.0)
 		engraving.inner_radius_factor = data.get("inner", 0.0)
+		engraving.inner_multiplier = data.get("inner_mult", 2.0)
 		engraving.max_size = data.get("max_size", GemDef.Size.GROSS)
 		engraving.target = data.get("target", ENEMY)
 		for r: Array in data.rules:

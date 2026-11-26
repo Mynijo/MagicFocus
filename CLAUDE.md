@@ -48,7 +48,7 @@ Kommunikation mit dem Nutzer auf **Deutsch**.
 - **Status** (Burn, Nass, Bleed, Armor Break, Schock) entsteht **nur aus E des passenden Elements** (gewichtet), nie aus N-E. Pro Status gibt es eine eigene Nebengravur (Burn, Nass, Bleed, Armor Break, Schock) mit dem passenden Element.
 - Die Hauptgravur bestimmt die Art des Spells. Gems verfärben sich nicht; es gibt keine Resistenz und nur einen Schadenstyp. Power Transfer überträgt rohe N-E und E; das Hauptgem wendet seine Regeln (und seinen Elementfilter) an.
 - **Tooltips:** Element- und Status-Wörter in Texten sind Begriffe (`CraftingContent.glossary`, Texte in `TERMS` im Generator mit `{wert}`-Platzhaltern aus `CombatRules`, Element-, Buff- und Debuff-Texte automatisch). Hovern zeigt den Tooltip, nach ca. 1 s ist er festgepinnt; Begriffe darin öffnen weitere Tooltips. Neue UI-Texte mit Begriffen: `tooltips.linkify()` und Label mit `tooltips.register()` anmelden.
-- In der Werkstatt werden E-Punkte größer gezeichnet als N-E (`FocusCanvas.ELEMENT_DOT_SCALE`); doppelt zählende Punkte (Spitz) haben eine versetzte Schattenkopie, die Gem-Liste zeigt „Punkte für die Gravur“. Beim Darüberfahren (und Ziehen) zeigt ein Gem seine eingesammelten Punkte mit Linien und „Sammelt: …“.
+- In der Werkstatt werden E-Punkte größer gezeichnet als N-E (`FocusCanvas.ELEMENT_DOT_SCALE`); mehrfach zählende Punkte (Spitz ×2, Multiplikator-Ring ×3, beides ×6) werden größer gezeichnet und tragen ihren Wert als römische Zahl (II, III, VI), die Gem-Liste zeigt „Punkte für die Gravur“. Beim Darüberfahren (und Ziehen) zeigt ein Gem seine eingesammelten Punkte mit Linien und „Sammelt: …“.
 - **Crit:** 1 Crit = 1 % Crit-Chance. Ein Crit macht 200 % Schaden (Auswirkung erst im Kampf, M6).
 - **Speicherstände** liegen als JSON in `user://foci/` und enthalten nur IDs (`FocusInstance.to_dict()` / `from_dict()`). Unbekannte IDs werden beim Laden entfernt und gemeldet; fehlt ein Gem, wird der Kreis gelöst. **IDs von Gems, Gravuren, Foki und Elementen nicht leichtfertig umbenennen**, sonst gehen gespeicherte Gems verloren.
 - **Hauptgravuren** (Element in Klammern): Magischer Bolzen (alle), Freeze (Wasser und Luft, 100 Nass → 1 Eis), Slow (Luft), Heal (Wasser), Schutz (Erde), Hasted (Luft), Leben-Reg (Wasser), Mana-Reg (Blitz), Feuerball (Feuer, Burn), Wasser-Detonation (Wasser, Nass), Luftklinge (Luft, Bleed), Kanone (Erde, Armor Break), Blitzschlag (Blitz, Schock). Dazu die Gravuren aus dem Spell-Paket (Abschnitt unten).
@@ -116,7 +116,7 @@ godot --headless --path . -s res://tools/prepare_assets.gd
 # Tests (Exit-Code 0 = grün)
 godot --headless --path . -s res://tests/run_tests.gd
 # Render-Check der Werkstatt (PNG-Frames)
-godot --path . res://tests/preview_snapshot.tscn --write-movie out.png --quit-after 4 --fixed-fps 30 -- [--focus=<id>] [--place] [--place-at=x,y] [--all-elements] [--tooltip] [--details] [--scroll] [--hover[=N]] [--replace] [--minor=<gravur-id>] [--first-main]
+godot --path . res://tests/preview_snapshot.tscn --write-movie out.png --quit-after 4 --fixed-fps 30 -- [--focus=<id>] [--place] [--place-at=x,y] [--all-elements] [--tooltip] [--details] [--scroll] [--hover[=N]] [--replace] [--minor=<gravur-id>] [--first-main] [--drag=N,x,y]
 godot --path . --write-movie out.png --quit-after 3 --fixed-fps 30 -- --example
 # Render-Check der Arena (Beispiel-Magier, nicht aus user://)
 godot --path . res://tests/arena_snapshot.tscn --write-movie out.png --quit-after 4 --fixed-fps 30 -- [--seconds=N] [--stats]

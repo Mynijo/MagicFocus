@@ -25,8 +25,8 @@ const DRAG_THRESHOLD := 5.0      # Bildschirm-Pixel, ab denen ein Klick zum Zieh
 const SLIDE_ATTEMPTS := 4       # Versuche, ein gezogenes Gem aus fremden Reichweiten zu schieben
 const MAIN_GEM_SIZE := 24.0     # Bildschirm-Pixel (halbe Bildgröße)
 const MINOR_GEM_SIZE := 17.0
-const DOUBLE_OFFSET := 1.6  # Versatz der Schattenkopie doppelt zählender Punkte (× Punktradius)
-const ELEMENT_DOT_SCALE := 2.6  # Essenz-Punkte größer als neutrale
+const BASE_DOT_SCALE := 1.35  # neutrale Essenz
+const ELEMENT_DOT_SCALE := 3.5  # Essenz-Punkte größer als neutrale
 const HALO_SCALE := 1.35  # dunkler Rand um jeden Punkt (× Punktradius)
 
 const COLOR_BACKGROUND := Color(0.07, 0.07, 0.11)
@@ -77,6 +77,8 @@ var _view_scale := 1.0
 var _pressed := -1          # Gem unter dem Mauszeiger beim Drücken
 var _press_screen := Vector2.ZERO
 var _dragging := false
+## Auswertung zu Beginn des Ziehens (für die Änderungen an den Gems), sonst null.
+var _drag_start: SpellResult
 var _hovered := -1
 var _mouse_inside := false
 var _mouse_focus := Vector2.ZERO
@@ -146,6 +148,7 @@ func _gui_input(event: InputEvent) -> void:
 		_mouse_focus = to_focus(event.position)
 		if _pressed >= 0 and not _dragging and event.position.distance_to(_press_screen) > DRAG_THRESHOLD:
 			_dragging = true
+			_drag_start = result
 			drag_started.emit()
 		if _dragging:
 			_move_gem(_pressed, _mouse_focus)
@@ -178,6 +181,7 @@ func _gui_input(event: InputEvent) -> void:
 			var was_dragging := _dragging
 			_pressed = -1
 			_dragging = false
+			_drag_start = null
 			if was_dragging:
 				drag_ended.emit()
 			update_preview()
@@ -571,11 +575,16 @@ func _blocked_text(placed: PlacedGem) -> String:
 	return "  ·  verdeckt %d (zählen nicht)" % count if count > 0 else ""
 
 
-## Zählt ein Punkt der Vorschau doppelt? (Spitz oder innerer Ring der Multiplikator-Gravur)
-func _preview_doubled(dot: EnergyDot) -> bool:
+## Wie oft zählt ein Punkt der Vorschau? (Spitz, innerer Ring der Multiplikator-Gravur)
+func _preview_copies(dot: EnergyDot) -> int:
 	if _preview != null and _preview.valid:
-		return _preview.gem_results[_preview_index].dot_multiplier(dot) > 1.0 + 0.001
-	return placing_gem != null and placing_gem.get_multiplier() > 1.0 + 0.001
+		return _copies(_preview.gem_results[_preview_index].dot_multiplier(dot))
+	return _copies(placing_gem.get_multiplier()) if placing_gem != null else 1
+
+
+## Anzahl gezeichneter Kopien eines Punkts: so oft, wie er zählt (mindestens 1).
+static func _copies(multiplier: float) -> int:
+	return maxi(1, int(roundf(multiplier)))
 
 
 ## Eingesammelte Punkte eines Gems; mit innerem Ring (Multiplikator) getrennt nach außen und innen.
@@ -650,23 +659,21 @@ func _draw_engraving(engraving: EngravingDef, pos: Vector2, gem_radius: float) -
 
 ## Essenz-Punkt als Bild, eingefärbt mit `color` (neutral: Kugel, Element: eigene Form
 ## aus ElementDef.dot_texture, sonst ein Kristall).
-## `doubled`: zählt doppelt (Spitz) – dann liegt eine versetzte Schattenkopie dahinter.
-func _draw_dot(dot: EnergyDot, radius: float, color: Color, doubled := false) -> void:
+## `copies`: so oft zählt der Punkt; er wird entsprechend größer gezeichnet
+## (Fläche × `copies`, also Radius × Wurzel daraus: ×2 ≈ 1,4, ×3 ≈ 1,7, ×6 ≈ 2,4).
+func _draw_dot(dot: EnergyDot, radius: float, color: Color, copies := 1) -> void:
 	var texture: Texture2D = TEX_DOT_BASE
 	if not dot.is_base():
 		texture = TEX_DOT_ELEMENT
 		var element := content.get_element(dot.element_id) if content != null else null
 		if element != null and element.dot_texture != null:
 			texture = element.dot_texture
+	radius *= _grow(copies)
 	var size := Vector2(radius, radius) * 2.0
 	# dunkler Rand in der Form des Punkts, damit er sich von der Fläche abhebt
 	var halo := radius * HALO_SCALE
 	draw_texture_rect(texture, Rect2(dot.position - Vector2(halo, halo), Vector2(halo, halo) * 2.0), false,
 		Color(0, 0, 0, 0.7 * color.a))
-	if doubled:
-		var offset := _shadow_position(dot, radius) - dot.position
-		var shadow := Color(color.r * 0.75, color.g * 0.75, color.b * 0.75, color.a * 0.8)
-		draw_texture_rect(texture, Rect2(dot.position - Vector2(radius, radius) + offset, size), false, shadow)
 	draw_texture_rect(texture, Rect2(dot.position - Vector2(radius, radius), size), false, color)
 
 
@@ -724,16 +731,16 @@ func _draw() -> void:
 
 	var valid := result != null and result.valid
 	var claimed := {}
-	## Punkte, die doppelt zählen (eingesammelt von einem Gem mit Multiplikator > 1)
-	var doubled := {}
+	## Punkt -> wie oft er zählt (nur Punkte, die mehrfach zählen)
+	var copies := {}
 
 	# Einflussbereiche
 	if valid:
 		for rr in result.gem_results:
 			for dot in rr.collected:
 				claimed[dot] = true
-				if rr.dot_multiplier(dot) > 1.0 + 0.001:
-					doubled[dot] = true
+				if _copies(rr.dot_multiplier(dot)) > 1:
+					copies[dot] = _copies(rr.dot_multiplier(dot))
 			if show_sectors:
 				var color := _gem_color(rr.placed.gem)
 				_draw_sector(rr, 0.13, Color(color, 0.45), px)
@@ -789,36 +796,35 @@ func _draw() -> void:
 			owned[dot] = true
 			var line_color := Color(_element_color(dot.element_id, COLOR_BASE_DOT), 0.5)
 			draw_line(owner.placed.position, dot.position, line_color, 1.0 * px, true)
-			# doppelt zählend: auch eine Linie zur Schattenkopie (gleicher Versatz wie in _draw_dot)
-			if doubled.has(dot):
-				var dot_radius := 4.0 * (1.0 if dot.is_base() else ELEMENT_DOT_SCALE) * px
-				var shadow_pos := _shadow_position(dot, dot_radius)
-				draw_line(owner.placed.position, shadow_pos, Color(line_color, 0.35), 1.0 * px, true)
 
 	# Energiepunkte
 	# Essenz-Punkte sind größer als neutrale (sie zählen mehr). Beim Hervorheben
 	# werden die Punkte anderer Gems blasser.
+	## Punkt -> [Wert, Radius] für die römischen Zahlen (siehe _draw_dot_values)
+	var marks := {}
 	if result != null:
 		for dot in result.dots:
 			var color := _element_color(dot.element_id, COLOR_BASE_DOT)
-			var scale := 1.0 if dot.is_base() else ELEMENT_DOT_SCALE
+			var scale := BASE_DOT_SCALE if dot.is_base() else ELEMENT_DOT_SCALE
 			if owned.has(dot):
-				_draw_dot(dot, 4.6 * scale * px, color, doubled.has(dot))
-				_draw_dot_ring(dot.position, 5.5 * scale * px, Color(1, 1, 1, 0.85), px)
-				if doubled.has(dot):
-					_draw_dot_ring(_shadow_position(dot, 4.0 * scale * px), 5.5 * scale * px, Color(1, 1, 1, 0.55), px)
+				_draw_dot(dot, 6.4 * scale * px, color, copies.get(dot, 1))
+				if copies.has(dot):
+					marks[dot] = [copies[dot], 6.4 * scale * px * _grow(copies[dot])]
+				_draw_dot_ring(dot.position, 7.5 * scale * _grow(copies.get(dot, 1)) * px, Color(1, 1, 1, 0.85), px)
 			elif claimed.has(dot):
-				_draw_dot(dot, 4.2 * scale * px, Color(color, 0.35 if owner != null else 1.0), doubled.has(dot))
+				_draw_dot(dot, 5.8 * scale * px, Color(color, 0.35 if owner != null else 1.0), copies.get(dot, 1))
+				if copies.has(dot) and owner == null:
+					marks[dot] = [copies[dot], 5.8 * scale * px * _grow(copies[dot])]
 			elif show_free_dots:
-				_draw_dot(dot, 3.4 * scale * px, Color(color, 0.8))
+				_draw_dot(dot, 4.8 * scale * px, Color(color, 0.8))
 	for dot in preview_dots:
 		var color := _element_color(dot.element_id, COLOR_BASE_DOT)
-		var scale := 1.0 if dot.is_base() else ELEMENT_DOT_SCALE
-		var preview_doubled := _preview_doubled(dot)
-		_draw_dot(dot, 4.2 * scale * px, color, preview_doubled)
-		_draw_dot_ring(dot.position, 6.0 * scale * px, COLOR_PREVIEW, px)
-		if preview_doubled:
-			_draw_dot_ring(_shadow_position(dot, 3.6 * scale * px), 6.0 * scale * px, Color(COLOR_PREVIEW, 0.6), px)
+		var scale := BASE_DOT_SCALE if dot.is_base() else ELEMENT_DOT_SCALE
+		var preview_copies := _preview_copies(dot)
+		_draw_dot(dot, 5.8 * scale * px, color, preview_copies)
+		if preview_copies > 1:
+			marks[dot] = [preview_copies, 5.8 * scale * px * _grow(preview_copies)]
+		_draw_dot_ring(dot.position, 8.0 * scale * _grow(preview_copies) * px, COLOR_PREVIEW, px)
 
 	# Geist der zu setzenden Gem
 	if show_ghost:
@@ -848,8 +854,8 @@ func _draw() -> void:
 	# Verdeckte Essenz: auf dem Stein blass mit rotem Kreuz (zählt nicht)
 	if valid:
 		for dot in result.blocked:
-			var scale := 1.0 if dot.is_base() else ELEMENT_DOT_SCALE
-			var r := 3.0 * scale * px
+			var scale := BASE_DOT_SCALE if dot.is_base() else ELEMENT_DOT_SCALE
+			var r := 4.2 * scale * px
 			_draw_dot(dot, r, Color(_element_color(dot.element_id, COLOR_BASE_DOT), 0.55))
 			draw_line(dot.position - Vector2(r, r), dot.position + Vector2(r, r), Color(COLOR_BAD, 0.9), 1.2 * px, true)
 			draw_line(dot.position + Vector2(-r, r), dot.position + Vector2(r, -r), Color(COLOR_BAD, 0.9), 1.2 * px, true)
@@ -862,6 +868,8 @@ func _draw() -> void:
 		var label_pos := to_screen(placed.position) + Vector2(14, -10)
 		draw_string_outline(font, label_pos, label, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, 4, Color(0, 0, 0, 0.8))
 		draw_string(font, label_pos, label, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(1, 1, 1, 0.9))
+	_draw_dot_values(font, marks)
+	_draw_drag_changes(font)
 
 	if show_ghost:
 		var text := _preview_error if _preview_error != "" else _preview_summary(preview_dots)
@@ -879,6 +887,40 @@ func _draw() -> void:
 		var text := "Klick: wird zu %s  ·  %s" % [
 			_gem_label(placing_gem, placing_engraving), _preview_summary(_preview_dots(claimed))]
 		_draw_hint(font, to_screen(_preview_position()), text, COLOR_PREVIEW)
+
+
+## Beim Ziehen: an jedem Gem, dessen Punkte sich ändern, "Punkte 12 → 15 (+3)".
+func _draw_drag_changes(font: Font) -> void:
+	if not _dragging or _drag_start == null or not _drag_start.valid or result == null or not result.valid:
+		return
+	for i in mini(_drag_start.gem_results.size(), result.gem_results.size()):
+		var change := gem_change(_drag_start.gem_results[i], result.gem_results[i])
+		if change.text != "":
+			# das gezogene Gem hat schon "Sammelt: ..." in der ersten Zeile
+			_draw_hint(font, to_screen(focus.gems[i].position), change.text,
+				COLOR_OK if change.better else COLOR_BAD, 1 if i == _pressed else 0)
+
+
+## Änderung eines Gems zwischen zwei Auswertungen: {text, better}; text = "" ohne Änderung.
+## Gravuren mit Weitergabe zeigen, was sie weitergeben, alle anderen ihre Punkte.
+static func gem_change(before: GemResult, after: GemResult) -> Dictionary:
+	var old_value := _gem_value(before)
+	var new_value := _gem_value(after)
+	var delta := snappedf(new_value - old_value, 0.01)
+	if is_zero_approx(delta):
+		return { text = "", better = true }
+	var label := "Weitergabe" if after.placed.engraving.transfer_to_main else "Punkte"
+	return { better = delta > 0.0, text = "%s %s → %s (%s%s)" % [label, TextFormat.number(old_value),
+		TextFormat.number(new_value), "+" if delta > 0.0 else "", TextFormat.number(delta)] }
+
+
+static func _gem_value(gr: GemResult) -> float:
+	if not gr.placed.engraving.transfer_to_main:
+		return gr.points
+	var total := gr.effective_base
+	for value: float in gr.effective_elements.values():
+		total += value
+	return total
 
 
 ## Hinweistext unter einem Punkt (`line` = weitere Zeile darunter);
@@ -922,6 +964,32 @@ func _draw_dot_ring(pos: Vector2, radius: float, color: Color, px: float) -> voi
 	draw_arc(pos, radius, 0.0, TAU, 16, color, 1.5 * px, true)
 
 
-## Position der Schattenkopie eines doppelt zählenden Punkts (`radius` = gezeichneter Punktradius).
-func _shadow_position(dot: EnergyDot, radius: float) -> Vector2:
-	return dot.position + Vector2(radius, -radius) * DOUBLE_OFFSET
+## Größenfaktor eines Punkts, der `copies`-mal zählt (Fläche wächst mit).
+static func _grow(copies: int) -> float:
+	return sqrt(float(maxi(1, copies)))
+
+
+## Römische Zahl (für den Wert mehrfach zählender Punkte), z. B. 6 -> "VI".
+static func roman(value: int) -> String:
+	var numerals := [[1000, "M"], [900, "CM"], [500, "D"], [400, "CD"], [100, "C"], [90, "XC"],
+		[50, "L"], [40, "XL"], [10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]]
+	var text := ""
+	for pair: Array in numerals:
+		while value >= pair[0]:
+			text += pair[1]
+			value -= pair[0]
+	return text
+
+
+## Römische Zahl mittig auf jedem mehrfach zählenden Punkt (Bildschirm-Koordinaten).
+## `marks`: Punkt -> [Wert, gezeichneter Radius in Fokus-Einheiten].
+func _draw_dot_values(font: Font, marks: Dictionary) -> void:
+	for dot: EnergyDot in marks:
+		var value: int = marks[dot][0]
+		var radius: float = marks[dot][1] * _view_scale
+		var font_size := clampi(int(radius * 1.1), 8, 18)
+		var text := roman(value)
+		var text_size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+		var pos := to_screen(dot.position) + Vector2(-text_size.x / 2.0, font.get_ascent(font_size) / 2.0 - 1.0)
+		draw_string_outline(font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, 3, Color(0, 0, 0, 0.9))
+		draw_string(font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color(1, 1, 1))

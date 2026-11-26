@@ -452,9 +452,12 @@ func _allowed_text(def: FocusDef) -> String:
 
 func _update_result_text() -> void:
 	var t := ""
-	if _preview_result != null:
+	var estimate := _estimate_text() if _preview_result != null and not _preview_result.valid else ""
+	if estimate != "":
+		t += estimate  # Spell noch ungültig: Vorschau aus den hervorgehobenen Essenzen
+	elif _preview_result != null:
 		var title := "Vorschau: Gem ändern" if _canvas.is_replace_preview() else "Vorschau: neues Gem"
-		t += _section(title, _diff_text(result, _preview_result) + _estimate_text())
+		t += _section(title, _diff_text(result, _preview_result))
 	elif _drag_baseline != null:
 		t += _section("Änderung durch Verschieben", _diff_text(_drag_baseline, result))
 	if result.valid:
@@ -477,17 +480,22 @@ func _update_result_text() -> void:
 	_result_text.text = tooltips.linkify(t)
 
 
-## Richtwert der Gravur aus den Essenzen in Reichweite (solange der Spell ungültig ist).
+## Vorschau beim Setzen, solange der Spell ungültig ist: die gewählte Gravur wie ein Spell,
+## Werte aus den hervorgehobenen Essenzen (Richtwert; der Bereich steht erst mit dem Kreis fest).
 func _estimate_text() -> String:
 	var estimate := _canvas.reach_estimate()
 	if estimate.is_empty():
 		return ""
-	var t := "\n[b]%s mit den Essenzen in Reichweite[/b]\n" % _canvas.placing_engraving.display_name
-	t += "[color=#999999]Richtwert: der genaue Bereich steht erst mit dem Kreis fest.[/color]\n"
-	t += "Punkte: %s\n" % TextFormat.number(estimate.points)
+	var engraving := _canvas.placing_engraving
+	var t := "[font_size=16][color=#fff2a0]Vorschau mit den hervorgehobenen Essenzen[/color][/font_size]\n"
+	t += "[font_size=22][b]%s[/b][/font_size]\n" % engraving.display_name
+	t += "[color=#aaaaaa]%s[/color]\n\n" % ContentText.describe(engraving, CONTENT)
+	t += "Punkte: [b]%s[/b]\n" % TextFormat.number(estimate.points)
 	for stat: StringName in estimate.stats:
-		t += "%s: %s\n" % [ContentText.value_name(stat), TextFormat.number(estimate.stats[stat])]
-	return t
+		t += "%s: [b]%s[/b]\n" % [ContentText.value_name(stat), TextFormat.number(estimate.stats[stat])]
+	t += "[color=#999999][font_size=12]Richtwert: Der genaue Bereich steht erst mit dem Kreis fest. Noch offen: %s[/font_size][/color]\n" % \
+		" ".join(_preview_result.errors)
+	return t + "[color=#555555]────────────[/color]\n\n"
 
 
 func _section(title: String, body: String) -> String:
@@ -517,7 +525,22 @@ func _diff_text(before: SpellResult, after: SpellResult) -> String:
 	for stat: StringName in stat_names:
 		var old_value: float = before.stats.get(stat, 0.0) if before.valid else 0.0
 		t += _diff_line(ContentText.value_name(stat), old_value, after.stats.get(stat, 0.0), true)
+	t += _gem_changes_text(before, after)
 	return t
+
+
+## Gems, deren Punkte (bzw. Weitergabe) sich ändern, z. B. "★ Feuerball: Punkte 12 → 15 (+3)".
+func _gem_changes_text(before: SpellResult, after: SpellResult) -> String:
+	if not before.valid or not after.valid:
+		return ""
+	var t := ""
+	for i in mini(before.gem_results.size(), after.gem_results.size()):
+		var change := FocusCanvas.gem_change(before.gem_results[i], after.gem_results[i])
+		if change.text != "":
+			var gr := after.gem_results[i]
+			t += "[color=%s]%s%s: %s[/color]\n" % [COLOR_GOOD if change.better else COLOR_BAD,
+				"★ " if gr.is_main() else "", gr.placed.engraving.display_name, change.text]
+	return "\n[b]Gems[/b]\n" + t if t != "" else ""
 
 
 ## Eine Zeile "Name: alt → neu (+x)"; grün = besser, rot = schlechter.

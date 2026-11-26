@@ -13,4 +13,5 @@ icon = ExtResource("2_2ah8r")
 transfer_to_main = true
 radius_factor = 0.8
 inner_radius_factor = 0.3
+inner_multiplier = 3.0
 max_size = 2

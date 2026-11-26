@@ -45,6 +45,8 @@ func _ready() -> void:
 				workshop._sync_fill_ui()
 			# Optional: --minor=<gravur-id> gibt dem linken Nebengem diese Gravur und wählt sie zum Setzen aus
 			for minor_arg in OS.get_cmdline_user_args():
+				if minor_arg.begins_with("--minor2="):  # spitzes Nebengem (Gem 2)
+					gems[2].engraving = content.get_engraving(StringName(minor_arg.trim_prefix("--minor2=")))
 				if minor_arg.begins_with("--minor="):
 					var minor_engraving := content.get_engraving(StringName(minor_arg.trim_prefix("--minor=")))
 					gems[1].engraving = minor_engraving
@@ -64,6 +66,18 @@ func _ready() -> void:
 					canvas._hovered = n
 					canvas._mouse_focus = workshop.focus.gems[n].position
 					canvas.update_preview()
+					canvas.queue_redraw()
+			# Optional: --drag=N,x,y zeigt Gem N beim Ziehen an die Position (x, y)
+			for drag_arg in OS.get_cmdline_user_args():
+				if drag_arg.begins_with("--drag="):
+					var values := drag_arg.trim_prefix("--drag=").split_floats(",")
+					var n := int(values[0])
+					canvas._mouse_inside = true
+					canvas._pressed = n
+					canvas._dragging = true
+					canvas._drag_start = canvas.result
+					workshop._drag_baseline = canvas.result
+					canvas._move_gem(n, Vector2(values[1], values[2]))
 					canvas.queue_redraw()
 			# Optional: --place zeigt die Vorschau eines vierten Gems
 			if OS.get_cmdline_user_args().has("--place"):
