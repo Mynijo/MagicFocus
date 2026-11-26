@@ -22,9 +22,10 @@ script = ExtResource("4_lelud")
 id = &"dispel"
 display_name = "Dispel"
 role = 0
-description = "1 Dispel, +1 pro 50 Punkte. +1 Schaden pro 2 Punkte. Ziel: Gegner. Punkte: neutrale Essenz ×1, Blitz-Essenz ×5"
 icon = ExtResource("2_s6p26")
-element_ids = Array[StringName]([&"lightning"])
+element_factors = {
+&"lightning": 5.0
+}
 base_stats = {
 &"dispel": 1.0
 }

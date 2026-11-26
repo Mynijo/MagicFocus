@@ -49,9 +49,9 @@ func test_combat_status_rules() -> void:
 func test_combat_mana_shock_ice() -> void:
 	var rules := CombatRules.new()
 	# Mana wird beim Cast-Start bezahlt; fehlt es, wartet der Magier
-	var c := duel([make_spell({ &"damage": 1 }, 1.0, 150.0)], [])
+	var c := duel([make_spell({ &"damage": 1 }, 1.0, 40.0)], [])
 	c.step()
-	check(c.mages[0].casting == 0 and is_equal_approx(c.mages[0].mana, rules.start_mana - 150.0), "Cast beginnt, Mana bezahlt")
+	check(c.mages[0].casting == 0 and is_equal_approx(c.mages[0].mana, rules.start_mana - 40.0), "Cast beginnt, Mana bezahlt")
 	for k in 10:
 		c.step()
 	check(c.mages[0].casting == -1 and c.mages[0].waiting_for_mana, "Zu wenig Mana: wartet")
@@ -167,7 +167,7 @@ func test_combat_conditions() -> void:
 	c.step()
 	check(a.casting == 2, "Einmal-Spell beim ersten Mal")
 	a.casting = -1
-	a.hp = 100.0
+	a.hp = c.rules.max_hp * 0.3
 	c.step()
 	check(a.casting == 0, "Unter 50 %% Leben: Heal")
 	a.casting = -1
@@ -232,12 +232,12 @@ func test_combat_new_statuses() -> void:
 	check(c.mages[1].stacks(&"burn") == 2, "Zwei Burn-Ticks pro Sekunde, Burn %d" % c.mages[1].stacks(&"burn"))
 	# Life Rewind: nach 10 s Leben auf gespeicherten Wert (auch nach unten)
 	c = duel([make_spell({ &"life_rewind": 1 }, 1.0, 10.0, EngravingDef.Target.SELF)], [])
-	c.mages[0].hp = 300.0
+	c.mages[0].hp = 60.0
 	c._apply_spell(0, 0)
-	c.mages[0].hp = 500.0
+	c.mages[0].hp = 120.0
 	for k in int(rules.life_rewind_seconds):
 		c._pulse(0)
-	check(is_equal_approx(c.mages[0].hp, 300.0) and c.mages[0].stacks(&"life_rewind") == 0, "Life Rewind setzt auf 300 zurück, HP %s" % c.mages[0].hp)
+	check(is_equal_approx(c.mages[0].hp, 60.0) and c.mages[0].stacks(&"life_rewind") == 0, "Life Rewind setzt auf 60 zurück, HP %s" % c.mages[0].hp)
 
 
 func test_combat_package_two() -> void:

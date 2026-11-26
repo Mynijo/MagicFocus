@@ -15,7 +15,8 @@ script = ExtResource("4_2s5dc")
 id = &"rot"
 display_name = "Rot"
 role = 0
-description = "1 Rotten pro Punkt. Ziel: Gegner. Punkte: neutrale Essenz ×1, Erd-Essenz ×5"
 icon = ExtResource("2_vek01")
-element_ids = Array[StringName]([&"earth"])
+element_factors = {
+&"earth": 5.0
+}
 rules = Array[ExtResource("3_ghum8")]([SubResource("Resource_347dr")])

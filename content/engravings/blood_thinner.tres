@@ -16,7 +16,9 @@ script = ExtResource("4_534u4")
 id = &"blood_thinner"
 display_name = "Blood Thinner"
 role = 0
-description = "1 Blood Thinner pro 10 Punkte. Ziel: Gegner. Punkte: neutrale Essenz ×1, Wasser-Essenz ×5, Erd-Essenz ×5"
 icon = ExtResource("2_rkipw")
-element_ids = Array[StringName]([&"water", &"earth"])
+element_factors = {
+&"earth": 5.0,
+&"water": 5.0
+}
 rules = Array[ExtResource("3_habi2")]([SubResource("Resource_2hvyy")])

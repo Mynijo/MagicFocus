@@ -24,9 +24,11 @@ cap = 1.0
 script = ExtResource("4_fxf0o")
 id = &"mana_efficiency"
 display_name = "Mana Efficiency"
-description = "-1 Mana pro Punkt aus Wasser-Essenz. +1 s Cast-Zeit, minus 0,1 s pro 5 Punkte aus Luft-Essenz (bis 0). Punkte: Wasser-Essenz ×5, Luft-Essenz ×5"
 icon = ExtResource("2_fach4")
-element_ids = Array[StringName]([&"water", &"air"])
+element_factors = {
+&"air": 5.0,
+&"water": 5.0
+}
 base_stats = {
 &"cast_time_reduction": -1.0
 }

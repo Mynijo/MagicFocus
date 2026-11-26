@@ -9,9 +9,8 @@
 script = ExtResource("4_cvk2w")
 id = &"multiplikator"
 display_name = "Multiplikator"
-description = "Wie Power Transfer, aber Radius ×0,8; im inneren Ring (Stein + 0,3 × Radius) zählt alles doppelt. Nur klein und mittel"
 icon = ExtResource("2_2ah8r")
 transfer_to_main = true
 radius_factor = 0.8
 inner_radius_factor = 0.3
-max_size = 1
+max_size = 2

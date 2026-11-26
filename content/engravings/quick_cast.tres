@@ -24,9 +24,11 @@ cap = 10.0
 script = ExtResource("4_k61wj")
 id = &"quick_cast"
 display_name = "Quick Cast"
-description = "-1 s Cast-Zeit pro 5 Punkte aus Luft-Essenz. +10 Mana, minus 1 pro 2 Punkte aus Wasser-Essenz (bis 0). Punkte: Wasser-Essenz ×5, Luft-Essenz ×5"
 icon = ExtResource("2_ae2pb")
-element_ids = Array[StringName]([&"water", &"air"])
+element_factors = {
+&"air": 5.0,
+&"water": 5.0
+}
 base_stats = {
 &"mana_reduction": -10.0
 }

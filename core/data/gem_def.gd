@@ -9,9 +9,9 @@ extends Resource
 enum Role { MAIN, MINOR }
 ## Spitz sammelt im Innenwinkel der Ecke, Grob im Außenwinkel.
 enum Angle { SPITZ, GROB }
-enum Size { KLEIN, MITTEL, GROSS }
+enum Size { WINZIG, KLEIN, MITTEL, GROSS }
 
-const SIZE_NAMES := ["klein", "mittel", "groß"]
+const SIZE_NAMES := ["winzig", "klein", "mittel", "groß"]
 
 const SPITZ_MULTIPLIER := 2.0
 

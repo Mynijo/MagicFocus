@@ -16,7 +16,8 @@ stat = &"dispel"
 script = ExtResource("4_wf4sp")
 id = &"neben_dispel"
 display_name = "Dispel"
-description = "1 Dispel pro 25 Punkte. Punkte: Blitz-Essenz ×5"
 icon = ExtResource("2_1pmnr")
-element_ids = Array[StringName]([&"lightning"])
+element_factors = {
+&"lightning": 5.0
+}
 rules = Array[ExtResource("3_vvgiq")]([SubResource("Resource_gby75")])

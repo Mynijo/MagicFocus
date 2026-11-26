@@ -104,7 +104,7 @@ func test_engraving_without_element() -> void:
 	var dots := dots_line(MAIN_POS, MAIN_OUTER, 3) + dots_line(MAIN_POS + Vector2(-2, 0), MAIN_OUTER, 2, &"fire")
 	var r := evaluate(lab(make_gem(MAIN, GROB, 80), no_element, make_gem(MINOR, GROB, 80), null), dots)
 	check_stat(r, &"damage", 3.0)  # nur neutrale Essenz
-	check(engraving(&"magischer_bolzen").element_ids.size() == 5, "Magischer Bolzen hat alle Elemente")
+	check(engraving(&"magischer_bolzen").element_factors.size() == 5, "Magischer Bolzen hat alle Elemente")
 
 
 func test_minor_engravings() -> void:
@@ -131,7 +131,7 @@ func test_neutral_essence_rules() -> void:
 	r = evaluate(lab(main, bolt, minor, engraving(&"armor")), neutral)
 	check_stat(r, &"armor", 2.0)
 	r = evaluate(lab(main, bolt, minor, engraving(&"mana_reduktion")), neutral)
-	check(is_equal_approx(r.mana_cost, 118.0), "4 neutrale Essenz = -2 Mana, war %s" % r.mana_cost)
+	check(is_equal_approx(r.mana_cost, 1200 * SpellEvaluator.MANA_PER_LENGTH - 2.0), "4 neutrale Essenz = -2 Mana, war %s" % r.mana_cost)
 	r = evaluate(lab(main, bolt, minor, engraving(&"status_burn")), neutral)
 	check(not r.stats.has(&"burn") or is_zero_approx(r.get_stat(&"burn")), "Burn: neutrale Essenz bewirkt nichts")
 
@@ -149,7 +149,7 @@ func test_cast_time_and_mana() -> void:
 
 	var r := evaluate(lab(main, bolt, minor, null))
 	check(is_equal_approx(r.cast_time, 3.0), "3 Gems = 3 s, war %s" % r.cast_time)
-	check(is_equal_approx(r.mana_cost, 120.0), "Umfang 1200 x 0.1 = 120 Mana, war %s" % r.mana_cost)
+	check(is_equal_approx(r.mana_cost, 1200 * SpellEvaluator.MANA_PER_LENGTH), "Umfang 1200 × Mana pro Länge, war %s" % r.mana_cost)
 
 	r = evaluate(lab(main, bolt, minor, engraving(&"cast_speed")), dots_line(MINOR_POS, MINOR_OUTER, 4, &"air"))
 	check(is_equal_approx(r.cast_time, 1.0), "4 Luft = 20 Punkte = -2 s, war %s" % r.cast_time)
@@ -157,7 +157,7 @@ func test_cast_time_and_mana() -> void:
 	check(is_equal_approx(r.cast_time, SpellEvaluator.MIN_CAST_TIME), "Cast-Zeit hat eine Untergrenze, war %s" % r.cast_time)
 
 	r = evaluate(lab(main, bolt, minor, engraving(&"mana_reduktion")), dots_line(MINOR_POS, MINOR_OUTER, 5, &"water"))
-	check(is_equal_approx(r.mana_cost, 108.0), "5 Wasser = 25 Punkte = -12 Mana, war %s" % r.mana_cost)
+	check(is_equal_approx(r.mana_cost, 1200 * SpellEvaluator.MANA_PER_LENGTH - 12.0), "5 Wasser = 25 Punkte = -12 Mana, war %s" % r.mana_cost)
 
 
 func test_new_main_engravings() -> void:

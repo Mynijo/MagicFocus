@@ -16,8 +16,9 @@ script = ExtResource("4_ebrfe")
 id = &"critical_chance"
 display_name = "Critical Chance"
 role = 0
-description = "1 Critical Chance pro 5 Punkte. Ziel: selbst. Punkte: neutrale Essenz ×1, Feuer-Essenz ×5"
 icon = ExtResource("2_8smba")
-element_ids = Array[StringName]([&"fire"])
+element_factors = {
+&"fire": 5.0
+}
 target = 1
 rules = Array[ExtResource("3_dgsvm")]([SubResource("Resource_pby8s")])

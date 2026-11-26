@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="GemDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_def.gd" id="1_cnpc1"]
+
+[resource]
+script = ExtResource("1_cnpc1")
+id = &"nebengem_winzig_spitz"
+display_name = "Nebengem winzig Spitz"
+size = 0
+radius = 25.0
+angle = 0
+max_base = 8
+max_element = 3
+body_radius = 6.0

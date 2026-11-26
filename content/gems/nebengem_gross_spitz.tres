@@ -6,7 +6,7 @@
 script = ExtResource("1_0gcry")
 id = &"nebengem_gross_spitz"
 display_name = "Nebengem groß Spitz"
-size = 2
+size = 3
 radius = 90.0
 angle = 0
 max_base = 30

@@ -5,14 +5,6 @@ extends Control
 const CONTENT := preload("res://content/crafting_content.tres")
 const ARENA_SCENE := "res://ui/arena/arena.tscn"
 
-## Anzeigenamen der Spell-Werte, die kein Status sind (Status: Name aus `Status`).
-const VALUE_NAMES := {
-	&"damage": "Schaden", &"heal": "Heilung", &"crit": "Crit (%)", &"crit_damage": "Crit-Schaden (+%)",
-	&"hits": "Treffer", &"echo": "Echo (Wiederholungen)", &"vampire": "Vampire (Leben-Reg pro Bleed)",
-	&"cleanse": "Cleanse", &"dispel": "Dispel", &"armor_break": "Armor Break",
-	&"freeze_conversion": "Freeze (Nass pro Eis)", &"mana_reduction": "Mana-Reduktion",
-	&"cast_time_reduction": "Cast-Zeit-Verkürzung (s)", &"radius_bonus": "Radius des Hauptgems",
-}
 const COLOR_GOOD := "#80ff90"
 const COLOR_BAD := "#ff9090"
 const KEY_HELP := "Tasten: 1 Setzen · 2 Verbinden · R neu würfeln · Rücktaste Verbindung zurück"
@@ -27,7 +19,7 @@ var _preview_result: SpellResult
 var _drag_baseline: SpellResult
 ## Gem-Liste im Ergebnis aufgeklappt?
 var _show_gem_details := false
-var _selected_size: GemDef.Size = GemDef.Size.MITTEL
+var _selected_size: GemDef.Size = GemDef.Size.WINZIG
 
 var _canvas: FocusCanvas
 var _focus_select: OptionButton
@@ -49,6 +41,7 @@ var _delete_dialog: ConfirmationDialog
 
 
 func _ready() -> void:
+	Balance.ensure_applied()
 	_new_focus(CONTENT.foci[0])
 	_build_ui()
 	_sync_fill_ui()
@@ -299,7 +292,7 @@ func _update_placing() -> void:
 	var gem := CONTENT.find_gem(engraving.role, _selected_size, angle)
 	_canvas.placing_engraving = engraving
 	_canvas.placing_gem = gem
-	var text := engraving.description
+	var text := ContentText.describe(engraving, CONTENT)
 	if gem != null:
 		text += "\n%s · Radius %d · %s ×%s · bis %d neutrale Essenz, %d Essenzen" % [
 			gem.display_name, int(PlacedGem.radius_of(gem, engraving)),
@@ -453,13 +446,6 @@ func _allowed_text(def: FocusDef) -> String:
 
 # --- Ergebnis ---------------------------------------------------------------
 
-## Anzeigename eines Spell-Werts.
-static func value_name(stat: StringName) -> String:
-	if VALUE_NAMES.has(stat):
-		return VALUE_NAMES[stat]
-	return Status.name_of(stat)
-
-
 func _update_result_text() -> void:
 	var t := ""
 	if _preview_result != null:
@@ -469,11 +455,11 @@ func _update_result_text() -> void:
 		t += _section("Änderung durch Verschieben", _diff_text(_drag_baseline, result))
 	if result.valid:
 		t += "[font_size=22][b]%s[/b][/font_size]\n" % result.engraving.display_name
-		t += "[color=#aaaaaa]%s[/color]\n\n" % result.engraving.description
+		t += "[color=#aaaaaa]%s[/color]\n\n" % ContentText.describe(result.engraving, CONTENT)
 		t += "Cast-Zeit: [b]%s s[/b] · Mana: [b]%s[/b]\n\n" % [
 			TextFormat.number(result.cast_time), TextFormat.number(result.mana_cost, 1)]
 		for stat: StringName in result.stats:
-			t += "%s: %s\n" % [value_name(stat), TextFormat.number(result.stats[stat])]
+			t += "%s: %s\n" % [ContentText.value_name(stat), TextFormat.number(result.stats[stat])]
 		var arrow := "▾" if _show_gem_details else "▸"
 		t += "\n[url=toggle_gems][b]%s Gems (%d)[/b][/url]\n" % [arrow, result.gem_results.size()]
 		if _show_gem_details:
@@ -513,7 +499,7 @@ func _diff_text(before: SpellResult, after: SpellResult) -> String:
 				stat_names.append(stat)
 	for stat: StringName in stat_names:
 		var old_value: float = before.stats.get(stat, 0.0) if before.valid else 0.0
-		t += _diff_line(value_name(stat), old_value, after.stats.get(stat, 0.0), true)
+		t += _diff_line(ContentText.value_name(stat), old_value, after.stats.get(stat, 0.0), true)
 	return t
 
 

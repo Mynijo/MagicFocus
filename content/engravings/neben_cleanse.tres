@@ -9,9 +9,10 @@
 script = ExtResource("4_qe3xn")
 id = &"neben_cleanse"
 display_name = "Cleanse"
-description = "Cleanse"
 icon = ExtResource("2_hob7d")
-element_ids = Array[StringName]([&"water"])
+element_factors = {
+&"water": 5.0
+}
 base_stats = {
 &"cleanse": 1.0
 }

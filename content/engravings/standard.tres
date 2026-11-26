@@ -9,7 +9,6 @@
 script = ExtResource("4_m3355")
 id = &"standard"
 display_name = "Power Transfer"
-description = "Gibt alles Eingesammelte an das Hauptgem weiter (zählt dort nach dessen Gravur). Halber Radius"
 icon = ExtResource("2_q67jo")
 transfer_to_main = true
 radius_factor = 0.5

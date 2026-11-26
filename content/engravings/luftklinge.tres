@@ -22,7 +22,8 @@ script = ExtResource("4_qupra")
 id = &"luftklinge"
 display_name = "Luftklinge"
 role = 0
-description = "+1 Schaden pro Punkt, 1 Bleed pro 10 Punkte aus Luft-Essenz. Ziel: Gegner. Punkte: neutrale Essenz ×1, Luft-Essenz ×5"
 icon = ExtResource("2_rh5ny")
-element_ids = Array[StringName]([&"air"])
+element_factors = {
+&"air": 5.0
+}
 rules = Array[ExtResource("3_othq6")]([SubResource("Resource_qygsn"), SubResource("Resource_7fcpb")])

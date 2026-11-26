@@ -16,9 +16,10 @@ script = ExtResource("4_77bkt")
 id = &"damage_reduction"
 display_name = "Damage Reduction"
 role = 0
-description = "1 Damage Reduction, +1 pro 50 Punkte. Ziel: selbst. Punkte: neutrale Essenz ×1, Erd-Essenz ×5"
 icon = ExtResource("2_1ib0h")
-element_ids = Array[StringName]([&"earth"])
+element_factors = {
+&"earth": 5.0
+}
 target = 1
 base_stats = {
 &"damage_reduction": 1.0

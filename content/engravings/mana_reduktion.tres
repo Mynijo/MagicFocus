@@ -15,7 +15,8 @@ stat = &"mana_reduction"
 script = ExtResource("4_ca0ut")
 id = &"mana_reduktion"
 display_name = "Mana-Reduktion"
-description = "-1 Mana pro 2 Punkte. Punkte: neutrale Essenz ×1, Wasser-Essenz ×5"
 icon = ExtResource("2_uwiwa")
-element_ids = Array[StringName]([&"water"])
+element_factors = {
+&"water": 5.0
+}
 rules = Array[ExtResource("3_1hnay")]([SubResource("Resource_rmxee")])

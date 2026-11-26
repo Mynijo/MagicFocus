@@ -16,7 +16,8 @@ stat = &"slow"
 script = ExtResource("4_ud6w6")
 id = &"status_slow"
 display_name = "Slow"
-description = "1 Slowed pro 5 Punkte. Punkte: Luft-Essenz ×5"
 icon = ExtResource("2_64dn7")
-element_ids = Array[StringName]([&"air"])
+element_factors = {
+&"air": 5.0
+}
 rules = Array[ExtResource("3_b3l5k")]([SubResource("Resource_vu300")])

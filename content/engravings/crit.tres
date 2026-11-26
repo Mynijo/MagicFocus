@@ -15,7 +15,8 @@ stat = &"crit"
 script = ExtResource("4_s70if")
 id = &"crit"
 display_name = "Crit"
-description = "+1 Crit pro 2 Punkte. Punkte: neutrale Essenz ×1, Feuer-Essenz ×5"
 icon = ExtResource("2_h82ll")
-element_ids = Array[StringName]([&"fire"])
+element_factors = {
+&"fire": 5.0
+}
 rules = Array[ExtResource("3_ra3xh")]([SubResource("Resource_qupem")])

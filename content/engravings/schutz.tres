@@ -16,8 +16,9 @@ script = ExtResource("4_k7m5v")
 id = &"schutz"
 display_name = "Schutz"
 role = 0
-description = "5 Armor pro Punkt. Ziel: selbst. Punkte: neutrale Essenz ×1, Erd-Essenz ×5"
 icon = ExtResource("2_40nqo")
-element_ids = Array[StringName]([&"earth"])
+element_factors = {
+&"earth": 5.0
+}
 target = 1
 rules = Array[ExtResource("3_bshoe")]([SubResource("Resource_npovv")])

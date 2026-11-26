@@ -18,7 +18,8 @@ script = ExtResource("4_uiuer")
 id = &"meteor"
 display_name = "Meteor"
 role = 0
-description = "150 Schaden pro volle 50 Punkte. Ziel: Gegner. Punkte: Feuer-Essenz ×5"
 icon = ExtResource("2_kmxfu")
-element_ids = Array[StringName]([&"fire"])
+element_factors = {
+&"fire": 5.0
+}
 rules = Array[ExtResource("3_l5jgj")]([SubResource("Resource_8tuja")])

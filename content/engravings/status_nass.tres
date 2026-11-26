@@ -16,7 +16,8 @@ stat = &"wet"
 script = ExtResource("4_xdytg")
 id = &"status_nass"
 display_name = "Nass"
-description = "1 Nass pro 5 Punkte. Punkte: Wasser-Essenz ×5"
 icon = ExtResource("2_s7nm1")
-element_ids = Array[StringName]([&"water"])
+element_factors = {
+&"water": 5.0
+}
 rules = Array[ExtResource("3_7y4aw")]([SubResource("Resource_eyt53")])

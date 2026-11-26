@@ -16,6 +16,9 @@ class ErrorCounter extends Logger:
 
 
 func _init() -> void:
+	# Tests nutzen nie die Änderungen des Spielers
+	Balance.path = "user://balance_test.json"
+	DirAccess.remove_absolute(Balance.path)
 	var content := load("res://content/crafting_content.tres") as CraftingContent
 	var counter := ErrorCounter.new()
 	OS.add_logger(counter)

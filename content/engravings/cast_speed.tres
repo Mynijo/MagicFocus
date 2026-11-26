@@ -15,7 +15,8 @@ stat = &"cast_time_reduction"
 script = ExtResource("4_upclm")
 id = &"cast_speed"
 display_name = "Cast-Speed"
-description = "-1 s Cast-Zeit pro 10 Punkte. Punkte: neutrale Essenz ×1, Luft-Essenz ×5"
 icon = ExtResource("2_goesq")
-element_ids = Array[StringName]([&"air"])
+element_factors = {
+&"air": 5.0
+}
 rules = Array[ExtResource("3_es58b")]([SubResource("Resource_eljyr")])

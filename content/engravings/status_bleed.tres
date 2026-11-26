@@ -16,7 +16,8 @@ stat = &"bleed"
 script = ExtResource("4_5wf0l")
 id = &"status_bleed"
 display_name = "Bleed"
-description = "1 Bleed pro 5 Punkte. Punkte: Luft-Essenz ×5"
 icon = ExtResource("2_m0ebq")
-element_ids = Array[StringName]([&"air"])
+element_factors = {
+&"air": 5.0
+}
 rules = Array[ExtResource("3_kf4ei")]([SubResource("Resource_n5m41")])

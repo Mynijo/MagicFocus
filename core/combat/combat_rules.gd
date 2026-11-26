@@ -4,12 +4,12 @@ extends Resource
 ## die "X" aus den Kampfregeln stehen hier. Inhalt: content/combat_rules.tres.
 
 @export_group("Magier")
-@export var max_hp := 600.0
-@export var max_mana := 200.0
+@export var max_hp := 150.0
+@export var max_mana := 60.0
 ## Mana zu Kampfbeginn
-@export var start_mana := 200.0
+@export var start_mana := 60.0
 ## Mana pro Sekunde ohne Status
-@export var mana_regen := 25.0
+@export var mana_regen := 6.0
 
 @export_group("Ablauf")
 ## Zeitschritt der Simulation in Sekunden

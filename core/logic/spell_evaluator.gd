@@ -17,7 +17,7 @@ extends RefCounted
 const MIN_GEMS := 3
 const CAST_TIME_PER_GEM := 1.0
 const MIN_CAST_TIME := 0.5
-const MANA_PER_LENGTH := 0.1
+const MANA_PER_LENGTH := 0.05
 const MIN_MANA := 1.0
 
 const STAT_CAST_TIME_REDUCTION := &"cast_time_reduction"
@@ -39,11 +39,11 @@ static func evaluate(focus: FocusInstance, elements: Array[ElementDef],
 
 	var points := _loop_points(focus)
 	var ccw := FocusGeometry.signed_area(points) > 0.0
-	_run(focus, points, ccw, result, elements, 0.0)
+	_run(focus, points, ccw, result, 0.0)
 	# Radius Expansion: zweiter Durchlauf mit größerem Radius des Hauptgems
 	var bonus := result.get_stat(STAT_RADIUS_BONUS)
 	if bonus > 0.0:
-		_run(focus, points, ccw, result, elements, bonus)
+		_run(focus, points, ccw, result, bonus)
 		result.stats[STAT_RADIUS_BONUS] = bonus
 
 	result.valid = true
@@ -52,7 +52,7 @@ static func evaluate(focus: FocusInstance, elements: Array[ElementDef],
 
 ## Phasen 2 bis 6. `main_bonus` = zusätzlicher Radius des Hauptgems.
 static func _run(focus: FocusInstance, points: PackedVector2Array, ccw: bool, result: SpellResult,
-		elements: Array[ElementDef], main_bonus: float) -> void:
+		main_bonus: float) -> void:
 	result.gem_results.clear()
 	result.stats.clear()
 	_build_gem_results(focus, points, ccw, result)
@@ -63,7 +63,7 @@ static func _run(focus: FocusInstance, points: PackedVector2Array, ccw: bool, re
 	for gr in result.gem_results:
 		gr.apply_multiplier(gr.placed.gem.get_multiplier())
 	_transfer(main, result)
-	_compute_spell(main, order, points, result, elements)
+	_compute_spell(main, order, points, result)
 
 
 # --- Phase 1 ---------------------------------------------------------------
@@ -227,25 +227,20 @@ static func _transfer(main: GemResult, result: SpellResult) -> void:
 
 # --- Phase 6 ---------------------------------------------------------------
 
-## Element-Essenz für eine Gravur: mit dem Faktor des Elements gewichtet.
+## Element-Essenz für eine Gravur: mit dem Faktor der Gravur für dieses Element gewichtet.
 ## Nur Essenz der Elemente der Gravur zählt, andere fällt weg.
-static func _weighted_counts(counts: Dictionary, engraving: EngravingDef, factors: Dictionary) -> Dictionary:
+static func _weighted_counts(counts: Dictionary, engraving: EngravingDef) -> Dictionary:
 	var weighted := {}
 	for id: StringName in counts:
-		if not engraving.counts_element(id):
-			continue
-		weighted[id] = float(counts[id]) * float(factors.get(id, 1.0))
+		if engraving.counts_element(id):
+			weighted[id] = float(counts[id]) * engraving.factor_of(id)
 	return weighted
 
 
 static func _compute_spell(main: GemResult, order: Array[GemResult],
-		points: PackedVector2Array, result: SpellResult, elements: Array[ElementDef]) -> void:
+		points: PackedVector2Array, result: SpellResult) -> void:
 	var main_engraving := main.placed.engraving
 	result.engraving = main_engraving
-
-	var factors := {}
-	for element in elements:
-		factors[element.id] = element.factor
 
 	# Hauptgem: eigene und übertragene Essenzen; Nebengems: nur eigene
 	for gr in order:
@@ -255,7 +250,7 @@ static func _compute_spell(main: GemResult, order: Array[GemResult],
 			result.add_stat(stat, float(engraving.base_stats[stat]))
 		var base := gr.total_base() if gr.is_main() else gr.effective_base
 		var counts := _weighted_counts(
-			gr.total_elements() if gr.is_main() else gr.effective_elements, engraving, factors)
+			gr.total_elements() if gr.is_main() else gr.effective_elements, engraving)
 		gr.points = base
 		for count: float in counts.values():
 			gr.points += count

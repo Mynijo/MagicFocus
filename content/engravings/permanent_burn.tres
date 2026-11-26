@@ -17,7 +17,8 @@ script = ExtResource("4_8qdim")
 id = &"permanent_burn"
 display_name = "Permanent Burn"
 role = 0
-description = "1 Perma-Burn pro 25 Punkte. Ziel: Gegner. Punkte: Feuer-Essenz ×5"
 icon = ExtResource("2_depev")
-element_ids = Array[StringName]([&"fire"])
+element_factors = {
+&"fire": 5.0
+}
 rules = Array[ExtResource("3_312e3")]([SubResource("Resource_150rk")])

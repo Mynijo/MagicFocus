@@ -18,8 +18,9 @@ script = ExtResource("4_fg52o")
 id = &"bulwark"
 display_name = "Bulwark"
 role = 0
-description = "Ab 50 Punkten: 8 Armor pro Punkt. Ziel: selbst. Punkte: Erd-Essenz ×5"
 icon = ExtResource("2_bllv4")
-element_ids = Array[StringName]([&"earth"])
+element_factors = {
+&"earth": 5.0
+}
 target = 1
 rules = Array[ExtResource("3_p8ccd")]([SubResource("Resource_rijbj")])

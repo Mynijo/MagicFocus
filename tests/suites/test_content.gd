@@ -5,7 +5,7 @@ extends TestSuite
 func test_content_loads() -> void:
 	check(content != null, "crafting_content.tres sollte laden")
 	check(content.elements.size() == 5, "5 Elemente erwartet")
-	check(content.gems.size() == 12, "12 Gem-Formen erwartet (2 Rollen x 3 Größen x 2 Winkel), waren %d" % content.gems.size())
+	check(content.gems.size() == 16, "16 Gem-Formen erwartet (2 Rollen x 4 Größen x 2 Winkel), waren %d" % content.gems.size())
 	for role in [MAIN, MINOR]:
 		for size in GemDef.Size.values():
 			for angle in [SPITZ, GROB]:
@@ -14,11 +14,12 @@ func test_content_loads() -> void:
 					"Gem für Rolle %d, Größe %d, Winkel %d sollte existieren" % [role, size, angle])
 	check(content.find_gem(MINOR, GemDef.Size.KLEIN, GROB).radius < content.find_gem(MINOR, GemDef.Size.GROSS, GROB).radius,
 		"Größere Gems haben einen größeren Radius")
-	check(content.foci.size() == 8, "8 Fokus-Typen erwartet")
+	check(content.foci.size() == 9, "9 Fokus-Typen erwartet")
 	check(content.get_engravings_for(MAIN).size() == 31, "31 Hauptgravuren erwartet")
 	check(content.get_engravings_for(MINOR).size() == 22, "22 Nebengravuren erwartet")
 	for e in content.engravings:
-		check(e.description != "" and not e.description.contains("N-E"), "%s braucht eine Beschreibung ohne Abkürzung" % e.id)
+		var text := ContentText.describe(e, content)
+		check(text != "" and not text.contains("N-E"), "%s braucht eine Beschreibung ohne Abkürzung" % e.id)
 		for rule in e.rules:
 			check(rule.stat != &"", "Regel ohne Wert in %s" % e.id)
 	check(engraving(&"standard").transfer_to_main, "Standard-Gravur überträgt an das Hauptgem")
@@ -98,19 +99,17 @@ func test_allowed_elements() -> void:
 	check(r.valid, "300 N-E im neutralen Fokus sollten gültig sein: %s" % [r.errors])
 
 
-## Der Faktor ist pro Element einstellbar.
+## Der Faktor hängt an der Gravur, pro Element einstellbar.
 func test_element_factor_per_element() -> void:
-	for element in content.elements:
-		check(is_equal_approx(element.factor, 5.0), "%s: Faktor 5 erwartet" % element.id)
-	var elements: Array[ElementDef] = []
-	for element in content.elements:
-		var copy := element.duplicate() as ElementDef
-		if copy.id == &"fire":
-			copy.factor = 3.0
-		elements.append(copy)
-	var focus := lab(make_gem(MAIN, GROB, 80), engraving(&"magischer_bolzen"), make_gem(MINOR, GROB, 80), null)
+	for e in content.engravings:
+		for id: StringName in e.element_factors:
+			check(is_equal_approx(e.factor_of(id), 5.0), "%s: Faktor 5 für %s erwartet" % [e.id, id])
+	var bolt := engraving(&"magischer_bolzen").duplicate() as EngravingDef
+	bolt.element_factors = bolt.element_factors.duplicate()
+	bolt.element_factors[&"fire"] = 3.0
+	var focus := lab(make_gem(MAIN, GROB, 80), bolt, make_gem(MINOR, GROB, 80), null)
 	var dots := dots_line(MAIN_POS, MAIN_OUTER, 2, &"fire") + dots_line(MAIN_POS + Vector2(-2, 0), MAIN_OUTER, 2, &"water")
-	var r := SpellEvaluator.evaluate(focus, elements, dots)
+	var r := evaluate(focus, dots)
 	check_stat(r, &"damage", 16.0)  # 2 Feuer x 3 + 2 Wasser x 5
 	check(is_equal_approx(r.gem_results[0].points, 16.0), "Punkte des Hauptgems, war %s" % r.gem_results[0].points)
 

@@ -22,8 +22,10 @@ script = ExtResource("4_3iwf4")
 id = &"mana_absorption"
 display_name = "Mana Absorption"
 role = 0
-description = "2 Armor pro Punkt, 1 Mana Absorption pro 10 Punkte aus Essenz. Ziel: selbst. Punkte: neutrale Essenz ×1, Wasser-Essenz ×5, Erd-Essenz ×5"
 icon = ExtResource("2_xrcvj")
-element_ids = Array[StringName]([&"water", &"earth"])
+element_factors = {
+&"earth": 5.0,
+&"water": 5.0
+}
 target = 1
 rules = Array[ExtResource("3_relyb")]([SubResource("Resource_c1wam"), SubResource("Resource_1dda1")])

@@ -22,7 +22,8 @@ script = ExtResource("4_bwiel")
 id = &"wasser_detonation"
 display_name = "Wasser-Detonation"
 role = 0
-description = "+1 Schaden pro Punkt, 1 Nass pro 10 Punkte aus Wasser-Essenz. Ziel: Gegner. Punkte: neutrale Essenz ×1, Wasser-Essenz ×5"
 icon = ExtResource("2_hehdr")
-element_ids = Array[StringName]([&"water"])
+element_factors = {
+&"water": 5.0
+}
 rules = Array[ExtResource("3_imxr2")]([SubResource("Resource_2f7sw"), SubResource("Resource_t0oi2")])

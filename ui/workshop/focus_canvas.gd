@@ -608,9 +608,9 @@ func _draw_engraving(engraving: EngravingDef, pos: Vector2, gem_radius: float) -
 	var texture: Texture2D = engraving.icon
 	var color := ENGRAVING_TINT
 	if texture == null:
-		if engraving.element_ids.size() != 1 or content == null:
+		if engraving.element_factors.size() != 1 or content == null:
 			return
-		var element := content.get_element(engraving.element_ids[0])
+		var element := content.get_element(engraving.get_element_ids()[0])
 		if element == null or element.dot_texture == null:
 			return
 		texture = element.dot_texture

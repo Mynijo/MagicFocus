@@ -16,7 +16,8 @@ stat = &"thorns"
 script = ExtResource("4_6ei2m")
 id = &"thorns"
 display_name = "Thorns"
-description = "1 Thorns pro 5 Punkte. Punkte: Erd-Essenz ×5"
 icon = ExtResource("2_7tjuv")
-element_ids = Array[StringName]([&"earth"])
+element_factors = {
+&"earth": 5.0
+}
 rules = Array[ExtResource("3_sok73")]([SubResource("Resource_62qnj")])

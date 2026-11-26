@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="GemDef" format=3]
+
+[ext_resource type="Script" path="res://core/data/gem_def.gd" id="1_nna84"]
+
+[resource]
+script = ExtResource("1_nna84")
+id = &"hauptgem_winzig_spitz"
+display_name = "Hauptgem winzig Spitz"
+role = 0
+size = 0
+radius = 40.0
+angle = 0
+max_base = 20
+max_element = 5
+body_radius = 8.0

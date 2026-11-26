@@ -17,8 +17,9 @@ script = ExtResource("4_delqc")
 id = &"water_rain"
 display_name = "Water Rain"
 role = 0
-description = "1 Nass pro 5 Punkte. Ziel: beide. Punkte: Wasser-Essenz ×5"
 icon = ExtResource("2_x20h6")
-element_ids = Array[StringName]([&"water"])
+element_factors = {
+&"water": 5.0
+}
 target = 2
 rules = Array[ExtResource("3_7oyyd")]([SubResource("Resource_vloxi")])

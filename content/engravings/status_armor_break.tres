@@ -16,7 +16,8 @@ stat = &"armor_break"
 script = ExtResource("4_c78sn")
 id = &"status_armor_break"
 display_name = "Armor Break"
-description = "1 Armor Break pro 5 Punkte. Punkte: Erd-Essenz ×5"
 icon = ExtResource("2_kyidi")
-element_ids = Array[StringName]([&"earth"])
+element_factors = {
+&"earth": 5.0
+}
 rules = Array[ExtResource("3_c3ghu")]([SubResource("Resource_u8cp6")])

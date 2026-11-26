@@ -22,7 +22,8 @@ script = ExtResource("4_1galj")
 id = &"feuerball"
 display_name = "Feuerball"
 role = 0
-description = "+1 Schaden pro Punkt, 1 Burn pro 10 Punkte aus Feuer-Essenz. Ziel: Gegner. Punkte: neutrale Essenz ×1, Feuer-Essenz ×5"
 icon = ExtResource("2_ca5hn")
-element_ids = Array[StringName]([&"fire"])
+element_factors = {
+&"fire": 5.0
+}
 rules = Array[ExtResource("3_4yb2p")]([SubResource("Resource_cu0h5"), SubResource("Resource_o80qw")])

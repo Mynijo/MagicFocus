@@ -15,9 +15,10 @@ script = ExtResource("4_aodp6")
 id = &"cleanse"
 display_name = "Cleanse"
 role = 0
-description = "Cleanse. 1 Heilung pro Punkt. Ziel: selbst. Punkte: neutrale Essenz ×1, Wasser-Essenz ×5"
 icon = ExtResource("2_12afr")
-element_ids = Array[StringName]([&"water"])
+element_factors = {
+&"water": 5.0
+}
 target = 1
 base_stats = {
 &"cleanse": 1.0

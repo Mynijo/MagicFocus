@@ -16,9 +16,10 @@ script = ExtResource("4_sylnd")
 id = &"vampire"
 display_name = "Vampire"
 role = 0
-description = "1 Leben-Reg pro Bleed-Stack des Gegners; +1 pro Stack je 100 Punkte. Ziel: selbst. Punkte: neutrale Essenz ×1, Wasser-Essenz ×5"
 icon = ExtResource("2_m7l70")
-element_ids = Array[StringName]([&"water"])
+element_factors = {
+&"water": 5.0
+}
 target = 1
 base_stats = {
 &"vampire": 1.0

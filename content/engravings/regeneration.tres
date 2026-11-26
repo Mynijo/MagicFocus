@@ -16,7 +16,8 @@ stat = &"life_regen"
 script = ExtResource("4_xr4x0")
 id = &"regeneration"
 display_name = "Regeneration"
-description = "1 Leben-Reg pro 5 Punkte. Punkte: Wasser-Essenz ×5"
 icon = ExtResource("2_3tqwq")
-element_ids = Array[StringName]([&"water"])
+element_factors = {
+&"water": 5.0
+}
 rules = Array[ExtResource("3_mdubh")]([SubResource("Resource_kakid")])

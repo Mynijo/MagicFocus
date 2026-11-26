@@ -16,7 +16,8 @@ script = ExtResource("4_r6l78")
 id = &"slow"
 display_name = "Slow"
 role = 0
-description = "1 Slowed pro 20 Punkte. Ziel: Gegner. Punkte: neutrale Essenz ×1, Luft-Essenz ×5"
 icon = ExtResource("2_f6nuq")
-element_ids = Array[StringName]([&"air"])
+element_factors = {
+&"air": 5.0
+}
 rules = Array[ExtResource("3_8u311")]([SubResource("Resource_nk2la")])

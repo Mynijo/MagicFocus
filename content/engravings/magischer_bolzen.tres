@@ -15,7 +15,12 @@ script = ExtResource("4_3soph")
 id = &"magischer_bolzen"
 display_name = "Magischer Bolzen"
 role = 0
-description = "+1 Schaden pro Punkt. Ziel: Gegner. Punkte: neutrale Essenz ×1, jede Essenz ×5"
 icon = ExtResource("2_f26u3")
-element_ids = Array[StringName]([&"fire", &"water", &"earth", &"air", &"lightning"])
+element_factors = {
+&"air": 5.0,
+&"earth": 5.0,
+&"fire": 5.0,
+&"lightning": 5.0,
+&"water": 5.0
+}
 rules = Array[ExtResource("3_1q4ag")]([SubResource("Resource_qkgub")])

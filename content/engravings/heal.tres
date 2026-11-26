@@ -16,8 +16,9 @@ script = ExtResource("4_lt7ti")
 id = &"heal"
 display_name = "Heal"
 role = 0
-description = "5 Heilung pro Punkt. Ziel: selbst. Punkte: neutrale Essenz ×1, Wasser-Essenz ×5"
 icon = ExtResource("2_1ushk")
-element_ids = Array[StringName]([&"water"])
+element_factors = {
+&"water": 5.0
+}
 target = 1
 rules = Array[ExtResource("3_mnchd")]([SubResource("Resource_pk654")])

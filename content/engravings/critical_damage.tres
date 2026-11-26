@@ -17,7 +17,8 @@ amount = 10.0
 script = ExtResource("4_3oyst")
 id = &"critical_damage"
 display_name = "Critical Damage"
-description = "+10 % Crit-Schaden pro 5 Punkte. Punkte: Blitz-Essenz ×5"
 icon = ExtResource("2_c0eac")
-element_ids = Array[StringName]([&"lightning"])
+element_factors = {
+&"lightning": 5.0
+}
 rules = Array[ExtResource("3_k815r")]([SubResource("Resource_b73yr")])

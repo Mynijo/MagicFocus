@@ -22,7 +22,8 @@ script = ExtResource("4_sum3p")
 id = &"kanone"
 display_name = "Kanone"
 role = 0
-description = "+1 Schaden pro Punkt, 1 Armor Break pro 10 Punkte aus Erd-Essenz. Ziel: Gegner. Punkte: neutrale Essenz ×1, Erd-Essenz ×5"
 icon = ExtResource("2_8c20c")
-element_ids = Array[StringName]([&"earth"])
+element_factors = {
+&"earth": 5.0
+}
 rules = Array[ExtResource("3_irah5")]([SubResource("Resource_xx4rm"), SubResource("Resource_hldkh")])

@@ -18,8 +18,9 @@ script = ExtResource("4_lclng")
 id = &"life_rewind"
 display_name = "Life Rewind"
 role = 0
-description = "Life Rewind ab 50 Punkten (mehr bringt nichts). Ziel: selbst. Punkte: Wasser-Essenz ×5"
 icon = ExtResource("2_n7d5u")
-element_ids = Array[StringName]([&"water"])
+element_factors = {
+&"water": 5.0
+}
 target = 1
 rules = Array[ExtResource("3_qfcce")]([SubResource("Resource_u2bcc")])

@@ -42,6 +42,7 @@ var _speed_buttons: Array[Button] = []
 
 
 func _ready() -> void:
+	Balance.ensure_applied()
 	tooltips = TermTooltips.new()
 	tooltips.setup(CONTENT)
 	add_child(tooltips)
