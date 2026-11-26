@@ -80,6 +80,16 @@ func _ready() -> void:
 				canvas.queue_redraw()
 			return
 
+	# Optional: --first-main zeigt die Vorschau des ersten Hauptgems im leeren Fokus
+	if OS.get_cmdline_user_args().has("--first-main"):
+		workshop._refresh()
+		canvas.placing_gem = content.get_gem(&"hauptgem_winzig_grob")
+		canvas.placing_engraving = content.get_engraving(&"feuerball")
+		canvas._mouse_inside = true
+		canvas._mouse_focus = Vector2(10, 20)
+		canvas.update_preview()
+		canvas.queue_redraw()
+		return
 	workshop._on_example_pressed()
 	# Optional: --tooltip zeigt einen festgepinnten Tooltip (Burn) und darin einen weiteren (Nass)
 	if OS.get_cmdline_user_args().has("--tooltip"):

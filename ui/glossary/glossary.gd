@@ -31,6 +31,7 @@ func _ready() -> void:
 	var top := UiKit.row(root, 8)
 	UiKit.button(top, "← Werkstatt", func() -> void: get_tree().change_scene_to_file(WORKSHOP_SCENE), false)
 	UiKit.button(top, "Arena", func() -> void: get_tree().change_scene_to_file(ARENA_SCENE), false)
+	UiKit.button(top, "Editor", func() -> void: get_tree().change_scene_to_file("res://ui/editor/editor.tscn"), false)
 	_search = LineEdit.new()
 	_search.placeholder_text = "Suchen …"
 	_search.custom_minimum_size.x = 260

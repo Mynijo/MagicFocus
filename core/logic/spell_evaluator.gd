@@ -266,3 +266,38 @@ static func _compute_spell(main: GemResult, order: Array[GemResult],
 	result.cast_time = maxf(MIN_CAST_TIME, cast_time)
 	var mana := FocusGeometry.perimeter(points) * MANA_PER_LENGTH - result.get_stat(STAT_MANA_REDUCTION)
 	result.mana_cost = maxf(MIN_MANA, mana)
+
+
+## Richtwert ohne geschlossenen Kreis (Vorschau beim Setzen): was `engraving` auf `gem` aus
+## den Punkten `dots` machen würde. Nächste Punkte zuerst bis zur Kapazität, × Multiplikator
+## der Form; der Sektor ist noch unbekannt, daher zählt die ganze Reichweite.
+## Gibt {points: float, stats: Dictionary} zurück.
+static func estimate(gem: GemDef, engraving: EngravingDef, center: Vector2, dots: Array[EnergyDot]) -> Dictionary:
+	var sorted := dots.duplicate()
+	sorted.sort_custom(func(a: EnergyDot, b: EnergyDot) -> bool:
+		return a.position.distance_squared_to(center) < b.position.distance_squared_to(center))
+	var base := 0.0
+	var counts := {}
+	var element_taken := 0
+	for dot: EnergyDot in sorted:
+		if dot.is_base():
+			if base < gem.max_base:
+				base += 1.0
+		elif element_taken < gem.max_element:
+			element_taken += 1
+			counts[dot.element_id] = counts.get(dot.element_id, 0.0) + 1.0
+	base *= gem.get_multiplier()
+	for id: StringName in counts:
+		counts[id] *= gem.get_multiplier()
+	var weighted := _weighted_counts(counts, engraving)
+	var points := base
+	for value: float in weighted.values():
+		points += value
+	var stats := {}
+	for stat: StringName in engraving.base_stats:
+		stats[stat] = float(engraving.base_stats[stat])
+	for rule in engraving.rules:
+		var value := rule.evaluate(base, weighted)
+		if not is_zero_approx(value):
+			stats[rule.stat] = stats.get(rule.stat, 0.0) + value
+	return { points = points, stats = stats }

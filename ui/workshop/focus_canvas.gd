@@ -26,7 +26,8 @@ const SLIDE_ATTEMPTS := 4       # Versuche, ein gezogenes Gem aus fremden Reichw
 const MAIN_GEM_SIZE := 24.0     # Bildschirm-Pixel (halbe Bildgröße)
 const MINOR_GEM_SIZE := 17.0
 const DOUBLE_OFFSET := 1.6  # Versatz der Schattenkopie doppelt zählender Punkte (× Punktradius)
-const ELEMENT_DOT_SCALE := 2.2  # Essenz-Punkte größer als neutrale
+const ELEMENT_DOT_SCALE := 2.6  # Essenz-Punkte größer als neutrale
+const HALO_SCALE := 1.35  # dunkler Rand um jeden Punkt (× Punktradius)
 
 const COLOR_BACKGROUND := Color(0.07, 0.07, 0.11)
 const COLOR_FOCUS := Color(0.11, 0.11, 0.18)
@@ -44,7 +45,7 @@ const MAIN_GEM_TINT := Color(1.0, 0.86, 0.55)
 const ENGRAVING_SCALE := 0.62
 const ENGRAVING_TINT := Color(0.12, 0.1, 0.2, 0.9)
 ## Tönung der Fokus-Oberfläche (etwas abdunkeln, damit die Punkte gut sichtbar bleiben).
-const SURFACE_TINT := Color(0.8, 0.85, 1.0)
+const SURFACE_TINT := Color(0.55, 0.6, 0.75)
 ## Kachelgröße der Fokus-Oberfläche in Fokus-Einheiten.
 const SURFACE_TILE := 500.0
 
@@ -496,9 +497,33 @@ func _preview_dots(claimed: Dictionary) -> Array[EnergyDot]:
 		return dots
 	var center := _preview_position()
 	for dot in result.dots:
-		if not claimed.has(dot) and dot.position.distance_to(center) <= PlacedGem.radius_of(placing_gem, placing_engraving):
+		var distance := dot.position.distance_to(center)
+		if not claimed.has(dot) and distance <= PlacedGem.radius_of(placing_gem, placing_engraving) \
+				and distance >= placing_gem.body_radius and not _under_gem(dot):
 			dots.append(dot)
 	return dots
+
+
+## Liegt der Punkt unter dem Stein eines gesetzten Gems?
+func _under_gem(dot: EnergyDot) -> bool:
+	for placed in focus.gems:
+		if dot.position.distance_to(placed.position) < placed.gem.body_radius:
+			return true
+	return false
+
+
+## Richtwert für die Vorschau, solange der Spell mit dem neuen Gem noch ungültig ist:
+## {points, stats} aus den freien Punkten in Reichweite, sonst {}.
+func reach_estimate() -> Dictionary:
+	if placing_gem == null or placing_engraving == null or (_preview != null and _preview.valid) \
+			or (_preview == null and _replace_index < 0):
+		return {}
+	var claimed := {}
+	if result != null and result.valid:
+		for gr in result.gem_results:
+			for dot in gr.collected:
+				claimed[dot] = true
+	return SpellEvaluator.estimate(placing_gem, placing_engraving, _preview_position(), _preview_dots(claimed))
 
 
 func _preview_summary(dots: Array[EnergyDot]) -> String:
@@ -634,6 +659,10 @@ func _draw_dot(dot: EnergyDot, radius: float, color: Color, doubled := false) ->
 		if element != null and element.dot_texture != null:
 			texture = element.dot_texture
 	var size := Vector2(radius, radius) * 2.0
+	# dunkler Rand in der Form des Punkts, damit er sich von der Fläche abhebt
+	var halo := radius * HALO_SCALE
+	draw_texture_rect(texture, Rect2(dot.position - Vector2(halo, halo), Vector2(halo, halo) * 2.0), false,
+		Color(0, 0, 0, 0.7 * color.a))
 	if doubled:
 		var offset := _shadow_position(dot, radius) - dot.position
 		var shadow := Color(color.r * 0.75, color.g * 0.75, color.b * 0.75, color.a * 0.8)
@@ -774,19 +803,19 @@ func _draw() -> void:
 			var color := _element_color(dot.element_id, COLOR_BASE_DOT)
 			var scale := 1.0 if dot.is_base() else ELEMENT_DOT_SCALE
 			if owned.has(dot):
-				_draw_dot(dot, 4.0 * scale * px, color, doubled.has(dot))
+				_draw_dot(dot, 4.6 * scale * px, color, doubled.has(dot))
 				_draw_dot_ring(dot.position, 5.5 * scale * px, Color(1, 1, 1, 0.85), px)
 				if doubled.has(dot):
 					_draw_dot_ring(_shadow_position(dot, 4.0 * scale * px), 5.5 * scale * px, Color(1, 1, 1, 0.55), px)
 			elif claimed.has(dot):
-				_draw_dot(dot, 3.6 * scale * px, Color(color, 0.35 if owner != null else 1.0), doubled.has(dot))
+				_draw_dot(dot, 4.2 * scale * px, Color(color, 0.35 if owner != null else 1.0), doubled.has(dot))
 			elif show_free_dots:
-				_draw_dot(dot, 2.6 * scale * px, Color(color, 0.4))
+				_draw_dot(dot, 3.4 * scale * px, Color(color, 0.8))
 	for dot in preview_dots:
 		var color := _element_color(dot.element_id, COLOR_BASE_DOT)
 		var scale := 1.0 if dot.is_base() else ELEMENT_DOT_SCALE
 		var preview_doubled := _preview_doubled(dot)
-		_draw_dot(dot, 3.6 * scale * px, color, preview_doubled)
+		_draw_dot(dot, 4.2 * scale * px, color, preview_doubled)
 		_draw_dot_ring(dot.position, 6.0 * scale * px, COLOR_PREVIEW, px)
 		if preview_doubled:
 			_draw_dot_ring(_shadow_position(dot, 3.6 * scale * px), 6.0 * scale * px, Color(COLOR_PREVIEW, 0.6), px)

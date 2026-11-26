@@ -19,6 +19,7 @@ Kommunikation mit dem Nutzer auf **Deutsch**.
 | `assets/` | Bilder (vom Nutzer mit ChatGPT erzeugt): Originale in `gems/`, `essences/`, `textures/`, `engravings/<gravur-id>.png`, `elements/element_<id>.png`; Spiel nutzt `sprites/` (aufbereitet, Mipmaps an). Jedes Element hat eine eigene Punktform (`ElementDef.dot_texture`, im Generator gesetzt), neutrale Essenz ist eine Kugel. Gravuren zeigen auf dem Gem ihr Symbol (`EngravingDef.icon`); ohne Symbol die Form ihres Elements (nur bei genau einem Element). Elemente haben ein Symbol (`ElementDef.icon`) für Befüllen-Liste und Tooltips; Status-Tooltips nutzen das Symbol der erzeugenden Gravur (`STATUS_ICONS` im Generator). Neue Bilder kommen in `input/` und werden von Claude einsortiert |
 | `ui/arena/` | Arena: zwei Magier aus gespeicherten Foki (bis zu 5 Spells), Balken, Status-Symbole, Log, Tempo 1×/2×/4× |
 | `ui/glossary/` | Glossar-Seite: Reiter Status, Gravuren, Gems, Foki, Elemente, Kampfregeln mit aktuellen Werten, Suche |
+| `ui/editor/` | Editor-Seite: Gravuren (Ziel, Notiz, Elemente mit Faktor, feste Werte, Regeln, Einsammeln), Gems, Foki, Kampfregeln; Änderungen gelten sofort, werden über `Balance` gespeichert, • = geändert, pro Eintrag zurücksetzbar |
 | `ui/common/` | `term_tooltips.gd`: verschachtelte Tooltips (`linkify()` + `register()`, `[nolink]…[/nolink]` verhindert Links); `ui_kit.gd`: Bausteine für die im Code gebauten Oberflächen |
 | `ui/workshop/` | Fokus-Werkstatt (Hauptszene): `workshop.gd` (Panels, im Code aufgebaut), `focus_canvas.gd` (Zeichnen und Mausbedienung) |
 | `tests/` | `run_tests.gd` (Runner: ruft jede Methode `test_*` aller Dateien in `suites/` auf; Skriptfehler zählen als Fehler), `test_suite.gd` (Basis mit `check` und Helfern), `suites/test_*.gd` (nach Thema), `preview_snapshot.tscn` (Render-Check der Werkstatt), `arena_snapshot.tscn` (Render-Check der Arena) |
@@ -115,7 +116,7 @@ godot --headless --path . -s res://tools/prepare_assets.gd
 # Tests (Exit-Code 0 = grün)
 godot --headless --path . -s res://tests/run_tests.gd
 # Render-Check der Werkstatt (PNG-Frames)
-godot --path . res://tests/preview_snapshot.tscn --write-movie out.png --quit-after 4 --fixed-fps 30 -- [--focus=<id>] [--place] [--place-at=x,y] [--all-elements] [--tooltip] [--details] [--scroll] [--hover[=N]] [--replace] [--minor=<gravur-id>]
+godot --path . res://tests/preview_snapshot.tscn --write-movie out.png --quit-after 4 --fixed-fps 30 -- [--focus=<id>] [--place] [--place-at=x,y] [--all-elements] [--tooltip] [--details] [--scroll] [--hover[=N]] [--replace] [--minor=<gravur-id>] [--first-main]
 godot --path . --write-movie out.png --quit-after 3 --fixed-fps 30 -- --example
 # Render-Check der Arena (Beispiel-Magier, nicht aus user://)
 godot --path . res://tests/arena_snapshot.tscn --write-movie out.png --quit-after 4 --fixed-fps 30 -- [--seconds=N] [--stats]

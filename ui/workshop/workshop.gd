@@ -172,6 +172,7 @@ func _build_left_panel() -> Control:
 	var nav_row := UiKit.row(box)
 	UiKit.button(nav_row, "Arena", func() -> void: get_tree().change_scene_to_file(ARENA_SCENE))
 	UiKit.button(nav_row, "Glossar", func() -> void: get_tree().change_scene_to_file(GLOSSARY_SCENE))
+	UiKit.button(nav_row, "Editor", func() -> void: get_tree().change_scene_to_file("res://ui/editor/editor.tscn"))
 	return scroll
 
 
@@ -453,7 +454,7 @@ func _update_result_text() -> void:
 	var t := ""
 	if _preview_result != null:
 		var title := "Vorschau: Gem ändern" if _canvas.is_replace_preview() else "Vorschau: neues Gem"
-		t += _section(title, _diff_text(result, _preview_result))
+		t += _section(title, _diff_text(result, _preview_result) + _estimate_text())
 	elif _drag_baseline != null:
 		t += _section("Änderung durch Verschieben", _diff_text(_drag_baseline, result))
 	if result.valid:
@@ -474,6 +475,19 @@ func _update_result_text() -> void:
 		t += "\nKreis: %d von %d Gems verbunden%s\n" % [
 			focus.loop.size(), focus.gems.size(), " (geschlossen)" if focus.loop_closed else ""]
 	_result_text.text = tooltips.linkify(t)
+
+
+## Richtwert der Gravur aus den Essenzen in Reichweite (solange der Spell ungültig ist).
+func _estimate_text() -> String:
+	var estimate := _canvas.reach_estimate()
+	if estimate.is_empty():
+		return ""
+	var t := "\n[b]%s mit den Essenzen in Reichweite[/b]\n" % _canvas.placing_engraving.display_name
+	t += "[color=#999999]Richtwert: der genaue Bereich steht erst mit dem Kreis fest.[/color]\n"
+	t += "Punkte: %s\n" % TextFormat.number(estimate.points)
+	for stat: StringName in estimate.stats:
+		t += "%s: %s\n" % [ContentText.value_name(stat), TextFormat.number(estimate.stats[stat])]
+	return t
 
 
 func _section(title: String, body: String) -> String:

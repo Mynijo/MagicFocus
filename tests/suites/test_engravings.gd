@@ -208,3 +208,14 @@ func test_life_rewind_threshold() -> void:
 	r = evaluate(lab(make_gem(MAIN, GROB, 80), rewind, make_gem(MINOR, GROB, 80), null),
 		dots_line(MAIN_POS, MAIN_OUTER, 16, &"water"))
 	check_stat(r, &"life_rewind", 1.0)  # 80 Punkte: trotzdem nur 1
+
+
+## Richtwert beim Setzen ohne Kreis: Kapazität, Multiplikator, Element-Faktor.
+func test_reach_estimate() -> void:
+	var gem := make_gem(MAIN, SPITZ, 80, 2, 3)  # max. 2 Essenzen, 3 neutrale, ×2
+	var dots := dots_line(Vector2.ZERO, 0.0, 5) + dots_line(Vector2.ZERO, 90.0, 4, &"fire")
+	var estimate := SpellEvaluator.estimate(gem, engraving(&"feuerball"), Vector2.ZERO, dots)
+	# 3 neutrale ×2 = 6, 2 Feuer ×2 = 4 × Faktor 5 = 20 -> 26 Punkte; Burn: 20 Feuer-Punkte / 10 = 2
+	check(is_equal_approx(estimate.points, 26.0), "Punkte 26, waren %s" % estimate.points)
+	check(is_equal_approx(estimate.stats.get(&"damage", 0.0), 26.0) and is_equal_approx(estimate.stats.get(&"burn", 0.0), 2.0),
+		"Schaden 26 und 2 Burn: %s" % [estimate.stats])

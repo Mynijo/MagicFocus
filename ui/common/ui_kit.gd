@@ -41,11 +41,12 @@ static func header(parent: Control, text: String) -> Label:
 	return label
 
 
-## Kleiner grauer Hinweistext mit Zeilenumbruch.
-static func hint(parent: Control, text: String) -> Label:
+## Kleiner grauer Hinweistext; `wrap` = Zeilenumbruch (nicht in Zeilen ohne feste Breite).
+static func hint(parent: Control, text: String, wrap := true) -> Label:
 	var label := Label.new()
 	label.text = text
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if wrap:
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_font_size_override("font_size", 12)
 	label.add_theme_color_override("font_color", COLOR_HINT)
 	parent.add_child(label)
@@ -70,8 +71,7 @@ static func rich_label(parent: Control, bbcode: String, font_size: int, tooltips
 static func button(parent: Control, text: String, callback: Callable, expand := true) -> Button:
 	var b := Button.new()
 	b.text = text
-	if expand:
-		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL if expand else Control.SIZE_SHRINK_BEGIN
 	b.pressed.connect(callback)
 	parent.add_child(b)
 	return b
