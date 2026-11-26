@@ -12,7 +12,10 @@ const TABS := ["Status", "Gravuren", "Gems", "Foki", "Elemente", "Kampfregeln"]
 
 var tooltips: TermTooltips
 var _tabs: TabContainer
-var _texts: Array[RichTextLabel] = []
+## Reiter-Titel -> RichTextLabel (alle außer Gravuren)
+var _texts := {}
+## Reiter Gravuren: sortierbare Tabelle
+var _engraving_table: EngravingTable
 var _search: LineEdit
 
 
@@ -43,13 +46,19 @@ func _ready() -> void:
 	_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(_tabs)
 	for title: String in TABS:
+		if title == "Gravuren":
+			_engraving_table = EngravingTable.new()
+			_engraving_table.name = title
+			_tabs.add_child(_engraving_table)
+			_engraving_table.setup(CONTENT)
+			continue
 		var label := RichTextLabel.new()
 		label.name = title
 		label.bbcode_enabled = true
 		label.selection_enabled = true
 		tooltips.register(label)
 		_tabs.add_child(label)
-		_texts.append(label)
+		_texts[title] = label
 	refresh()
 	# Für Render-Checks: --tab=N zeigt Reiter N
 	for arg in OS.get_cmdline_user_args():
@@ -58,9 +67,13 @@ func _ready() -> void:
 
 
 func refresh() -> void:
-	var texts := [_status_text(), _engravings_text(), _gems_text(), _foci_text(), _elements_text(), _rules_text()]
-	for i in _texts.size():
-		_texts[i].text = tooltips.linkify(texts[i])
+	var texts := { "Status": _status_text(), "Gems": _gems_text(), "Foki": _foci_text(),
+		"Elemente": _elements_text(), "Kampfregeln": _rules_text() }
+	for title: String in texts:
+		(_texts[title] as RichTextLabel).text = tooltips.linkify(texts[title])
+	if _engraving_table != null:
+		_engraving_table.filter = _search.text.strip_edges()
+		_engraving_table.refresh()
 
 
 ## Passt ein Eintrag zur Suche? (Groß-/Kleinschreibung egal)
@@ -90,46 +103,6 @@ func _term_section(title: String, ids: Array[StringName]) -> String:
 			t += "%s[b]%s[/b]\n[indent]%s[/indent]\n" % [_icon(term.icon, term.icon_color), term.title, term.text]
 	return _section(title, t)
 
-
-## Gravuren nach Element: je ein Abschnitt pro Element, dann mehrere Elemente, alle
-## Elemente und ohne Element; darin Haupt- vor Nebengravuren.
-func _engravings_text() -> String:
-	var groups := {}  # Gruppenschlüssel -> Array[EngravingDef]
-	for e in CONTENT.engravings:
-		var key: String = "none"
-		if e.element_factors.size() == CONTENT.elements.size():
-			key = "all"
-		elif e.element_factors.size() > 1:
-			key = "mixed"
-		elif e.element_factors.size() == 1:
-			key = String(e.get_element_ids()[0])
-		if not groups.has(key):
-			groups[key] = []
-		groups[key].append(e)
-	var t := ""
-	for element in CONTENT.elements:
-		t += _engraving_group("%s%s" % [_icon(element.icon, element.color), element.display_name], groups.get(String(element.id), []))
-	t += _engraving_group("Mehrere Elemente", groups.get("mixed", []))
-	t += _engraving_group("Alle Elemente", groups.get("all", []))
-	t += _engraving_group("Ohne Element", groups.get("none", []))
-	return t
-
-
-func _engraving_group(title: String, engravings: Array) -> String:
-	var t := ""
-	for role in [GemDef.Role.MAIN, GemDef.Role.MINOR]:
-		var entries := ""
-		for e: EngravingDef in engravings:
-			if e.role != role:
-				continue
-			var text := ContentText.describe(e, CONTENT)
-			if not _matches(e.display_name + " " + text):
-				continue
-			entries += "%s[b][nolink]%s[/nolink][/b]  %s\n[indent][color=#bbbbbb]%s[/color][/indent]\n" % [
-				_icon(e.icon, Color.WHITE), e.display_name, _elements_of(e), text]
-		if entries != "":
-			t += "[color=#999999]%s[/color]\n%s" % ["Hauptgravuren" if role == GemDef.Role.MAIN else "Nebengravuren", entries]
-	return _section(title, t)
 
 
 func _gems_text() -> String:
@@ -186,18 +159,14 @@ func _section(title: String, body: String) -> String:
 func _icon(texture: Texture2D, color: Color) -> String:
 	if texture == null or texture.resource_path == "":
 		return ""
-	return "[img width=%d height=%d color=#%s]%s[/img] " % [ICON_SIZE, ICON_SIZE, color.to_html(false), texture.resource_path]
+	return _icon_path(texture.resource_path, color) + " "
+
+
+func _icon_path(path: String, color: Color) -> String:
+	return "[img width=%d height=%d color=#%s]%s[/img]" % [ICON_SIZE, ICON_SIZE, color.to_html(false), path]
 
 
 ## Elemente einer Gravur in Elementfarbe mit Faktor, z. B. "Feuer ×5".
-func _elements_of(e: EngravingDef) -> String:
-	var parts := PackedStringArray()
-	for element in CONTENT.elements:
-		if e.counts_element(element.id):
-			parts.append("[color=#%s]%s ×%s[/color]" % [element.color.to_html(false), element.display_name,
-				TextFormat.number(e.factor_of(element.id))])
-	return "[nolink]%s[/nolink]" % " ".join(parts)
-
 
 func _allowed_text(def: FocusDef) -> String:
 	if def.max_element_dots <= 0:

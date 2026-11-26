@@ -563,12 +563,12 @@ func _values_table(stats: Dictionary) -> String:
 
 
 ## Aufschlüsselung als eine Tabelle (Spalten bündig über alle Gems, Hauptgem zuerst):
-## Essenz | Menge | Form (Spitz, innerer Ring) | Faktor der Gravur | Punkte.
+## Essenz | Menge (bereits mit Spitz und innerem Ring vervielfacht) | Faktor der Gravur | Punkte.
 ## Danach je Gem die Summe der Punkte und die Werte, die daraus entstehen.
 ## Gems mit Weitergabe zeigen statt Faktor einen Pfeil und die übertragene Menge.
 func _origin_text() -> String:
-	var t := "[table=5]"
-	for header in ["Essenz", "Menge", "Form", "Faktor", "Punkte"]:
+	var t := "[table=4]"
+	for header in ["Essenz", "Menge", "Faktor", "Punkte"]:
 		t += _cell("[color=%s][nolink]%s[/nolink][/color]" % [COLOR_DIM, header], 4 if header == "Essenz" else 1)
 	var order := result.gem_results.duplicate()
 	order.sort_custom(func(a: GemResult, b: GemResult) -> bool: return a.is_main() and not b.is_main())
@@ -577,55 +577,46 @@ func _origin_text() -> String:
 		var main := gr.is_main()
 		var transfer := engraving.transfer_to_main
 		t += _row(["%s%s[b][nolink]%s[/nolink][/b]" % ["★ " if main else "", _icon(engraving.icon, Color.WHITE),
-			engraving.display_name], "", "", "", ""])
+			engraving.display_name], "", "", ""])
 		var neutral_icon := _icon_path(NEUTRAL_ICON, Color(0.8, 0.8, 0.88))
-		var base_factor := 1.0 if _counts_base(engraving) else 0.0
+		var base_factor := 1.0 if ContentText.counts_base(engraving) else 0.0
 		var rows := 0
 		if gr.base_count > 0:
-			t += _essence_row(neutral_icon + "Neutral", gr.base_count, gr.effective_base, base_factor, transfer)
+			t += _essence_row(neutral_icon + "Neutral", gr.effective_base, base_factor, transfer)
 			rows += 1
 		if main and gr.received_base > 0.0:
-			t += _essence_row("↳ " + neutral_icon + "Neutral", -1, gr.received_base, base_factor, false)
+			t += _essence_row("↳ " + neutral_icon + "Neutral", gr.received_base, base_factor, false)
 			rows += 1
 		for element in CONTENT.elements:
 			var icon := _icon(element.icon, element.color)
 			var factor := engraving.factor_of(element.id)
 			var raw: int = gr.element_counts.get(element.id, 0)
 			if raw > 0:
-				t += _essence_row(icon + element.display_name, raw, gr.effective_elements.get(element.id, 0.0), factor, transfer)
+				t += _essence_row(icon + element.display_name, gr.effective_elements.get(element.id, 0.0), factor, transfer)
 				rows += 1
 			var received: float = gr.received_elements.get(element.id, 0.0) if main else 0.0
 			if received > 0.0:
-				t += _essence_row("↳ " + icon + element.display_name, -1, received, factor, false)
+				t += _essence_row("↳ " + icon + element.display_name, received, factor, false)
 				rows += 1
 		if rows == 0:
-			t += _row(["[color=%s]keine Essenz[/color]" % COLOR_DIM, "", "", "", ""])
+			t += _row(["[color=%s]keine Essenz[/color]" % COLOR_DIM, "", "", ""])
 		elif not transfer:
-			t += _row(["[color=%s]Summe[/color]" % COLOR_DIM, "", "", "", "[b]%s[/b]" % TextFormat.number(gr.points)])
+			t += _row(["[color=%s]Summe[/color]" % COLOR_DIM, "", "", "[b]%s[/b]" % TextFormat.number(gr.points)])
 			var contribution := SpellEvaluator.gem_contribution(gr)
 			for stat: StringName in contribution:
-				t += _row(["→ %s%s" % [_stat_icon(stat), ContentText.value_name(stat)], "", "", "",
+				t += _row(["→ %s%s" % [_stat_icon(stat), ContentText.value_name(stat)], "", "",
 					"[color=#fff2a0][b]%s[/b][/color]" % TextFormat.number(contribution[stat])])
-	return t + "[/table]\n[color=%s][font_size=12]↳ vom Nebengem übertragen · Form: Spitz und innerer Ring · Faktor: Punkte pro Essenz der Gravur[/font_size][/color]\n" % COLOR_DIM
+	return t + "[/table]\n[color=%s][font_size=12]↳ vom Nebengem übertragen · Menge inklusive Spitz und innerem Ring · Faktor: Punkte pro Essenz der Gravur[/font_size][/color]\n" % COLOR_DIM
 
 
-## Eine Zeile: Essenz | Menge | Form | Faktor | Punkte. `raw` < 0 = übertragen (keine Form).
-func _essence_row(label: String, raw: int, effective: float, factor: float, transfer: bool) -> String:
-	var amount := str(raw) if raw >= 0 else TextFormat.number(effective)
-	var form := "×%s" % TextFormat.number(effective / raw) if raw > 0 and not is_equal_approx(effective, raw) else ""
+## Eine Zeile: Essenz | Menge | Faktor | Punkte; die Menge ist schon vervielfacht (Spitz, innerer Ring).
+func _essence_row(label: String, effective: float, factor: float, transfer: bool) -> String:
+	var amount := TextFormat.number(effective)
 	if transfer:
-		return _row([label, amount, form, "→", TextFormat.number(effective)])
+		return _row([label, amount, "→", TextFormat.number(effective)])
 	if is_zero_approx(factor):
-		return _row([label, amount, form, "[color=%s]–[/color]" % COLOR_DIM, "[color=%s]–[/color]" % COLOR_DIM])
-	return _row([label, amount, form, "×%s" % TextFormat.number(factor), TextFormat.number(effective * factor)])
-
-
-## Zählt die Gravur neutrale Essenz? (Regel mit Quelle Punkte oder neutrale Essenz)
-static func _counts_base(engraving: EngravingDef) -> bool:
-	for rule in engraving.rules:
-		if rule.source in [ScalingRule.Source.POINTS, ScalingRule.Source.BASE]:
-			return true
-	return false
+		return _row([label, amount, "[color=%s]–[/color]" % COLOR_DIM, "[color=%s]–[/color]" % COLOR_DIM])
+	return _row([label, amount, "×%s" % TextFormat.number(factor), TextFormat.number(effective * factor)])
 
 
 ## Tabellenzelle; `expand` = Anteil an der Breite (erste Spalte breiter).

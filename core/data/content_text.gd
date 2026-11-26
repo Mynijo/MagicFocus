@@ -85,7 +85,8 @@ static func essence_name(element_id: StringName, content: CraftingContent) -> St
 
 
 ## Beschreibung einer Gravur: Notiz, feste Werte, Regeln, Einsammeln, Ziel, Punkte.
-static func describe(engraving: EngravingDef, content: CraftingContent) -> String:
+## `with_points` / `with_target` = false lassen "Punkte: ..." bzw. "Ziel: ..." weg (wenn sie anders angezeigt werden).
+static func describe(engraving: EngravingDef, content: CraftingContent, with_points := true, with_target := true) -> String:
 	var parts := PackedStringArray()
 	if engraving.note != "":
 		parts.append(engraving.note)
@@ -102,9 +103,9 @@ static func describe(engraving: EngravingDef, content: CraftingContent) -> Strin
 			TextFormat.number(engraving.inner_radius_factor), TextFormat.number(engraving.inner_multiplier)])
 	if engraving.max_size < GemDef.Size.GROSS:
 		parts.append("Nur bis Größe %s" % GemDef.SIZE_NAMES[engraving.max_size])
-	if engraving.role == GemDef.Role.MAIN:
+	if engraving.role == GemDef.Role.MAIN and with_target:
 		parts.append("Ziel: " + TARGET_NAMES[engraving.target])
-	var points := points_text(engraving, content)
+	var points := points_text(engraving, content) if with_points else ""
 	if points != "":
 		parts.append(points)
 	return ". ".join(parts)
@@ -128,3 +129,11 @@ static func points_text(engraving: EngravingDef, content: CraftingContent) -> St
 			if engraving.counts_element(element.id):
 				parts.append("%s ×%s" % [essence_name(element.id, content), TextFormat.number(engraving.factor_of(element.id))])
 	return "Punkte: " + ", ".join(parts)
+
+
+## Zählt die Gravur neutrale Essenz? (Regel mit Quelle Punkte oder neutrale Essenz)
+static func counts_base(engraving: EngravingDef) -> bool:
+	for rule in engraving.rules:
+		if rule.source in [ScalingRule.Source.POINTS, ScalingRule.Source.BASE]:
+			return true
+	return false
