@@ -87,16 +87,16 @@ func test_allowed_elements() -> void:
 	focus.element_fill = {&"fire": 60, &"water": 5}
 	var r := evaluate_real(focus)
 	check(not r.valid and _has_error(r, "keine Wasser-Essenz"), "Wasser im Feuer-Fokus sollte abgelehnt werden: %s" % [r.errors])
-	focus.element_fill = {&"fire": 80}
+	focus.element_fill = {&"fire": fire_focus.max_element_dots}
 	r = evaluate_real(focus)
-	check(r.valid, "80 Feuer im Feuer-Fokus sollte gültig sein: %s" % [r.errors])
+	check(r.valid, "Volles Feuer im Feuer-Fokus sollte gültig sein: %s" % [r.errors])
 
 	focus.focus_def = content.get_focus(&"neutraler_fokus")
 	r = evaluate_real(focus)
 	check(not r.valid and _has_error(r, "Zu viele Essenzen"), "Essenzen im neutralen Fokus sollten abgelehnt werden")
 	focus.element_fill = {}
 	r = evaluate_real(focus)
-	check(r.valid, "300 N-E im neutralen Fokus sollten gültig sein: %s" % [r.errors])
+	check(r.valid, "Nur neutrale Essenz im neutralen Fokus sollte gültig sein: %s" % [r.errors])
 
 
 ## Der Faktor hängt an der Gravur, pro Element einstellbar.

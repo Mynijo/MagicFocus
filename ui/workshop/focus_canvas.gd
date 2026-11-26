@@ -25,6 +25,9 @@ const DRAG_THRESHOLD := 5.0      # Bildschirm-Pixel, ab denen ein Klick zum Zieh
 const SLIDE_ATTEMPTS := 4       # Versuche, ein gezogenes Gem aus fremden Reichweiten zu schieben
 const MAIN_GEM_SIZE := 24.0     # Bildschirm-Pixel (halbe Bildgröße)
 const MINOR_GEM_SIZE := 17.0
+## Größe der Essenz-Punkte in Fokus-Einheiten pro Größenstufe: fest auf der Fläche (Maßstab:
+## winziger Fokus), auf größeren Foki wirken sie daher kleiner. Passt zu DotField-Abständen.
+const DOT_UNIT := 0.32
 const BASE_DOT_SCALE := 1.35  # neutrale Essenz
 const ELEMENT_DOT_SCALE := 3.5  # Essenz-Punkte größer als neutrale
 const HALO_SCALE := 1.35  # dunkler Rand um jeden Punkt (× Punktradius)
@@ -543,7 +546,7 @@ func _preview_summary(dots: Array[EnergyDot]) -> String:
 ## "neutrale Essenz 12 · Feuer 3"; bei Multiplikator ≠ 1 "neutrale Essenz 4 ×2 = 8 · Feuer 1 ×2 = 2"
 func _dots_summary(dots: Array[EnergyDot], multiplier := 1.0) -> String:
 	if dots.is_empty():
-		return "keine Punkte"
+		return "keine Essenz"
 	var base := 0
 	var counts := {}
 	for dot in dots:
@@ -572,7 +575,7 @@ func _blocked_text(placed: PlacedGem) -> String:
 	for dot in result.blocked:
 		if dot.position.distance_to(placed.position) < placed.gem.body_radius:
 			count += 1
-	return "  ·  verdeckt %d (zählen nicht)" % count if count > 0 else ""
+	return "  ·  %d verdeckt, nicht gewertet" % count if count > 0 else ""
 
 
 ## Wie oft zählt ein Punkt der Vorschau? (Spitz, innerer Ring der Multiplikator-Gravur)
@@ -807,24 +810,24 @@ func _draw() -> void:
 			var color := _element_color(dot.element_id, COLOR_BASE_DOT)
 			var scale := BASE_DOT_SCALE if dot.is_base() else ELEMENT_DOT_SCALE
 			if owned.has(dot):
-				_draw_dot(dot, 6.4 * scale * px, color, copies.get(dot, 1))
+				_draw_dot(dot, 6.4 * scale * DOT_UNIT, color, copies.get(dot, 1))
 				if copies.has(dot):
-					marks[dot] = [copies[dot], 6.4 * scale * px * _grow(copies[dot])]
-				_draw_dot_ring(dot.position, 7.5 * scale * _grow(copies.get(dot, 1)) * px, Color(1, 1, 1, 0.85), px)
+					marks[dot] = [copies[dot], 6.4 * scale * DOT_UNIT * _grow(copies[dot])]
+				_draw_dot_ring(dot.position, 7.5 * scale * _grow(copies.get(dot, 1)) * DOT_UNIT, Color(1, 1, 1, 0.85), px)
 			elif claimed.has(dot):
-				_draw_dot(dot, 5.8 * scale * px, Color(color, 0.35 if owner != null else 1.0), copies.get(dot, 1))
+				_draw_dot(dot, 5.8 * scale * DOT_UNIT, Color(color, 0.35 if owner != null else 1.0), copies.get(dot, 1))
 				if copies.has(dot) and owner == null:
-					marks[dot] = [copies[dot], 5.8 * scale * px * _grow(copies[dot])]
+					marks[dot] = [copies[dot], 5.8 * scale * DOT_UNIT * _grow(copies[dot])]
 			elif show_free_dots:
-				_draw_dot(dot, 4.8 * scale * px, Color(color, 0.8))
+				_draw_dot(dot, 4.8 * scale * DOT_UNIT, Color(color, 0.8))
 	for dot in preview_dots:
 		var color := _element_color(dot.element_id, COLOR_BASE_DOT)
 		var scale := BASE_DOT_SCALE if dot.is_base() else ELEMENT_DOT_SCALE
 		var preview_copies := _preview_copies(dot)
-		_draw_dot(dot, 5.8 * scale * px, color, preview_copies)
+		_draw_dot(dot, 5.8 * scale * DOT_UNIT, color, preview_copies)
 		if preview_copies > 1:
-			marks[dot] = [preview_copies, 5.8 * scale * px * _grow(preview_copies)]
-		_draw_dot_ring(dot.position, 8.0 * scale * _grow(preview_copies) * px, COLOR_PREVIEW, px)
+			marks[dot] = [preview_copies, 5.8 * scale * DOT_UNIT * _grow(preview_copies)]
+		_draw_dot_ring(dot.position, 8.0 * scale * _grow(preview_copies) * DOT_UNIT, COLOR_PREVIEW, px)
 
 	# Geist der zu setzenden Gem
 	if show_ghost:
@@ -855,7 +858,7 @@ func _draw() -> void:
 	if valid:
 		for dot in result.blocked:
 			var scale := BASE_DOT_SCALE if dot.is_base() else ELEMENT_DOT_SCALE
-			var r := 4.2 * scale * px
+			var r := 4.2 * scale * DOT_UNIT
 			_draw_dot(dot, r, Color(_element_color(dot.element_id, COLOR_BASE_DOT), 0.55))
 			draw_line(dot.position - Vector2(r, r), dot.position + Vector2(r, r), Color(COLOR_BAD, 0.9), 1.2 * px, true)
 			draw_line(dot.position + Vector2(-r, r), dot.position + Vector2(r, -r), Color(COLOR_BAD, 0.9), 1.2 * px, true)
@@ -878,13 +881,13 @@ func _draw() -> void:
 		_draw_hint(font, to_screen(_mouse_focus), text, COLOR_BAD if _preview_error != "" else COLOR_PREVIEW)
 	elif owner != null:
 		var anchor := to_screen(owner.placed.position)
-		_draw_hint(font, anchor, "Sammelt: " + _gem_summary(owner) + _blocked_text(owner.placed), Color(1, 1, 1, 0.95))
+		_draw_hint(font, anchor, "Gesammelt: " + _gem_summary(owner) + _blocked_text(owner.placed), Color(1, 1, 1, 0.95))
 		if show_replace:
-			var text := "Klick: wird zu %s  ·  %s" % [
+			var text := "Klicken ersetzt durch %s  ·  %s" % [
 				_gem_label(placing_gem, placing_engraving), _preview_summary(_preview_dots(claimed))]
 			_draw_hint(font, anchor, text, COLOR_PREVIEW, 1)
 	elif show_replace:
-		var text := "Klick: wird zu %s  ·  %s" % [
+		var text := "Klicken ersetzt durch %s  ·  %s" % [
 			_gem_label(placing_gem, placing_engraving), _preview_summary(_preview_dots(claimed))]
 		_draw_hint(font, to_screen(_preview_position()), text, COLOR_PREVIEW)
 

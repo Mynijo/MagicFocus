@@ -80,7 +80,7 @@ func test_dot_field_reproducible() -> void:
 func test_example_focus_evaluates() -> void:
 	var focus := FocusInstance.new()
 	focus.focus_def = content.get_focus(&"kleiner_fokus")
-	focus.element_fill = {&"fire": 25, &"air": 15}
+	focus.element_fill = {&"fire": 12, &"air": 8}
 	focus.dot_seed = 1234
 	var standard := engraving(&"standard")
 	focus.gems = [
@@ -94,3 +94,27 @@ func test_example_focus_evaluates() -> void:
 	check(r.valid, "Beispiel-Fokus sollte gültig sein: %s" % [r.errors])
 	check(r.get_stat(&"damage") > 0.0, "Beispiel sollte Schaden machen")
 	print("\nBeispiel-Fokus:\n" + r.describe())
+
+
+## Essenzen überlappen nicht (alle echten Foki, voll befüllt) und halten Abstand zum Rand.
+func test_dots_do_not_overlap() -> void:
+	for def in content.foci:
+		var focus := FocusInstance.new()
+		focus.focus_def = def
+		focus.dot_seed = 7
+		var remaining := def.max_element_dots
+		for element in content.elements:
+			if def.allows_element(element.id) and remaining > 0:
+				var count := mini(remaining, ceili(def.max_element_dots / 5.0))
+				focus.element_fill[element.id] = count
+				remaining -= count
+		var start := Time.get_ticks_msec()
+		var dots := DotField.generate(focus)
+		var factor := DotField.spacing_factor(focus)
+		var overlaps := 0
+		for i in dots.size():
+			for j in range(i + 1, dots.size()):
+				if dots[i].position.distance_to(dots[j].position) < (DotField.spacing(dots[i]) + DotField.spacing(dots[j])) * factor - 0.01:
+					overlaps += 1
+		check(overlaps == 0, "%s: %d Überlappungen" % [def.id, overlaps])
+		check(Time.get_ticks_msec() - start < 300, "%s: Erzeugen dauert zu lange" % def.id)

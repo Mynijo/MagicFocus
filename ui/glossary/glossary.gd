@@ -91,18 +91,45 @@ func _term_section(title: String, ids: Array[StringName]) -> String:
 	return _section(title, t)
 
 
+## Gravuren nach Element: je ein Abschnitt pro Element, dann mehrere Elemente, alle
+## Elemente und ohne Element; darin Haupt- vor Nebengravuren.
 func _engravings_text() -> String:
+	var groups := {}  # Gruppenschlüssel -> Array[EngravingDef]
+	for e in CONTENT.engravings:
+		var key: String = "none"
+		if e.element_factors.size() == CONTENT.elements.size():
+			key = "all"
+		elif e.element_factors.size() > 1:
+			key = "mixed"
+		elif e.element_factors.size() == 1:
+			key = String(e.get_element_ids()[0])
+		if not groups.has(key):
+			groups[key] = []
+		groups[key].append(e)
+	var t := ""
+	for element in CONTENT.elements:
+		t += _engraving_group("%s%s" % [_icon(element.icon, element.color), element.display_name], groups.get(String(element.id), []))
+	t += _engraving_group("Mehrere Elemente", groups.get("mixed", []))
+	t += _engraving_group("Alle Elemente", groups.get("all", []))
+	t += _engraving_group("Ohne Element", groups.get("none", []))
+	return t
+
+
+func _engraving_group(title: String, engravings: Array) -> String:
 	var t := ""
 	for role in [GemDef.Role.MAIN, GemDef.Role.MINOR]:
 		var entries := ""
-		for e in CONTENT.get_engravings_for(role):
+		for e: EngravingDef in engravings:
+			if e.role != role:
+				continue
 			var text := ContentText.describe(e, CONTENT)
 			if not _matches(e.display_name + " " + text):
 				continue
 			entries += "%s[b][nolink]%s[/nolink][/b]  %s\n[indent][color=#bbbbbb]%s[/color][/indent]\n" % [
 				_icon(e.icon, Color.WHITE), e.display_name, _elements_of(e), text]
-		t += _section("Hauptgravuren" if role == GemDef.Role.MAIN else "Nebengravuren", entries)
-	return t
+		if entries != "":
+			t += "[color=#999999]%s[/color]\n%s" % ["Hauptgravuren" if role == GemDef.Role.MAIN else "Nebengravuren", entries]
+	return _section(title, t)
 
 
 func _gems_text() -> String:

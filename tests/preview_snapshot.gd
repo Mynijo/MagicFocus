@@ -12,9 +12,6 @@ func _ready() -> void:
 	await get_tree().process_frame
 	var content: CraftingContent = workshop.CONTENT
 	var canvas: FocusCanvas = workshop._canvas
-	# Optional: --details klappt die Gem-Liste im Ergebnis auf
-	if OS.get_cmdline_user_args().has("--details"):
-		workshop._on_result_meta_clicked("toggle_gems")
 	# Optional: --scroll zeigt das Ende der linken Spalte (Speichern & Laden)
 	if OS.get_cmdline_user_args().has("--scroll"):
 		var scroll := workshop.find_children("*", "ScrollContainer", true, false)[0] as ScrollContainer
@@ -41,7 +38,7 @@ func _ready() -> void:
 					workshop.focus.dot_seed = int(seed_arg.trim_prefix("--seed="))
 			# Optional: --all-elements füllt alle fünf Elemente (zum Ansehen der Essenz-Formen)
 			if OS.get_cmdline_user_args().has("--all-elements"):
-				workshop.focus.element_fill = {&"fire": 8, &"water": 8, &"earth": 8, &"air": 8, &"lightning": 8}
+				workshop.focus.element_fill = {&"fire": 4, &"water": 4, &"earth": 4, &"air": 4, &"lightning": 4}
 				workshop._sync_fill_ui()
 			# Optional: --minor=<gravur-id> gibt dem linken Nebengem diese Gravur und wählt sie zum Setzen aus
 			for minor_arg in OS.get_cmdline_user_args():

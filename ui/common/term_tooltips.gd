@@ -25,6 +25,8 @@ var content: CraftingContent
 
 ## word -> term id; Wörter nach Länge sortiert (längste zuerst, z. B. "Mana Burn" vor "Burn")
 var _word_to_id := {}
+## Begriff -> Linkfarbe (Elemente in ihrer Farbe, sonst LINK_COLOR)
+var _colors := {}
 var _regex: RegEx
 
 ## Offene Tooltips, Ebene 0 zuerst. Einträge: {panel, label, bar, term, pinned}
@@ -44,6 +46,7 @@ func setup(p_content: CraftingContent) -> void:
 	content = p_content
 	var words: Array[String] = []
 	for term in content.glossary:
+		_colors[String(term.id)] = "#" + term.icon_color.to_html(false) if term.icon_color != Color.WHITE else LINK_COLOR
 		for word in term.words:
 			_word_to_id[word] = String(term.id)
 			words.append(word)
@@ -101,7 +104,7 @@ func _link_words(text: String, exclude_id: String) -> String:
 		if id == "" or id == exclude_id:
 			out += word
 		else:
-			out += "[url=%s%s][color=%s]%s[/color][/url]" % [META_PREFIX, id, LINK_COLOR, word]
+			out += "[url=%s%s][color=%s]%s[/color][/url]" % [META_PREFIX, id, _colors.get(id, LINK_COLOR), word]
 		last = m.get_end(1)
 	return out + text.substr(last)
 

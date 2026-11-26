@@ -54,7 +54,7 @@ func test_canvas_auto_connect_and_preview() -> void:
 	var minor := content.get_gem(&"nebengem_mittel_grob")
 	var focus := FocusInstance.new()
 	focus.focus_def = content.get_focus(&"mittlerer_fokus")
-	focus.element_fill = {&"fire": 60}
+	focus.element_fill = {&"fire": 40}
 	focus.dot_seed = 7
 	var canvas := FocusCanvas.new()
 	canvas.focus = focus
@@ -102,7 +102,7 @@ func test_canvas_replace_engraving() -> void:
 	var minor := content.get_gem(&"nebengem_mittel_grob")
 	var focus := FocusInstance.new()
 	focus.focus_def = content.get_focus(&"mittlerer_fokus")
-	focus.element_fill = {&"fire": 60}
+	focus.element_fill = {&"fire": 40}
 	focus.dot_seed = 7
 	var canvas := FocusCanvas.new()
 	canvas.focus = focus

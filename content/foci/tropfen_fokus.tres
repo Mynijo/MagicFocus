@@ -5,9 +5,6 @@
 
 [sub_resource type="Resource" id="Shape_drop"]
 script = ExtResource("2_drop")
-height = 330.0
-width = 340.0
-sharpness = 1.0
 
 [resource]
 script = ExtResource("1_focus")
@@ -16,5 +13,5 @@ display_name = "Tropfen-Fokus"
 shape = SubResource("Shape_drop")
 size_class = 1
 max_gems = 4
-max_dots = 295
-max_element_dots = 55
+max_dots = 130
+max_element_dots = 25

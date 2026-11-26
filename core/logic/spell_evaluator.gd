@@ -301,3 +301,17 @@ static func estimate(gem: GemDef, engraving: EngravingDef, center: Vector2, dots
 		if not is_zero_approx(value):
 			stats[rule.stat] = stats.get(rule.stat, 0.0) + value
 	return { points = points, stats = stats }
+
+
+## Beitrag eines Gems zu den Spell-Werten aus seinen Regeln (Hauptgem inklusive
+## Übertragenem), z. B. {&"damage": 33.0, &"burn": 1.0}. Für die Anzeige der Herkunft.
+static func gem_contribution(gr: GemResult) -> Dictionary:
+	var engraving := gr.placed.engraving
+	var base := gr.total_base() if gr.is_main() else gr.effective_base
+	var counts := _weighted_counts(gr.total_elements() if gr.is_main() else gr.effective_elements, engraving)
+	var out := {}
+	for rule in engraving.rules:
+		var value := rule.evaluate(base, counts)
+		if not is_zero_approx(value):
+			out[rule.stat] = out.get(rule.stat, 0.0) + value
+	return out

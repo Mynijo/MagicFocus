@@ -14,5 +14,5 @@ display_name = "Großer Fokus"
 shape = SubResource("Shape_circle")
 size_class = 2
 max_gems = 7
-max_dots = 465
-max_element_dots = 90
+max_dots = 320
+max_element_dots = 65

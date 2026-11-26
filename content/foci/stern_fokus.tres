@@ -5,7 +5,6 @@
 
 [sub_resource type="Resource" id="Shape_star"]
 script = ExtResource("2_star")
-points = 5
 outer_radius = 340.0
 inner_radius = 170.0
 
@@ -16,5 +15,5 @@ display_name = "Stern-Fokus"
 shape = SubResource("Shape_star")
 size_class = 1
 max_gems = 5
-max_dots = 315
-max_element_dots = 60
+max_dots = 95
+max_element_dots = 20

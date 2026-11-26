@@ -18,8 +18,6 @@ var tooltips: TermTooltips
 var _preview_result: SpellResult
 ## Auswertung vor Beginn des Verschiebens (während des Ziehens), sonst null.
 var _drag_baseline: SpellResult
-## Gem-Liste im Ergebnis aufgeklappt?
-var _show_gem_details := false
 var _selected_size: GemDef.Size = GemDef.Size.WINZIG
 
 var _canvas: FocusCanvas
@@ -263,7 +261,7 @@ func _build_save(box: VBoxContainer) -> void:
 
 func _build_right_panel() -> Control:
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size.x = 360
+	panel.custom_minimum_size.x = 400
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
 	UiKit.margin(panel).add_child(box)
@@ -275,7 +273,6 @@ func _build_right_panel() -> Control:
 
 	_result_text = RichTextLabel.new()
 	_result_text.bbcode_enabled = true
-	_result_text.meta_clicked.connect(_on_result_meta_clicked)
 	tooltips.register(_result_text)
 	_result_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_child(_result_text)
@@ -462,15 +459,11 @@ func _update_result_text() -> void:
 		t += _section("Änderung durch Verschieben", _diff_text(_drag_baseline, result))
 	if result.valid:
 		t += "[font_size=22][b]%s[/b][/font_size]\n" % result.engraving.display_name
-		t += "[color=#aaaaaa]%s[/color]\n\n" % ContentText.describe(result.engraving, CONTENT)
-		t += "Cast-Zeit: [b]%s s[/b] · Mana: [b]%s[/b]\n\n" % [
-			TextFormat.number(result.cast_time), TextFormat.number(result.mana_cost, 1)]
-		for stat: StringName in result.stats:
-			t += "%s: %s\n" % [ContentText.value_name(stat), TextFormat.number(result.stats[stat])]
-		var arrow := "▾" if _show_gem_details else "▸"
-		t += "\n[url=toggle_gems][b]%s Gems (%d)[/b][/url]\n" % [arrow, result.gem_results.size()]
-		if _show_gem_details:
-			t += _gem_details_text()
+		t += "[color=#aaaaaa]Cast-Zeit %s s · Mana %s · Ziel %s[/color]\n\n" % [TextFormat.number(result.cast_time),
+			TextFormat.number(result.mana_cost, 1), ContentText.TARGET_NAMES[result.engraving.target]]
+		t += _values_table(result.stats)
+		t += "\n[font_size=16][b]Aufschlüsselung[/b][/font_size]\n" + _origin_text()
+		t += "\n[color=#888888][font_size=12]%s[/font_size][/color]\n" % ContentText.describe(result.engraving, CONTENT)
 	else:
 		t += "[font_size=18][b]Noch kein gültiger Spell[/b][/font_size]\n\n"
 		for error in result.errors:
@@ -487,13 +480,13 @@ func _estimate_text() -> String:
 	if estimate.is_empty():
 		return ""
 	var engraving := _canvas.placing_engraving
-	var t := "[font_size=16][color=#fff2a0]Vorschau mit den hervorgehobenen Essenzen[/color][/font_size]\n"
+	var t := "[font_size=16][color=#fff2a0]Vorschau[/color][/font_size]\n"
 	t += "[font_size=22][b]%s[/b][/font_size]\n" % engraving.display_name
 	t += "[color=#aaaaaa]%s[/color]\n\n" % ContentText.describe(engraving, CONTENT)
 	t += "Punkte: [b]%s[/b]\n" % TextFormat.number(estimate.points)
 	for stat: StringName in estimate.stats:
 		t += "%s: [b]%s[/b]\n" % [ContentText.value_name(stat), TextFormat.number(estimate.stats[stat])]
-	t += "[color=#999999][font_size=12]Richtwert: Der genaue Bereich steht erst mit dem Kreis fest. Noch offen: %s[/font_size][/color]\n" % \
+	t += "[color=#999999][font_size=12]Schätzwert aus den markierten Essenzen; der Einflussbereich steht erst mit geschlossenem Kreis fest. Fehlt: %s[/font_size][/color]\n" % \
 		" ".join(_preview_result.errors)
 	return t + "[color=#555555]────────────[/color]\n\n"
 
@@ -554,53 +547,116 @@ func _diff_line(label: String, old_value: float, new_value: float, higher_is_bet
 		"+" if delta > 0.0 else "", TextFormat.number(delta, 1)]
 
 
-func _gem_details_text() -> String:
+const ICON_SIZE := 16
+const NEUTRAL_ICON := "res://assets/sprites/element_neutral.png"
+const COLOR_DIM := "#999999"
+
+
+## Werte als Tabelle mit Symbol: [Symbol Name | Wert].
+func _values_table(stats: Dictionary) -> String:
+	if stats.is_empty():
+		return ""
+	var t := "[table=2]"
+	for stat: StringName in stats:
+		t += _cell("%s%s" % [_stat_icon(stat), ContentText.value_name(stat)]) + _cell("[b]%s[/b]" % TextFormat.number(stats[stat]))
+	return t + "[/table]\n"
+
+
+## Aufschlüsselung als eine Tabelle (Spalten bündig über alle Gems, Hauptgem zuerst):
+## Essenz | Menge | Form (Spitz, innerer Ring) | Faktor der Gravur | Punkte.
+## Danach je Gem die Summe der Punkte und die Werte, die daraus entstehen.
+## Gems mit Weitergabe zeigen statt Faktor einen Pfeil und die übertragene Menge.
+func _origin_text() -> String:
+	var t := "[table=5]"
+	for header in ["Essenz", "Menge", "Form", "Faktor", "Punkte"]:
+		t += _cell("[color=%s][nolink]%s[/nolink][/color]" % [COLOR_DIM, header], 4 if header == "Essenz" else 1)
+	var order := result.gem_results.duplicate()
+	order.sort_custom(func(a: GemResult, b: GemResult) -> bool: return a.is_main() and not b.is_main())
+	for gr: GemResult in order:
+		var engraving := gr.placed.engraving
+		var main := gr.is_main()
+		var transfer := engraving.transfer_to_main
+		t += _row(["%s%s[b][nolink]%s[/nolink][/b]" % ["★ " if main else "", _icon(engraving.icon, Color.WHITE),
+			engraving.display_name], "", "", "", ""])
+		var neutral_icon := _icon_path(NEUTRAL_ICON, Color(0.8, 0.8, 0.88))
+		var base_factor := 1.0 if _counts_base(engraving) else 0.0
+		var rows := 0
+		if gr.base_count > 0:
+			t += _essence_row(neutral_icon + "Neutral", gr.base_count, gr.effective_base, base_factor, transfer)
+			rows += 1
+		if main and gr.received_base > 0.0:
+			t += _essence_row("↳ " + neutral_icon + "Neutral", -1, gr.received_base, base_factor, false)
+			rows += 1
+		for element in CONTENT.elements:
+			var icon := _icon(element.icon, element.color)
+			var factor := engraving.factor_of(element.id)
+			var raw: int = gr.element_counts.get(element.id, 0)
+			if raw > 0:
+				t += _essence_row(icon + element.display_name, raw, gr.effective_elements.get(element.id, 0.0), factor, transfer)
+				rows += 1
+			var received: float = gr.received_elements.get(element.id, 0.0) if main else 0.0
+			if received > 0.0:
+				t += _essence_row("↳ " + icon + element.display_name, -1, received, factor, false)
+				rows += 1
+		if rows == 0:
+			t += _row(["[color=%s]keine Essenz[/color]" % COLOR_DIM, "", "", "", ""])
+		elif not transfer:
+			t += _row(["[color=%s]Summe[/color]" % COLOR_DIM, "", "", "", "[b]%s[/b]" % TextFormat.number(gr.points)])
+			var contribution := SpellEvaluator.gem_contribution(gr)
+			for stat: StringName in contribution:
+				t += _row(["→ %s%s" % [_stat_icon(stat), ContentText.value_name(stat)], "", "", "",
+					"[color=#fff2a0][b]%s[/b][/color]" % TextFormat.number(contribution[stat])])
+	return t + "[/table]\n[color=%s][font_size=12]↳ vom Nebengem übertragen · Form: Spitz und innerer Ring · Faktor: Punkte pro Essenz der Gravur[/font_size][/color]\n" % COLOR_DIM
+
+
+## Eine Zeile: Essenz | Menge | Form | Faktor | Punkte. `raw` < 0 = übertragen (keine Form).
+func _essence_row(label: String, raw: int, effective: float, factor: float, transfer: bool) -> String:
+	var amount := str(raw) if raw >= 0 else TextFormat.number(effective)
+	var form := "×%s" % TextFormat.number(effective / raw) if raw > 0 and not is_equal_approx(effective, raw) else ""
+	if transfer:
+		return _row([label, amount, form, "→", TextFormat.number(effective)])
+	if is_zero_approx(factor):
+		return _row([label, amount, form, "[color=%s]–[/color]" % COLOR_DIM, "[color=%s]–[/color]" % COLOR_DIM])
+	return _row([label, amount, form, "×%s" % TextFormat.number(factor), TextFormat.number(effective * factor)])
+
+
+## Zählt die Gravur neutrale Essenz? (Regel mit Quelle Punkte oder neutrale Essenz)
+static func _counts_base(engraving: EngravingDef) -> bool:
+	for rule in engraving.rules:
+		if rule.source in [ScalingRule.Source.POINTS, ScalingRule.Source.BASE]:
+			return true
+	return false
+
+
+## Tabellenzelle; `expand` = Anteil an der Breite (erste Spalte breiter).
+func _cell(text: String, expand := 1) -> String:
+	return "[cell expand=%d]%s  [/cell]" % [expand, text]
+
+
+## Tabellenzeile der Aufschlüsselung (erste Spalte breiter).
+func _row(cells: Array) -> String:
 	var t := ""
-	for gr in result.gem_results:
-		var gem := gr.placed.gem
-		var multiplier := "" if is_equal_approx(gr.multiplier, 1.0) else " ×" + TextFormat.number(gr.multiplier)
-		t += "%s%s · %s%s\n" % ["★ " if gr.is_main() else "", gem.display_name, gr.placed.engraving.display_name, multiplier]
-		var details := "Gesammelt: neutrale Essenz %d/%d, Essenzen %d/%d%s" % [
-			gr.base_count, gem.max_base, gr.get_element_total(), gem.max_element,
-			"" if gr.element_counts.is_empty() else " (%s)" % _counts_text(gr.element_counts)]
-		if not is_equal_approx(gr.effective_base + _sum(gr.effective_elements), gr.base_count + gr.get_element_total()):
-			details += "\nZählt: %s" % _essence_text(gr.effective_base, gr.effective_elements)
-		if gr.is_main() and (gr.received_base > 0.0 or not gr.received_elements.is_empty()):
-			details += "\nErhalten: %s" % _essence_text(gr.received_base, gr.received_elements)
-		if not gr.placed.engraving.transfer_to_main:
-			details += "\nPunkte: %s" % TextFormat.number(gr.points)
-		t += "[indent][color=#bbbbbb]%s[/color][/indent]\n" % details
+	for i in cells.size():
+		t += _cell(cells[i], 4 if i == 0 else 1)
 	return t
 
 
-static func _sum(counts: Dictionary) -> float:
-	var total := 0.0
-	for value: float in counts.values():
-		total += value
-	return total
+func _icon(texture: Texture2D, color: Color) -> String:
+	if texture == null or texture.resource_path == "":
+		return ""
+	return _icon_path(texture.resource_path, color)
 
 
-## "neutrale Essenz 12, Feuer 3, Luft 1"
-func _essence_text(base: float, counts: Dictionary) -> String:
-	var text := "neutrale Essenz %s" % TextFormat.number(base)
-	if not counts.is_empty():
-		text += ", " + _counts_text(counts)
-	return text
+func _icon_path(path: String, color: Color) -> String:
+	return "[img width=%d height=%d color=#%s]%s[/img] " % [ICON_SIZE, ICON_SIZE, color.to_html(false), path]
 
 
-func _counts_text(counts: Dictionary) -> String:
-	var parts := PackedStringArray()
-	for element in CONTENT.elements:
-		if counts.has(element.id):
-			parts.append("[color=#%s]%s[/color] %s" % [
-				element.color.to_html(false), element.display_name, TextFormat.number(float(counts[element.id]))])
-	return ", ".join(parts)
+## Symbol eines Spell-Werts: Symbol seines Begriffs (Status, Crit, ...), sonst keins.
+func _stat_icon(stat: StringName) -> String:
+	var term := CONTENT.get_term(stat)
+	return _icon(term.icon, term.icon_color) if term != null else ""
 
 
-func _on_result_meta_clicked(meta: Variant) -> void:
-	if str(meta) == "toggle_gems":
-		_show_gem_details = not _show_gem_details
-		_update_result_text()
 
 
 # --- Speichern und Laden (FocusStore: JSON mit IDs in user://foci/) ---------
