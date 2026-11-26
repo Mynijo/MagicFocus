@@ -52,3 +52,17 @@ extends Resource
 @export var max_health_per_stack := 2.0
 ## Rotten: weniger maximales Leben pro Stack
 @export var rotten_per_stack := 1.0
+
+## Anzeigenamen der Werte (Glossar und Editor), in dieser Reihenfolge.
+const LABELS := {
+	"max_hp": "Leben", "max_mana": "Mana", "start_mana": "Mana zu Kampfbeginn", "mana_regen": "Mana pro Sekunde",
+	"tick": "Zeitschritt (s)", "max_duration": "Höchstdauer (s)", "crit_multiplier": "Crit: Schaden-Faktor",
+	"bleed_damage": "Bleed: Schaden pro Stack", "burn_damage": "Burn: Schaden pro Stack",
+	"slowed_seconds": "Slowed: Sekunden pro Stack", "hasted_seconds": "Hasted: Sekunden pro Stack",
+	"max_slowed_hasted": "Slowed und Hasted: höchstens Stacks", "mana_burn_per_stack": "Mana Burn: weniger Mana pro Stack",
+	"wet_shock_bonus": "Nass: Schock-Schaden pro Stack", "armor_break_ratio": "Armor Break: Armor pro Stack",
+	"perma_burn_rate": "Perma-Burn: Burn pro Stack und Sekunde", "bless_heal": "Bless: Heilung pro Stack",
+	"thorns_damage": "Thorns: Schaden pro Stack", "mana_absorption_mana": "Mana Absorption: Mana pro Stack",
+	"damage_reduction_factor": "Damage Reduction: Schaden-Faktor", "life_rewind_seconds": "Life Rewind: Sekunden",
+	"max_health_per_stack": "Max Health: Leben pro Stack", "rotten_per_stack": "Rotten: Leben pro Stack",
+}

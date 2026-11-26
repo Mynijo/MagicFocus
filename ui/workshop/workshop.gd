@@ -4,6 +4,7 @@ extends Control
 
 const CONTENT := preload("res://content/crafting_content.tres")
 const ARENA_SCENE := "res://ui/arena/arena.tscn"
+const GLOSSARY_SCENE := "res://ui/glossary/glossary.tscn"
 
 const COLOR_GOOD := "#80ff90"
 const COLOR_BAD := "#ff9090"
@@ -167,8 +168,10 @@ func _build_left_panel() -> Control:
 	UiKit.header(box, "Speichern und Laden")
 	_build_save(box)
 
-	UiKit.header(box, "Kampf")
-	UiKit.button(box, "Zur Arena", func() -> void: get_tree().change_scene_to_file(ARENA_SCENE))
+	UiKit.header(box, "Weiter")
+	var nav_row := UiKit.row(box)
+	UiKit.button(nav_row, "Arena", func() -> void: get_tree().change_scene_to_file(ARENA_SCENE))
+	UiKit.button(nav_row, "Glossar", func() -> void: get_tree().change_scene_to_file(GLOSSARY_SCENE))
 	return scroll
 
 

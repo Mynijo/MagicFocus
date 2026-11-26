@@ -3,6 +3,12 @@ extends Resource
 ## Basisklasse für die Form eines Fokus, zentriert um (0, 0).
 ## Neue Formen (z. B. Stern) überschreiben diese drei Funktionen.
 
+## Anzeigenamen der Größen-Werte aller Formen (Glossar und Editor).
+const FIELD_LABELS := {
+	"radius": "Radius", "outer_radius": "Radius außen", "inner_radius": "Radius innen", "points": "Spitzen",
+	"height": "Höhe", "width": "Breite", "sharpness": "Schärfe der Spitze",
+}
+
 
 func contains(_point: Vector2) -> bool:
 	return false

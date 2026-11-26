@@ -63,6 +63,7 @@ func _build_ui() -> void:
 	# Kopfzeile
 	var top := UiKit.row(root, 8)
 	UiKit.button(top, "← Werkstatt", func() -> void: get_tree().change_scene_to_file(WORKSHOP_SCENE), false)
+	UiKit.button(top, "Glossar", func() -> void: get_tree().change_scene_to_file("res://ui/glossary/glossary.tscn"), false)
 	UiKit.button(top, "Kampf starten", _start_combat, false)
 	var speed_group := ButtonGroup.new()
 	for i in SPEEDS.size():
