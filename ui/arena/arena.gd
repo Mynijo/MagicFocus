@@ -14,7 +14,9 @@ const STAT_BAR_LENGTH := 24  # Zeichen für 100 % im Schadensmesser
 const STATUS_TERMS := {
 	&"burn": &"burn", &"bleed": &"bleed", &"wet": &"nass", &"shock": &"schock", &"slow": &"slowed",
 	&"mana_burn": &"mana_burn", &"armor": &"armor", &"hasted": &"hasted", &"life_regen": &"leben_reg",
-	&"mana_regen": &"mana_reg", &"ice": &"eis",
+	&"mana_regen": &"mana_reg", &"ice": &"eis", &"perma_burn": &"perma_burn", &"accelerated_burn": &"accelerated_burn",
+	&"bless": &"bless", &"thorns": &"thorns", &"mana_absorption": &"mana_absorption",
+	&"damage_reduction": &"damage_reduction", &"life_rewind": &"life_rewind",
 }
 
 ## Auswahl bleibt erhalten, wenn man zwischendurch in die Werkstatt wechselt.

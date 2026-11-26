@@ -36,3 +36,15 @@ extends Resource
 @export var wet_shock_bonus := 1.0
 ## Armor Break: so viel Armor hebt ein Stack auf
 @export var armor_break_ratio := 5.0
+## Perma-Burn: Burn pro Stack und Sekunde (baut sich nicht ab, nur Cleanse)
+@export var perma_burn_rate := 1.0
+## Bless: zusätzliche Heilung pro Stack bei jeder erhaltenen Heilung (1 Stack verbraucht)
+@export var bless_heal := 5.0
+## Thorns: Gegenschaden pro Stack bei jedem erhaltenen Spell-Treffer (1 Stack verbraucht)
+@export var thorns_damage := 3.0
+## Mana Absorption: Mana pro Stack bei jedem erhaltenen Spell-Treffer (1 Stack verbraucht)
+@export var mana_absorption_mana := 5.0
+## Damage Reduction: Faktor auf den Schaden des nächsten Spells (vom Nutzer vorgegeben: 50 %)
+@export var damage_reduction_factor := 0.5
+## Life Rewind: nach so vielen Sekunden wird das Leben zurückgesetzt
+@export var life_rewind_seconds := 10.0

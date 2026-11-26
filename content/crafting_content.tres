@@ -241,10 +241,82 @@ icon = ExtResource("72_rgplo")
 text = "1 Crit = 1 % Chance auf einen kritischen Treffer. Ein kritischer Treffer macht 200 % Schaden. Entsteht aus Feuer-Essenz.
 (Kampfregel, wirkt ab dem Auto-Battler.)"
 
+[sub_resource type="Resource" id="Resource_aa8s0"]
+script = ExtResource("54_p2b4g")
+id = &"perma_burn"
+title = "Perma-Burn"
+words = PackedStringArray("Perma-Burn")
+text = "Debuff. Erzeugt pro Stack jede Sekunde Burn. Baut sich nicht ab; nur Cleanse entfernt ihn.
+(Kampfregel, wirkt ab dem Auto-Battler.)"
+
+[sub_resource type="Resource" id="Resource_mtql7"]
+script = ExtResource("54_p2b4g")
+id = &"accelerated_burn"
+title = "Accelerated Burn"
+words = PackedStringArray("Accelerated Burn")
+text = "Debuff. Solange er wirkt, tickt Burn zweimal pro Sekunde: gleicher Gesamtschaden in der halben Zeit. Verliert 1 Stack pro Sekunde.
+(Kampfregel, wirkt ab dem Auto-Battler.)"
+
+[sub_resource type="Resource" id="Resource_8yyhn"]
+script = ExtResource("54_p2b4g")
+id = &"bless"
+title = "Bless"
+words = PackedStringArray("Bless")
+text = "Buff. Jede erhaltene Heilung (auch Leben-Reg) heilt pro Stack X mehr und verbraucht 1 Stack.
+(Kampfregel, wirkt ab dem Auto-Battler.)"
+
+[sub_resource type="Resource" id="Resource_hq7yt"]
+script = ExtResource("54_p2b4g")
+id = &"thorns"
+title = "Thorns"
+words = PackedStringArray("Thorns")
+text = "Buff. Wird der Träger von einem Spell getroffen, erhält der Angreifer pro Stack X Schaden; verbraucht 1 Stack pro Treffer.
+(Kampfregel, wirkt ab dem Auto-Battler.)"
+
+[sub_resource type="Resource" id="Resource_1xyw2"]
+script = ExtResource("54_p2b4g")
+id = &"mana_absorption"
+title = "Mana Absorption"
+words = PackedStringArray("Mana Absorption")
+text = "Buff. Wird der Träger von einem Spell getroffen, erhält er pro Stack X Mana; verbraucht 1 Stack pro Treffer.
+(Kampfregel, wirkt ab dem Auto-Battler.)"
+
+[sub_resource type="Resource" id="Resource_56qtw"]
+script = ExtResource("54_p2b4g")
+id = &"damage_reduction"
+title = "Damage Reduction"
+words = PackedStringArray("Damage Reduction")
+text = "Buff. Halbiert den Schaden des nächsten gegnerischen Spells (alle Treffer); 1 Stack pro Spell.
+(Kampfregel, wirkt ab dem Auto-Battler.)"
+
+[sub_resource type="Resource" id="Resource_5f56c"]
+script = ExtResource("54_p2b4g")
+id = &"life_rewind"
+title = "Life Rewind"
+words = PackedStringArray("Life Rewind")
+text = "Buff. Speichert das aktuelle Leben; nach 10 Sekunden wird das Leben auf diesen Wert gesetzt, auch nach unten. Tödlicher Schaden tötet trotzdem.
+(Kampfregel, wirkt ab dem Auto-Battler.)"
+
+[sub_resource type="Resource" id="Resource_2ytku"]
+script = ExtResource("54_p2b4g")
+id = &"cleanse"
+title = "Cleanse"
+words = PackedStringArray("Cleanse")
+text = "Entfernt alle Debuffs vom Ziel: Burn, Bleed, Nass, Schock, Slowed, Mana Burn, Eis, Perma-Burn, Accelerated Burn.
+(Kampfregel, wirkt ab dem Auto-Battler.)"
+
+[sub_resource type="Resource" id="Resource_rt088"]
+script = ExtResource("54_p2b4g")
+id = &"dispel"
+title = "Dispel"
+words = PackedStringArray("Dispel")
+text = "Entfernt alle Buffs vom Ziel: Armor, Hasted, Leben-Reg, Mana-Reg, Bless, Thorns, Mana Absorption, Damage Reduction, Life Rewind.
+(Kampfregel, wirkt ab dem Auto-Battler.)"
+
 [resource]
 script = ExtResource("73_cp5h5")
 elements = Array[ExtResource("1_yf8be")]([ExtResource("2_vvqjb"), ExtResource("3_xnj08"), ExtResource("4_b2lgo"), ExtResource("5_15ioc"), ExtResource("6_psvw1")])
 gems = Array[ExtResource("41_d1143")]([ExtResource("42_hc80o"), ExtResource("43_x8f4j"), ExtResource("44_crm6a"), ExtResource("45_3iem6"), ExtResource("46_ep2oj"), ExtResource("47_x4kve"), ExtResource("48_m4qwo"), ExtResource("49_2s36g"), ExtResource("50_6r2yy"), ExtResource("51_gf8ny"), ExtResource("52_0kqce"), ExtResource("53_fg612")])
 engravings = Array[ExtResource("7_764pd")]([ExtResource("8_lcs5n"), ExtResource("9_l6jgv"), ExtResource("10_uxgys"), ExtResource("11_dom5d"), ExtResource("12_3topo"), ExtResource("13_4fdgr"), ExtResource("14_pe4hh"), ExtResource("15_1sw7u"), ExtResource("16_3dkc8"), ExtResource("17_hn63x"), ExtResource("18_q1kyo"), ExtResource("19_iyc7c"), ExtResource("20_m285w"), ExtResource("21_c0l1y"), ExtResource("22_i0pda"), ExtResource("23_rrn14"), ExtResource("24_k2nu1"), ExtResource("25_8ltl7"), ExtResource("26_1plrm"), ExtResource("27_43sck"), ExtResource("28_a7nwj"), ExtResource("29_crm6a"), ExtResource("30_68y5y"), ExtResource("31_15u5i")])
 foci = Array[ExtResource("32_yy4wv")]([ExtResource("33_k7q15"), ExtResource("34_dcj1m"), ExtResource("35_x7mbf"), ExtResource("36_st2oq"), ExtResource("37_7y2yt"), ExtResource("38_sgpaj"), ExtResource("39_2r3vc"), ExtResource("40_lvn3h")])
-glossary = Array[ExtResource("54_p2b4g")]([SubResource("Resource_lhmy4"), SubResource("Resource_u16vp"), SubResource("Resource_oh1r2"), SubResource("Resource_s2pax"), SubResource("Resource_k0ktl"), SubResource("Resource_u2e3j"), SubResource("Resource_f3i8g"), SubResource("Resource_vqfps"), SubResource("Resource_um50i"), SubResource("Resource_88nw1"), SubResource("Resource_wcbni"), SubResource("Resource_sxtuk"), SubResource("Resource_f81s4"), SubResource("Resource_8brif"), SubResource("Resource_ejcqa"), SubResource("Resource_vj0yu"), SubResource("Resource_nqmpx"), SubResource("Resource_6udlh")])
+glossary = Array[ExtResource("54_p2b4g")]([SubResource("Resource_lhmy4"), SubResource("Resource_u16vp"), SubResource("Resource_oh1r2"), SubResource("Resource_s2pax"), SubResource("Resource_k0ktl"), SubResource("Resource_u2e3j"), SubResource("Resource_f3i8g"), SubResource("Resource_vqfps"), SubResource("Resource_um50i"), SubResource("Resource_88nw1"), SubResource("Resource_wcbni"), SubResource("Resource_sxtuk"), SubResource("Resource_f81s4"), SubResource("Resource_8brif"), SubResource("Resource_ejcqa"), SubResource("Resource_vj0yu"), SubResource("Resource_nqmpx"), SubResource("Resource_6udlh"), SubResource("Resource_aa8s0"), SubResource("Resource_mtql7"), SubResource("Resource_8yyhn"), SubResource("Resource_hq7yt"), SubResource("Resource_1xyw2"), SubResource("Resource_56qtw"), SubResource("Resource_5f56c"), SubResource("Resource_2ytku"), SubResource("Resource_rt088")])

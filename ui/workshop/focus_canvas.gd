@@ -612,7 +612,7 @@ func _draw_dot(dot: EnergyDot, radius: float, color: Color, doubled := false) ->
 			texture = element.dot_texture
 	var size := Vector2(radius, radius) * 2.0
 	if doubled:
-		var offset := Vector2(radius, -radius) * DOUBLE_OFFSET
+		var offset := _shadow_position(dot, radius) - dot.position
 		var shadow := Color(color.r * 0.75, color.g * 0.75, color.b * 0.75, color.a * 0.8)
 		draw_texture_rect(texture, Rect2(dot.position - Vector2(radius, radius) + offset, size), false, shadow)
 	draw_texture_rect(texture, Rect2(dot.position - Vector2(radius, radius), size), false, color)
@@ -734,7 +734,7 @@ func _draw() -> void:
 			# doppelt zählend: auch eine Linie zur Schattenkopie (gleicher Versatz wie in _draw_dot)
 			if doubled.has(dot):
 				var dot_radius := 4.0 * (1.0 if dot.is_base() else ELEMENT_DOT_SCALE) * px
-				var shadow_pos := dot.position + Vector2(dot_radius, -dot_radius) * DOUBLE_OFFSET
+				var shadow_pos := _shadow_position(dot, dot_radius)
 				draw_line(owner.placed.position, shadow_pos, Color(line_color, 0.35), 1.0 * px, true)
 
 	# Energiepunkte
@@ -747,6 +747,8 @@ func _draw() -> void:
 			if owned.has(dot):
 				_draw_dot(dot, 4.0 * scale * px, color, doubled.has(dot))
 				_draw_dot_ring(dot.position, 5.5 * scale * px, Color(1, 1, 1, 0.85), px)
+				if doubled.has(dot):
+					_draw_dot_ring(_shadow_position(dot, 4.0 * scale * px), 5.5 * scale * px, Color(1, 1, 1, 0.55), px)
 			elif claimed.has(dot):
 				_draw_dot(dot, 3.6 * scale * px, Color(color, 0.35 if owner != null else 1.0), doubled.has(dot))
 			elif show_free_dots:
@@ -756,6 +758,8 @@ func _draw() -> void:
 		var scale := 1.0 if dot.is_base() else ELEMENT_DOT_SCALE
 		_draw_dot(dot, 3.6 * scale * px, color, placing_gem.get_multiplier() > 1.0 + 0.001)
 		_draw_dot_ring(dot.position, 6.0 * scale * px, COLOR_PREVIEW, px)
+		if placing_gem.get_multiplier() > 1.0 + 0.001:
+			_draw_dot_ring(_shadow_position(dot, 3.6 * scale * px), 6.0 * scale * px, Color(COLOR_PREVIEW, 0.6), px)
 
 	# Geist der zu setzenden Gem
 	if show_ghost:
@@ -852,3 +856,8 @@ static func _count_text(count: int, multiplier: float) -> String:
 ## Ring um einen hervorgehobenen Punkt.
 func _draw_dot_ring(pos: Vector2, radius: float, color: Color, px: float) -> void:
 	draw_arc(pos, radius, 0.0, TAU, 16, color, 1.5 * px, true)
+
+
+## Position der Schattenkopie eines doppelt zählenden Punkts (`radius` = gezeichneter Punktradius).
+func _shadow_position(dot: EnergyDot, radius: float) -> Vector2:
+	return dot.position + Vector2(radius, -radius) * DOUBLE_OFFSET

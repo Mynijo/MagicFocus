@@ -30,6 +30,8 @@ var cast_elapsed := 0.0
 var cast_total := 0.0
 ## true, solange er auf Mana für den nächsten Spell wartet (für das Log)
 var waiting_for_mana := false
+## Life Rewind: Sekunden bis zum Zurücksetzen (Stacks von &"life_rewind" = gespeichertes Leben)
+var rewind_time_left := 0.0
 
 
 ## Magier aus gespeicherten Foki; ungültige Foki werden übersprungen und in `warnings` gemeldet.

@@ -81,6 +81,15 @@ Kommunikation mit dem Nutzer auf **Deutsch**.
 | Mana-Reg | 1 Mana pro s pro Stack, −1 Stack pro s |
 | Armor Break | hebt Armor 1 : 5 auf |
 | Crit | 1 Crit = 1 % Chance, ein Crit macht 200 % Schaden |
+| Perma-Burn | erzeugt pro Stack und Sekunde Burn, baut sich nicht ab, nur Cleanse entfernt ihn |
+| Accelerated Burn | Burn tickt zusätzlich zur halben Sekunde, −1 Stack pro s |
+| Bless | +X Heilung pro Stack bei jeder erhaltenen Heilung, −1 Stack pro Heilung |
+| Thorns | X Gegenschaden pro Stack bei jedem erhaltenen Spell-Treffer, −1 Stack pro Treffer |
+| Mana Absorption | +X Mana pro Stack bei jedem erhaltenen Spell-Treffer, −1 Stack pro Treffer |
+| Damage Reduction | halbiert den nächsten gegnerischen Spell (alle Treffer), −1 Stack pro Spell |
+| Life Rewind | speichert das Leben, nach 10 s wird es darauf gesetzt (auch nach unten); Tod ist Tod |
+| Cleanse / Dispel | Spell-Werte: entfernen alle Debuffs bzw. Buffs des Ziels (`Combat.DEBUFFS`, `Combat.BUFFS`) |
+| Mehrfach-Treffer | Spell-Wert `hits`: Schaden gilt pro Treffer, jeder Treffer würfelt Crit, löst Thorns/Mana Absorption aus |
 
 ## Befehle
 
@@ -111,12 +120,16 @@ godot --path . res://tests/arena_snapshot.tscn --write-movie out.png --quit-afte
 
 ## Spell-Paket vom 2026-11-26 (Vorgabe des Nutzers, in Etappen)
 
-Etappe 1 (Systemänderungen) ist umgesetzt: Power Transfer, Ziel durch Hauptgravur, Slowed/Hasted nur nächster Cast, Aktivierungsbedingungen, Schattenkopie. Offen:
+Etappe 1 (Systemänderungen) und Etappe 2 (neue Status im Kampf, Werte in `CombatRules`) sind umgesetzt. Offen:
 
-- **Etappe 2 – neue Status:** Perma-Burn (Debuff, erzeugt jede Sekunde X Burn), Bless (+X Heilung pro Heilung), Thorns (X Gegenschaden pro Spell-Treffer), Mana Absorption (X Mana pro erhaltenem Treffer), Life Rewind (speichert HP, setzt nach 10 s zurück), Damage Reduction (halbiert den nächsten Spell-Schaden). Dazu Mehrfach-Treffer, Cleanse (eigene Debuffs weg), Dispel (gegnerische Buffs weg), Accelerated Burn.
 - **Etappe 3 – Hauptgravuren:** Meteor, Fire Rain (beide), Permanent Burn; Water Rain (beide), Cleanse, Bless, Life Rewind; Dispel, Thunderstorm (1 Treffer pro 50 Blitz-Punkte); Bulwark (ab 50 Erd-Punkte, viel Armor), Damage Reduction; Accelerated Burn (Luft + Feuer), Mana Absorption (Wasser + Erde).
 - **Etappe 4 – Nebengravuren:** Echo (Spell erneut, Mana erneut, keine Cast-Zeit), Mana Efficiency / Quick Cast (Wasser + Luft, flache Werte), Radius Expansion (Erde, Radius des Hauptgems pro Erd-Punkt; braucht 2. Auswertungsdurchlauf), Thorns (Erde).
 - **Etappe 5 – Multiplikator-Gravur:** neue Gem-Form (klein/mittel), Sektor wie andere Gems, äußerer Radius 0,8 × Größenradius mit ×1, innerer 0,3 × mit ×2.
+- **Paket 2 (Nutzer, 2026-11-26) – Status:** Critical Chance (Buff, +1 % Crit pro Stack auf eigene Spells, **bleibt bis zum nächsten Crit**, dann verbraucht), Blood Thinner (Debuff, Bleed tickt doppelt so oft), Cauterized (Debuff, **entsteht 1 : 1 aus Bleed + Burn**: je 1 Bleed und 1 Burn werden zu 1 Cauterized; verhindert die nächste Heilung, 1 Stack pro Heilung), Max Health (Buff, +X maximales Leben pro Stack), Rotten (Debuff, −1 maximales Leben pro Stack).
+- **Paket 2 – Hauptgravuren:** Critical Chance (Feuer), Blood Thinner (Wasser + Erde), Vampire (Wasser, Leben-Reg in Höhe der **Bleed-Stacks des Gegners**), Max Health (Wasser), Rot (Erde).
+- **Paket 2 – Nebengravuren:** Cleanse (Wasser), Regeneration (Wasser, Leben-Reg), Dispel (Blitz), Critical Damage (Blitz, erhöht den Crit-Schaden des Spells direkt, kein Status), Slow (Luft, Slowed auf das Spellziel).
+- **Paket 2 – Bedingungen:** Spieler/Gegner hat mehr oder weniger als X Stacks eines Status.
+- **Paket 2 – danach (Reihenfolge: erst alle Spells):** Glossar-Seite (alle Foki, Gems, Gravuren, Status mit Werten), Gravur-Editor und Fokus-Editor (Werte im Spiel bearbeiten), fehlende Assets (Symbole) auflisten und einbauen.
 - **Grundsatz:** Status- und Kampfwerte **flach**, nicht in Prozent (außer wo der Nutzer Prozent vorgibt, z. B. Damage Reduction 50 %).
 - **Entschieden:** Dodge (Status und Hauptgravur) entfällt. Perma-Burn baut sich nicht ab (pro Stack und Sekunde 1 Burn), nur Cleanse entfernt ihn. Accelerated Burn = doppelte Tick-Frequenz (gleicher Gesamtschaden, halbe Zeit). Life Rewind: Tod ist Tod; nach 10 s wird das Leben auf den gespeicherten Wert gesetzt (auch nach unten).
 - **Noch zu entscheiden:** Echo-Schwellen. Neue Gravuren brauchen Symbole (Assets).

@@ -62,6 +62,7 @@ func _init() -> void:
 		test_combat_targets_and_next_cast,
 		test_combat_conditions,
 		test_power_transfer_half_radius,
+		test_combat_new_statuses,
 		test_freeze_counts_water_and_air,
 		test_focus_shapes,
 		test_allowed_elements,
@@ -1011,7 +1012,7 @@ func test_gems_outside_other_radius() -> void:
 
 
 func test_glossary_and_linkify() -> void:
-	check(content.glossary.size() == 5 + 13, "5 Elemente + 13 Status als Begriffe, waren %d" % content.glossary.size())
+	check(content.glossary.size() == 5 + 22, "5 Elemente + 22 Status/Effekte als Begriffe, waren %d" % content.glossary.size())
 	for term in content.glossary:
 		check(term.text != "" and not term.words.is_empty(), "Begriff %s braucht Text und Wörter" % term.id)
 	var tips := TermTooltips.new()
@@ -1276,3 +1277,63 @@ func test_power_transfer_half_radius() -> void:
 	transfer.radius_factor = 0.5
 	var r := evaluate(lab(main, engraving(&"magischer_bolzen"), gem, transfer), dots)
 	check(r.gem_results[1].base_count == 8, "Radius 40 statt 80: 8 von 10 Punkten, waren %d" % r.gem_results[1].base_count)
+
+
+# --- Etappe 2: neue Status ----------------------------------------------------
+
+func test_combat_new_statuses() -> void:
+	var rules := CombatRules.new()
+	# Perma-Burn: erzeugt pro Sekunde Burn, baut sich nicht ab
+	var c := duel([], [])
+	c.mages[1].add_stacks(&"perma_burn", 2)
+	c._pulse(1)
+	c._pulse(1)
+	check(c.mages[1].stacks(&"perma_burn") == 2 and c.mages[1].stacks(&"burn") > 0, "Perma-Burn bleibt und erzeugt Burn")
+	# Cleanse entfernt eigene Debuffs, Dispel gegnerische Buffs
+	c = duel([make_spell({ &"cleanse": 1 }, 1.0, 10.0, EngravingDef.Target.SELF), make_spell({ &"dispel": 1 })], [])
+	c.mages[0].add_stacks(&"perma_burn", 2)
+	c.mages[0].add_stacks(&"armor", 5)
+	c.mages[1].add_stacks(&"thorns", 3)
+	c.mages[1].add_stacks(&"burn", 4)
+	c._apply_spell(0, 0)
+	check(c.mages[0].stacks(&"perma_burn") == 0 and c.mages[0].stacks(&"armor") == 5, "Cleanse: Debuffs weg, Buffs bleiben")
+	c._apply_spell(0, 1)
+	check(c.mages[1].stacks(&"thorns") == 0 and c.mages[1].stacks(&"burn") == 4, "Dispel: Buffs weg, Debuffs bleiben")
+	# Bless: +X Heilung pro Stack, 1 Stack pro Heilung
+	c = duel([make_spell({ &"heal": 10 }, 1.0, 10.0, EngravingDef.Target.SELF)], [])
+	c.mages[0].hp = 100.0
+	c.mages[0].add_stacks(&"bless", 2)
+	c._apply_spell(0, 0)
+	check(is_equal_approx(c.mages[0].hp, 110.0 + 2 * rules.bless_heal) and c.mages[0].stacks(&"bless") == 1, "Bless erhöht Heilung")
+	# Thorns und Mana Absorption reagieren auf Spell-Treffer
+	c = duel([make_spell({ &"damage": 10 })], [])
+	c.mages[1].add_stacks(&"thorns", 2)
+	c.mages[1].add_stacks(&"mana_absorption", 3)
+	c.mages[1].mana = 0.0
+	c._apply_spell(0, 0)
+	check(is_equal_approx(c.mages[0].hp, rules.max_hp - 2 * rules.thorns_damage), "Thorns: Gegenschaden")
+	check(is_equal_approx(c.mages[1].mana, 3 * rules.mana_absorption_mana), "Mana Absorption: Mana pro Treffer")
+	check(c.mages[1].stacks(&"thorns") == 1 and c.mages[1].stacks(&"mana_absorption") == 2, "Je 1 Stack verbraucht")
+	check(is_equal_approx(c.statistics[1].damage.get("Thorns", 0.0), 2 * rules.thorns_damage), "Thorns in der Statistik des Trägers")
+	# Damage Reduction halbiert den nächsten Spell (alle Treffer), Mehrfach-Treffer
+	c = duel([make_spell({ &"damage": 10, &"hits": 3 })], [])
+	c.mages[1].add_stacks(&"damage_reduction", 1)
+	c._apply_spell(0, 0)
+	check(is_equal_approx(c.mages[1].hp, rules.max_hp - 3 * 10 * rules.damage_reduction_factor), "3 Treffer, halbiert, HP %s" % c.mages[1].hp)
+	c._apply_spell(0, 0)
+	check(is_equal_approx(c.mages[1].hp, rules.max_hp - 15 - 30), "Danach wieder voller Schaden")
+	# Accelerated Burn: Burn tickt doppelt so oft
+	c = duel([], [])
+	c.mages[1].add_stacks(&"burn", 4)
+	c.mages[1].add_stacks(&"accelerated_burn", 5)
+	for k in 10:
+		c.step()  # 1 Sekunde
+	check(c.mages[1].stacks(&"burn") == 2, "Zwei Burn-Ticks pro Sekunde, Burn %d" % c.mages[1].stacks(&"burn"))
+	# Life Rewind: nach 10 s Leben auf gespeicherten Wert (auch nach unten)
+	c = duel([make_spell({ &"life_rewind": 1 }, 1.0, 10.0, EngravingDef.Target.SELF)], [])
+	c.mages[0].hp = 300.0
+	c._apply_spell(0, 0)
+	c.mages[0].hp = 500.0
+	for k in int(rules.life_rewind_seconds):
+		c._pulse(0)
+	check(is_equal_approx(c.mages[0].hp, 300.0) and c.mages[0].stacks(&"life_rewind") == 0, "Life Rewind setzt auf 300 zurück, HP %s" % c.mages[0].hp)
