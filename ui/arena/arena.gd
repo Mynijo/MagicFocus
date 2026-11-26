@@ -20,6 +20,8 @@ const STATUS_TERMS := {
 ## Auswahl bleibt erhalten, wenn man zwischendurch in die Werkstatt wechselt.
 static var _saved_slots := [[], []]
 static var _saved_names := ["Magier links", "Magier rechts"]
+## pro Seite und Slot: {type, percent, status}
+static var _saved_conditions := [[{}, {}, {}, {}, {}], [{}, {}, {}, {}, {}]]
 
 var tooltips: TermTooltips
 var combat: Combat
@@ -29,6 +31,7 @@ var _shown_events := 0
 
 var _name_edits: Array[LineEdit] = []
 var _slot_selects: Array = [[], []]  # pro Seite: Array[OptionButton]
+var _slot_conditions: Array = [[], []]  # pro Seite: Bedienelemente der Bedingung je Slot
 var _hp_bars: Array[ProgressBar] = []
 var _hp_labels: Array[Label] = []
 var _mana_bars: Array[ProgressBar] = []
@@ -143,7 +146,10 @@ func _build_side(side: int) -> Control:
 		_small(box, "Noch keine gespeicherten Foki. Speichere zuerst welche in der Werkstatt.")
 	_small(box, "Spells in Cast-Reihenfolge (bis zu %d):" % CombatMage.MAX_SPELLS)
 	for slot in CombatMage.MAX_SPELLS:
+		var row := HBoxContainer.new()
+		box.add_child(row)
 		var select := OptionButton.new()
+		select.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		select.add_item(EMPTY_SLOT)
 		for n in names:
 			select.add_item(n)
@@ -153,8 +159,9 @@ func _build_side(side: int) -> Control:
 				if select.get_item_text(i) == saved[slot]:
 					select.select(i)
 		select.item_selected.connect(func(_i: int) -> void: _remember_slots(side))
-		box.add_child(select)
+		row.add_child(select)
 		_slot_selects[side].append(select)
+		_slot_conditions[side].append(_build_condition(row, side, slot))
 
 	_hp_bars.append(_bar(box, Color(0.75, 0.25, 0.25)))
 	_hp_labels.append(_bar_label(_hp_bars.back()))
@@ -228,7 +235,9 @@ func _start_combat() -> void:
 	for side in 2:
 		var foci: Array[FocusInstance] = []
 		var names := PackedStringArray()
-		for select: OptionButton in _slot_selects[side]:
+		var conditions: Array[SpellCondition] = []
+		for slot in _slot_selects[side].size():
+			var select: OptionButton = _slot_selects[side][slot]
 			var focus_name := select.get_item_text(select.selected)
 			if focus_name == EMPTY_SLOT:
 				continue
@@ -236,7 +245,8 @@ func _start_combat() -> void:
 			if focus != null:
 				foci.append(focus)
 				names.append(focus_name)
-		mages.append(CombatMage.from_foci(_name_edits[side].text, foci, names, CONTENT.elements, warnings))
+				conditions.append(_condition_of(_slot_conditions[side][slot]))
+		mages.append(CombatMage.from_foci(_name_edits[side].text, foci, names, CONTENT.elements, warnings, conditions))
 	combat = Combat.new(mages[0], mages[1], RULES, int(_seed.value))
 	_accumulator = 0.0
 	_shown_events = 0
@@ -354,3 +364,54 @@ func _status_text(mage: CombatMage) -> String:
 	if parts.is_empty():
 		return "[color=#777777]keine Status[/color]"
 	return tooltips.linkify("   ".join(parts))
+
+
+# --- Aktivierungsbedingungen ------------------------------------------------
+
+## Bedingung eines Slots: Art, dazu je nach Art Prozent oder Status.
+## Gibt die Bedienelemente zurück: {type: OptionButton, percent: SpinBox, status: OptionButton}
+func _build_condition(row: HBoxContainer, side: int, slot: int) -> Dictionary:
+	var saved: Dictionary = _saved_conditions[side][slot]
+	var type_select := OptionButton.new()
+	for type_name in SpellCondition.TYPE_NAMES:
+		type_select.add_item(type_name)
+	type_select.select(int(saved.get("type", SpellCondition.Type.ALWAYS)))
+	type_select.tooltip_text = "Wann darf dieser Spell gecastet werden? Sonst wird er übersprungen."
+	row.add_child(type_select)
+	var percent := SpinBox.new()
+	percent.min_value = 1
+	percent.max_value = 99
+	percent.suffix = "%"
+	percent.value = float(saved.get("percent", 50.0))
+	row.add_child(percent)
+	var status := OptionButton.new()
+	for id: StringName in Combat.STATUS_NAMES:
+		status.add_item(Combat.STATUS_NAMES[id])
+		status.set_item_metadata(status.item_count - 1, id)
+		if id == StringName(saved.get("status", "burn")):
+			status.select(status.item_count - 1)
+	row.add_child(status)
+	var controls := { type = type_select, percent = percent, status = status }
+	var on_change := func(_v: Variant = null) -> void:
+		_update_condition_controls(controls)
+		_saved_conditions[side][slot] = {
+			type = type_select.selected, percent = percent.value,
+			status = String(status.get_item_metadata(status.selected)),
+		}
+	type_select.item_selected.connect(on_change)
+	percent.value_changed.connect(on_change)
+	status.item_selected.connect(on_change)
+	_update_condition_controls(controls)
+	return controls
+
+
+func _update_condition_controls(controls: Dictionary) -> void:
+	var type: int = (controls.type as OptionButton).selected
+	(controls.percent as SpinBox).visible = SpellCondition.uses_percent(type)
+	(controls.status as OptionButton).visible = SpellCondition.uses_status(type)
+
+
+func _condition_of(controls: Dictionary) -> SpellCondition:
+	var status_select: OptionButton = controls.status
+	return SpellCondition.create((controls.type as OptionButton).selected, (controls.percent as SpinBox).value,
+		status_select.get_item_metadata(status_select.selected))

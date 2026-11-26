@@ -11,6 +11,9 @@ const MAIN := GemDef.Role.MAIN
 const MINOR := GemDef.Role.MINOR
 const SPITZ := GemDef.Angle.SPITZ
 const GROB := GemDef.Angle.GROB
+const ENEMY := EngravingDef.Target.ENEMY
+const SELF := EngravingDef.Target.SELF
+const BOTH := EngravingDef.Target.BOTH
 
 ## Je Rolle und Größe (klein, mittel, groß): Radius, max. neutrale Essenz, max. Essenzen.
 ## Daraus entstehen alle Kombinationen mit Grob und Spitz,
@@ -51,19 +54,19 @@ const ENGRAVINGS := [
 	{ id = &"slow", name = "Slow", role = MAIN, el = &"air",
 		desc = "1 Slow pro 20 Punkte",
 		rules = [["P", 20, &"slow", 1.0]] },
-	{ id = &"heal", name = "Heal", role = MAIN, el = &"water",
+	{ id = &"heal", name = "Heal", role = MAIN, el = &"water", target = SELF,
 		desc = "5 Heilung pro Punkt",
 		rules = [["P", 1, &"heal", 5.0]] },
-	{ id = &"schutz", name = "Schutz", role = MAIN, el = &"earth",
+	{ id = &"schutz", name = "Schutz", role = MAIN, el = &"earth", target = SELF,
 		desc = "5 Armor pro Punkt",
 		rules = [["P", 1, &"armor", 5.0]] },
-	{ id = &"hasted", name = "Hasted", role = MAIN, el = &"air",
+	{ id = &"hasted", name = "Hasted", role = MAIN, el = &"air", target = SELF,
 		desc = "1 Hasted pro 20 Punkte",
 		rules = [["P", 20, &"hasted", 1.0]] },
-	{ id = &"leben_reg", name = "Leben-Reg", role = MAIN, el = &"water",
+	{ id = &"leben_reg", name = "Leben-Reg", role = MAIN, el = &"water", target = SELF,
 		desc = "1 Leben-Reg pro 2 Punkte",
 		rules = [["P", 2, &"life_regen", 1.0]] },
-	{ id = &"mana_reg", name = "Mana-Reg", role = MAIN, el = &"lightning",
+	{ id = &"mana_reg", name = "Mana-Reg", role = MAIN, el = &"lightning", target = SELF,
 		desc = "1 Mana-Reg pro 2 Punkte",
 		rules = [["P", 2, &"mana_regen", 1.0]] },
 	{ id = &"feuerball", name = "Feuerball", role = MAIN, el = &"fire",
@@ -82,8 +85,9 @@ const ENGRAVINGS := [
 		desc = "+1 Schaden pro Punkt, 1 Schock pro 10 Punkte aus Blitz-Essenz",
 		rules = [["P", 1, &"damage", 1.0], [&"lightning", 10, &"shock", 1.0]] },
 	# --- Nebengravuren ---
-	{ id = &"standard", name = "Standard", role = MINOR,
-		desc = "Gibt seine neutrale Essenz und Essenzen an das Hauptgem weiter. Dort zählen sie nach den Regeln des Hauptgems",
+	# ID "standard" bleibt (gespeicherte Foki), Name ist Power Transfer
+	{ id = &"standard", name = "Power Transfer", role = MINOR, radius = 0.5,
+		desc = "Gibt seine neutrale Essenz und Essenzen an das Hauptgem weiter. Dort zählen sie nach den Regeln des Hauptgems. Das Gem sammelt nur mit halbem Radius",
 		transfer = true, rules = [] },
 	{ id = &"crit", name = "Crit", role = MINOR, el = &"fire",
 		desc = "+1 % Crit-Chance pro 2 Punkte. Ein Crit macht 200 % Schaden",
@@ -205,6 +209,8 @@ func _init() -> void:
 		engraving.description = data.desc + _points_text(data, content.elements)
 		engraving.base_stats = data.get("stats", {})
 		engraving.transfer_to_main = data.get("transfer", false)
+		engraving.radius_factor = data.get("radius", 1.0)
+		engraving.target = data.get("target", ENEMY)
 		for r: Array in data.rules:
 			engraving.rules.append(_rule(r))
 		var path := ENGRAVING_DIR + String(engraving.id) + ".tres"

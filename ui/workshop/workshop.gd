@@ -396,7 +396,7 @@ func _update_placing() -> void:
 	var lines := PackedStringArray([engraving.description])
 	if gem != null:
 		lines.append("%s: Radius %d, %s, Essenzen zählen ×%s, max. %d neutrale Essenz und %d Essenzen" % [
-			gem.display_name, int(gem.radius), "Innenwinkel" if gem.is_inner() else "Außenwinkel",
+			gem.display_name, int(PlacedGem.radius_of(gem, engraving)), "Innenwinkel" if gem.is_inner() else "Außenwinkel",
 			_format_number(gem.get_multiplier()), gem.max_base, gem.max_element])
 	_gem_info.text = "[color=#b3b3bf]%s[/color]" % tooltips.linkify("\n".join(lines))
 	_canvas.update_preview()

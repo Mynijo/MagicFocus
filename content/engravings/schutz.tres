@@ -20,3 +20,4 @@ element_ids = Array[StringName]([&"earth"])
 icon = ExtResource("2_40nqo")
 description = "5 Armor pro Punkt. Punkte: neutrale Essenz 1, Erde-Essenz 5, andere Essenz 0"
 rules = Array[ExtResource("3_bshoe")]([SubResource("Resource_npovv")])
+target = 1

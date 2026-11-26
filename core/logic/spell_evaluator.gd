@@ -169,7 +169,7 @@ static func _collect(order: Array[GemResult], result: SpellResult) -> void:
 		for dot in result.dots:
 			if claimed.has(dot):
 				continue
-			if FocusGeometry.in_sector(dot.position, center, gem.radius, gr.sector_start, gr.sector_sweep):
+			if FocusGeometry.in_sector(dot.position, center, gr.placed.get_radius(), gr.sector_start, gr.sector_sweep):
 				candidates.append(dot)
 		candidates.sort_custom(func(a: EnergyDot, b: EnergyDot) -> bool:
 			return a.position.distance_squared_to(center) < b.position.distance_squared_to(center))

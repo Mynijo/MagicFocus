@@ -40,16 +40,16 @@ Kommunikation mit dem Nutzer auf **Deutsch**.
 - **Winkel:** Spitz sammelt im Innenwinkel der Ecke, Grob im Außenwinkel („innen“ = zum Polygoninneren, auch bei konkaven Formen).
 - **Multiplikator:** Spitze Gems zählen eingesammelte Essenzen pauschal **×2** (`GemDef.SPITZ_MULTIPLIER`), grobe ×1. Das gilt auch für Hauptgems. Radius und Kapazität wirken nicht auf den Multiplikator.
 - **Einsammeln:** zuerst das Hauptgem, dann die Nebengems in **Platzierungsreihenfolge**. Jedes nimmt die nächstgelegenen freien Punkte bis zu seiner Kapazität (N-E und E getrennt). Jeder Punkt wird nur einmal eingesammelt. Danach: effektiv = eingesammelt × Multiplikator.
-- **Übertragen:** Gems mit der Gravur **Standard** geben ihre effektiven N-E und E an das Hauptgem. Der Multiplikator des Hauptgems wirkt nur auf das, was es selbst einsammelt.
+- **Übertragen:** Gems mit der Gravur **Power Transfer** (ID `standard`) geben ihre effektiven N-E und E an das Hauptgem, sammeln dafür aber nur mit **halbem Radius** (`EngravingDef.radius_factor`, wirksamer Radius über `PlacedGem.get_radius()`). Der Multiplikator des Hauptgems wirkt nur auf das, was es selbst einsammelt.
 - **Punkte und Element-Faktor:** Gravuren rechnen mit **Punkten** = N-E + E × Faktor des Elements (`ElementDef.factor`, zurzeit überall 5). Eine Gravur zählt **nur E ihrer Elemente** (`EngravingDef.element_ids`, z. B. Heal = Wasser), **fremde E zählen gar nicht**. **Gravuren ohne Element zählen keine E** (nur N-E). Der **Magische Bolzen hat alle Elemente**. Jede Gravur hat **eine Rate pro Wert** (z. B. Heal 5 pro Punkt); Regeln mit Quelle `POINTS`. Die Beschreibung bekommt im Generator automatisch den Zusatz „Punkte: …“.
 - **Status** (Burn, Nass, Bleed, Armor Break, Schock) entsteht **nur aus E des passenden Elements** (gewichtet), nie aus N-E. Pro Status gibt es eine eigene Nebengravur (Burn, Nass, Bleed, Armor Break, Schock) mit dem passenden Element.
-- Die Hauptgravur bestimmt die Art des Spells. Gems verfärben sich nicht; es gibt keine Resistenz und nur einen Schadenstyp. Standard überträgt rohe N-E und E; das Hauptgem wendet seine Regeln (und seinen Elementfilter) an.
+- Die Hauptgravur bestimmt die Art des Spells. Gems verfärben sich nicht; es gibt keine Resistenz und nur einen Schadenstyp. Power Transfer überträgt rohe N-E und E; das Hauptgem wendet seine Regeln (und seinen Elementfilter) an.
 - **Tooltips:** Element- und Status-Wörter in Texten sind Begriffe (`CraftingContent.glossary`, Texte in `STATUS_TERMS` im Generator, Element-Texte automatisch). Hovern zeigt den Tooltip, nach ca. 1 s ist er festgepinnt; Begriffe darin öffnen weitere Tooltips. Neue UI-Texte mit Begriffen: `tooltips.linkify()` und Label mit `tooltips.register()` anmelden.
-- In der Werkstatt werden E-Punkte größer gezeichnet als N-E (`FocusCanvas.ELEMENT_DOT_SCALE`), die Gem-Liste zeigt „Punkte für die Gravur“. Beim Darüberfahren (und Ziehen) zeigt ein Gem seine eingesammelten Punkte mit Linien und „Sammelt: …“.
+- In der Werkstatt werden E-Punkte größer gezeichnet als N-E (`FocusCanvas.ELEMENT_DOT_SCALE`); doppelt zählende Punkte (Spitz) haben eine versetzte Schattenkopie, die Gem-Liste zeigt „Punkte für die Gravur“. Beim Darüberfahren (und Ziehen) zeigt ein Gem seine eingesammelten Punkte mit Linien und „Sammelt: …“.
 - **Crit:** 1 Crit = 1 % Crit-Chance. Ein Crit macht 200 % Schaden (Auswirkung erst im Kampf, M6).
 - **Speicherstände** liegen als JSON in `user://foci/` und enthalten nur IDs (`FocusInstance.to_dict()` / `from_dict()`). Unbekannte IDs werden beim Laden entfernt und gemeldet; fehlt ein Gem, wird der Kreis gelöst. **IDs von Gems, Gravuren, Foki und Elementen nicht leichtfertig umbenennen**, sonst gehen gespeicherte Gems verloren.
 - **Hauptgravuren** (Element in Klammern): Magischer Bolzen (alle), Freeze (Wasser und Luft, 100 Nass → 1 Eis), Slow (Luft), Heal (Wasser), Schutz (Erde), Hasted (Luft), Leben-Reg (Wasser), Mana-Reg (Blitz), Feuerball (Feuer, Burn), Wasser-Detonation (Wasser, Nass), Luftklinge (Luft, Bleed), Kanone (Erde, Armor Break), Blitzschlag (Blitz, Schock).
-- **Nebengravuren:** Standard (Übertragen, keins), Crit (Feuer), Mana-Reduktion (Wasser), Cast-Speed (Luft), Armor (Erde), Mana Burn (Blitz), Burn (Feuer), Nass (Wasser), Bleed (Luft), Armor Break (Erde), Schock (Blitz). Die sechs Status-Nebengravuren (inkl. Mana Burn) zählen keine N-E, 1 Status pro 5 Punkte.
+- **Nebengravuren:** Power Transfer (Übertragen, halber Radius, keins), Crit (Feuer), Mana-Reduktion (Wasser), Cast-Speed (Luft), Armor (Erde), Mana Burn (Blitz), Burn (Feuer), Nass (Wasser), Bleed (Luft), Armor Break (Erde), Schock (Blitz). Die sechs Status-Nebengravuren (inkl. Mana Burn) zählen keine N-E, 1 Status pro 5 Punkte.
 - **Cast-Zeit** = 1 s pro Gem − `cast_time_reduction` (mind. 0,5 s). **Mana** = Kantenlänge × 0,1 − `mana_reduction` (mind. 1).
 - **Foki** sind feste Typen: Form (Kreis, Stern, Tropfen), Gem-Kapazität (klein 3, mittel 3–5, groß 5–7, sehr groß bis 10), **Gesamtkapazität** `max_dots` für N-E und E zusammen, ein **Limit für alle E zusammen** `max_element_dots` (nicht pro Element) und `allowed_elements` (z. B. Feuer-Fokus nur Feuer, neutraler Fokus 0 E). **N-E wird nicht eingestellt**, sondern füllt immer bis zur Gesamtkapazität auf (`FocusInstance.get_base_count()`). Upgrades durch den Spieler sind vorerst nicht vorgesehen.
 - Der Kampf ist ausschließlich 1-gegen-1, es gibt keinen Flächenschaden und keine Mehrfachziele.
@@ -57,8 +57,8 @@ Kommunikation mit dem Nutzer auf **Deutsch**.
 ## Kampf (M6, umgesetzt in `core/combat/`)
 
 - 1 gegen 1, Tick 0,1 s, deterministisch über einen Seed (Crit wird gewürfelt). Gekämpft wird mit gespeicherten Foki (`FocusStore`), je Magier bis zu 5 Spells.
-- **Feste Reihenfolge:** Spells werden der Reihe nach im Kreis gecastet; fehlt Mana, wartet der Magier. **Mana wird beim Cast-Start bezahlt** (löst Schock aus). Cast-Zeit = Spell-Cast-Zeit + Slowed − Hasted (beim Start festgelegt, mind. 0,5 s).
-- **Ziele:** Schaden, Burn, Bleed, Nass, Schock, Armor Break, Slowed, Mana Burn gehen auf den Gegner; Heilung, Armor, Hasted, Leben-Reg, Mana-Reg auf den Caster.
+- **Feste Reihenfolge mit Bedingungen:** Spells werden der Reihe nach im Kreis gecastet. Jeder Spell hat eine Aktivierungsbedingung (`SpellCondition`: Immer, Einmal, eigenes/gegnerisches Leben unter/über X %, selbst/Gegner hat Status); ist sie nicht erfüllt, wird er übersprungen. Fehlt Mana, wartet der Magier. **Mana wird beim Cast-Start bezahlt** (löst Schock aus). Cast-Zeit = Spell-Cast-Zeit + Slowed − Hasted (mind. 0,5 s); **Slowed und Hasted gelten nur für diesen Cast und werden verbraucht** (kein Abbau über Zeit).
+- **Ziel:** Die Hauptgravur bestimmt das Ziel (`EngravingDef.target`: Gegner, selbst, beide). **Alle Werte des Spells, auch die der Nebengravuren, gehen auf dieses Ziel** (Feuerball + Armor-Nebengem gibt dem Gegner Armor). Selbst-Ziel: Heal, Schutz, Hasted, Leben-Reg, Mana-Reg.
 - **Eis pausiert den Cast** (kein Abbruch). Freeze wandelt nach dem Treffer je `freeze_conversion` Nass in 1 Eis.
 - Status wirken einmal pro Sekunde (Puls), Stacks sind ganze Zahlen; auch die Mana-Reg kommt im Puls. Armor Break wirkt sofort (Rest verfällt).
 - Ende: ein Magier ohne Leben (beide gleichzeitig = unentschieden) oder Zeitlimit (unentschieden).
@@ -69,8 +69,8 @@ Kommunikation mit dem Nutzer auf **Deutsch**.
 | Status | Wirkung |
 |---|---|
 | Bleed | X Schaden pro s, −1 Stack pro s |
-| Slowed | X s mehr Cast-Zeit, −1 Stack pro s, max. 10, hebt Hasted 1 : 1 auf |
-| Hasted | X s weniger Cast-Zeit, −1 Stack pro s, max. 10, hebt Slowed 1 : 1 auf |
+| Slowed | X s mehr Cast-Zeit beim nächsten Cast, wird dabei verbraucht, max. 10, hebt Hasted 1 : 1 auf |
+| Hasted | X s weniger Cast-Zeit beim nächsten Cast, wird dabei verbraucht, max. 10, hebt Slowed 1 : 1 auf |
 | Mana Burn | −X Mana-Reg pro s, −1 Stack pro Mana-Reg pro s |
 | Armor | verhindert X Schaden, −1 pro verhindertem Schaden |
 | Schock | 1 Schaden pro verbrauchtem Mana (max. = Stacks), −1 pro verbrauchtem Mana |
@@ -96,7 +96,7 @@ godot --headless --path . -s res://tools/prepare_assets.gd
 # Tests (Exit-Code 0 = grün)
 godot --headless --path . -s res://tests/run_tests.gd
 # Render-Check der Werkstatt (PNG-Frames)
-godot --path . res://tests/preview_snapshot.tscn --write-movie out.png --quit-after 4 --fixed-fps 30 -- [--focus=<id>] [--place] [--place-at=x,y] [--all-elements] [--tooltip] [--details] [--scroll] [--hover] [--replace]
+godot --path . res://tests/preview_snapshot.tscn --write-movie out.png --quit-after 4 --fixed-fps 30 -- [--focus=<id>] [--place] [--place-at=x,y] [--all-elements] [--tooltip] [--details] [--scroll] [--hover[=N]] [--replace]
 godot --path . --write-movie out.png --quit-after 3 --fixed-fps 30 -- --example
 # Render-Check der Arena (Beispiel-Magier, nicht aus user://)
 godot --path . res://tests/arena_snapshot.tscn --write-movie out.png --quit-after 4 --fixed-fps 30 -- [--seconds=N] [--stats]
@@ -108,6 +108,18 @@ godot --path . res://tests/arena_snapshot.tscn --write-movie out.png --quit-afte
 - Design-Fragen als **Multiple Choice** stellen (AskUserQuestion), mit Empfehlung.
 - **Commits nur nach ausdrücklicher Freigabe**, nie pushen ohne Nachfrage. Autor wie in den bisherigen Commits.
 - Nach Änderungen die Tests ausführen. Bei UI-Änderungen zusätzlich ein Bild rendern und ansehen.
+
+## Spell-Paket vom 2026-11-26 (Vorgabe des Nutzers, in Etappen)
+
+Etappe 1 (Systemänderungen) ist umgesetzt: Power Transfer, Ziel durch Hauptgravur, Slowed/Hasted nur nächster Cast, Aktivierungsbedingungen, Schattenkopie. Offen:
+
+- **Etappe 2 – neue Status:** Perma-Burn (Debuff, erzeugt jede Sekunde X Burn), Bless (+X Heilung pro Heilung), Thorns (X Gegenschaden pro Spell-Treffer), Mana Absorption (X Mana pro erhaltenem Treffer), Life Rewind (speichert HP, setzt nach 10 s zurück), Damage Reduction (halbiert den nächsten Spell-Schaden). Dazu Mehrfach-Treffer, Cleanse (eigene Debuffs weg), Dispel (gegnerische Buffs weg), Accelerated Burn.
+- **Etappe 3 – Hauptgravuren:** Meteor, Fire Rain (beide), Permanent Burn; Water Rain (beide), Cleanse, Bless, Life Rewind; Dispel, Thunderstorm (1 Treffer pro 50 Blitz-Punkte); Bulwark (ab 50 Erd-Punkte, viel Armor), Damage Reduction; Accelerated Burn (Luft + Feuer), Mana Absorption (Wasser + Erde).
+- **Etappe 4 – Nebengravuren:** Echo (Spell erneut, Mana erneut, keine Cast-Zeit), Mana Efficiency / Quick Cast (Wasser + Luft, flache Werte), Radius Expansion (Erde, Radius des Hauptgems pro Erd-Punkt; braucht 2. Auswertungsdurchlauf), Thorns (Erde).
+- **Etappe 5 – Multiplikator-Gravur:** neue Gem-Form (klein/mittel), Sektor wie andere Gems, äußerer Radius 0,8 × Größenradius mit ×1, innerer 0,3 × mit ×2.
+- **Grundsatz:** Status- und Kampfwerte **flach**, nicht in Prozent (außer wo der Nutzer Prozent vorgibt, z. B. Damage Reduction 50 %).
+- **Entschieden:** Dodge (Status und Hauptgravur) entfällt. Perma-Burn baut sich nicht ab (pro Stack und Sekunde 1 Burn), nur Cleanse entfernt ihn. Accelerated Burn = doppelte Tick-Frequenz (gleicher Gesamtschaden, halbe Zeit). Life Rewind: Tod ist Tod; nach 10 s wird das Leben auf den gespeicherten Wert gesetzt (auch nach unten).
+- **Noch zu entscheiden:** Echo-Schwellen. Neue Gravuren brauchen Symbole (Assets).
 
 ## Offene Punkte
 

@@ -5,24 +5,23 @@ extends RefCounted
 ##
 ## Ablauf pro Tick (rules.tick Sekunden):
 ##   1. Beide Magier: Cast fortsetzen (pausiert bei Eis) oder neuen Cast beginnen.
-##      Spells kommen in fester Reihenfolge; fehlt Mana, wartet der Magier.
-##      Mana wird beim Cast-Start bezahlt (löst Schock aus).
+##      Spells kommen in fester Reihenfolge; Spells mit unerfüllter Bedingung werden
+##      übersprungen; fehlt Mana, wartet der Magier. Mana wird beim Cast-Start
+##      bezahlt (löst Schock aus). Slowed und Hasted wirken auf diesen Cast und
+##      werden dabei verbraucht.
 ##   2. Fertige Spells beider Magier wirken gleichzeitig.
 ##   3. Einmal pro Sekunde: Status-Puls (Bleed, Burn, Leben-Reg, Mana-Reg mit Mana
-##      Burn, Abbau von Slowed, Hasted und Eis).
+##      Burn, Abbau von Eis).
 ##   4. Ende, wenn ein Magier kein Leben mehr hat (beide: unentschieden)
 ##      oder rules.max_duration erreicht ist (unentschieden).
 ##
-## Ziele: Schaden und Status gegen den Gegner (OFFENSIVE_STATUS), Heilung und
-## Buffs auf den Caster (SELF_STATUS).
+## Ziel: Die Hauptgravur bestimmt das Ziel (Gegner, selbst oder beide). Alle Werte
+## des Spells, auch die der Nebengravuren, gehen auf dieses Ziel.
 
-## Wert-ID des Spells -> Status beim Gegner (Slow aus der Gravur wird zu Slowed)
-const OFFENSIVE_STATUS := {
+## Wert-ID des Spells -> Status beim Ziel (Slow aus der Gravur wird zu Slowed)
+const SPELL_STATUS := {
 	&"burn": &"burn", &"bleed": &"bleed", &"wet": &"wet", &"shock": &"shock",
 	&"slow": &"slow", &"mana_burn": &"mana_burn",
-}
-## Wert-ID des Spells -> Status beim Caster
-const SELF_STATUS := {
 	&"armor": &"armor", &"hasted": &"hasted", &"life_regen": &"life_regen", &"mana_regen": &"mana_regen",
 }
 ## Anzeigenamen der Status (entsprechen den Begriffen der Tooltips)
@@ -117,9 +116,9 @@ func _advance(i: int, dt: float) -> int:
 
 func _try_start_cast(i: int) -> void:
 	var mage := mages[i]
-	if mage.spells.is_empty():
+	var index := _next_castable(i)
+	if index < 0:
 		return
-	var index := mage.next_spell
 	var spell := mage.spells[index]
 	if mage.mana < spell.mana_cost:
 		if not mage.waiting_for_mana:
@@ -130,11 +129,34 @@ func _try_start_cast(i: int) -> void:
 	mage.mana -= spell.mana_cost
 	mage.casting = index
 	mage.next_spell = (index + 1) % mage.spells.size()
+	if index < mage.cast_counts.size():
+		mage.cast_counts[index] += 1
 	mage.cast_elapsed = 0.0
 	mage.cast_total = cast_time_for(mage, spell)
 	_count(statistics[i].casts, mage.spell_names[index], 1.0)
 	_log(i, "%s castet %s (%s s)." % [mage.mage_name, mage.spell_names[index], _num(mage.cast_total)])
+	# Slowed und Hasted gelten nur für diesen Cast und werden verbraucht
+	var slowed := mage.remove_stacks(&"slow", mage.stacks(&"slow"))
+	var hasted := mage.remove_stacks(&"hasted", mage.stacks(&"hasted"))
+	var used := PackedStringArray()
+	if slowed > 0:
+		used.append("%d Slowed" % slowed)
+	if hasted > 0:
+		used.append("%d Hasted" % hasted)
+	if not used.is_empty():
+		_log(i, "%s: %s verbraucht." % [mage.mage_name, ", ".join(used)])
 	_trigger_shock(i, spell.mana_cost)
+
+
+## Nächster Spell ab `next_spell`, dessen Bedingung erfüllt ist (sonst -1).
+func _next_castable(i: int) -> int:
+	var mage := mages[i]
+	var count := mage.spells.size()
+	for offset in count:
+		var index := (mage.next_spell + offset) % count
+		if mage.condition_met(index, mages[1 - i]):
+			return index
+	return -1
 
 
 ## Cast-Zeit mit Slowed und Hasted, beim Cast-Start festgelegt.
@@ -145,49 +167,57 @@ func cast_time_for(mage: CombatMage, spell: SpellResult) -> float:
 
 # --- Spells wirken ----------------------------------------------------------
 
+## Ziele eines Spells: Gegner, Caster oder beide (aus der Hauptgravur).
+func targets_of(i: int, spell: SpellResult) -> Array[int]:
+	var target := spell.engraving.target if spell.engraving != null else EngravingDef.Target.ENEMY
+	match target:
+		EngravingDef.Target.SELF:
+			return [i]
+		EngravingDef.Target.BOTH:
+			return [1 - i, i]
+	return [1 - i]
+
+
 func _apply_spell(i: int, index: int) -> void:
 	var caster := mages[i]
-	var j := 1 - i
 	var spell := caster.spells[index]
 	var spell_name := caster.spell_names[index]
-
 	var damage := spell.get_stat(&"damage")
-	if damage > 0.0:
-		var crit := _rng.randf() * 100.0 < spell.get_stat(&"crit")
-		if crit:
-			damage *= rules.crit_multiplier
-			_count(statistics[i].crits, spell_name, 1.0)
-		_damage(j, damage, spell_name + (" (Crit)" if crit else ""), spell_name)
+	var crit := damage > 0.0 and _rng.randf() * 100.0 < spell.get_stat(&"crit")
+	if crit:
+		damage *= rules.crit_multiplier
+		_count(statistics[i].crits, spell_name, 1.0)
 
-	var heal := spell.get_stat(&"heal")
-	if heal > 0.0:
-		_heal(i, heal, spell_name)
-
-	for stat: StringName in OFFENSIVE_STATUS:
-		_add_status(j, OFFENSIVE_STATUS[stat], int(spell.get_stat(stat)))
-	for stat: StringName in SELF_STATUS:
-		_add_status(i, SELF_STATUS[stat], int(spell.get_stat(stat)))
-	_armor_break(j, int(spell.get_stat(&"armor_break")))
-
-	# Freeze: wandelt Nass des Gegners in Eis (nach dem Nass dieses Spells)
-	var conversion := spell.get_stat(&"freeze_conversion")
-	if conversion > 0.0:
-		var target := mages[j]
-		var ice := int(floor(target.stacks(&"wet") / conversion))
-		if ice > 0:
-			target.remove_stacks(&"wet", int(ice * conversion))
-			_add_status(j, &"ice", ice)
+	for t in targets_of(i, spell):
+		if damage > 0.0:
+			_damage(t, damage, spell_name + (" (Crit)" if crit else ""), spell_name, i)
+		var heal := spell.get_stat(&"heal")
+		if heal > 0.0:
+			_heal(t, heal, spell_name)
+		for stat: StringName in SPELL_STATUS:
+			_add_status(t, SPELL_STATUS[stat], int(spell.get_stat(stat)))
+		_armor_break(t, int(spell.get_stat(&"armor_break")))
+		# Freeze: wandelt Nass des Ziels in Eis (nach dem Nass dieses Spells)
+		var conversion := spell.get_stat(&"freeze_conversion")
+		if conversion > 0.0:
+			var target := mages[t]
+			var ice := int(floor(target.stacks(&"wet") / conversion))
+			if ice > 0:
+				target.remove_stacks(&"wet", int(ice * conversion))
+				_add_status(t, &"ice", ice)
 
 
 ## Schaden über Armor: Armor fängt Schaden 1 : 1 ab und verliert dabei Stacks.
 ## `stat_source` = Quelle für die Statistik (ohne Zusatz wie "(Crit)"), sonst `source`.
-func _damage(target_index: int, amount: float, source: String, stat_source := "") -> void:
+## `attacker` = Verursacher für die Statistik (Standard: der Gegner des Getroffenen).
+func _damage(target_index: int, amount: float, source: String, stat_source := "", attacker := -1) -> void:
 	var target := mages[target_index]
 	var absorbed := target.remove_stacks(&"armor", int(floor(amount)))
 	var taken := maxf(0.0, amount - absorbed)
 	target.hp -= taken
-	# aller Schaden stammt vom Gegner (auch Status und Schock)
-	_count(statistics[1 - target_index].damage, stat_source if stat_source != "" else source, taken)
+	if attacker < 0:
+		attacker = 1 - target_index  # Status und Schock stammen vom Gegner
+	_count(statistics[attacker].damage, stat_source if stat_source != "" else source, taken)
 	statistics[target_index].absorbed += absorbed
 	var text := "%s nimmt %s Schaden (%s)" % [target.mage_name, _num(taken), source]
 	if absorbed > 0:
@@ -272,8 +302,6 @@ func _pulse(i: int) -> void:
 	mage.mana = minf(mage.max_mana, mage.mana + regen)
 	mage.remove_stacks(&"mana_regen", 1)
 
-	mage.remove_stacks(&"slow", 1)
-	mage.remove_stacks(&"hasted", 1)
 	mage.remove_stacks(&"ice", 1)
 
 

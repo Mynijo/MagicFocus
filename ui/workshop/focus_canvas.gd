@@ -26,6 +26,7 @@ const MIN_GEM_DISTANCE := 25.0  # Fokus-Einheiten
 const SLIDE_ATTEMPTS := 4       # Versuche, ein gezogenes Gem aus fremden Reichweiten zu schieben
 const MAIN_GEM_SIZE := 24.0     # Bildschirm-Pixel (halbe Bildgröße)
 const MINOR_GEM_SIZE := 17.0
+const DOUBLE_OFFSET := 1.6  # Versatz der Schattenkopie doppelt zählender Punkte (× Punktradius)
 const ELEMENT_DOT_SCALE := 2.2  # Essenz-Punkte größer als neutrale
 
 const COLOR_BACKGROUND := Color(0.07, 0.07, 0.11)
@@ -202,21 +203,22 @@ func _too_close(target: FocusInstance, pos: Vector2, ignore: int) -> bool:
 ## Gems dürfen nicht in der Reichweite eines anderen Gems liegen, in beide Richtungen:
 ## Abstand mindestens der größere der beiden Radien. Gibt den Index des ersten
 ## störenden Gems zurück, sonst -1. Geprüft nur beim Setzen, Verschieben und Ändern.
-func radius_conflict(gem: GemDef, pos: Vector2, ignore: int) -> int:
+## `radius` = wirksamer Radius des Gems, das an `pos` stehen soll (PlacedGem.get_radius).
+func radius_conflict(radius: float, pos: Vector2, ignore: int) -> int:
 	for i in focus.gems.size():
 		var other := focus.gems[i]
-		if i != ignore and other.position.distance_to(pos) < maxf(gem.radius, other.gem.radius):
+		if i != ignore and other.position.distance_to(pos) < maxf(radius, other.get_radius()):
 			return i
 	return -1
 
 
-func _radius_error(gem: GemDef, pos: Vector2, ignore: int) -> String:
-	var other := radius_conflict(gem, pos, ignore)
+func _radius_error(radius: float, pos: Vector2, ignore: int) -> String:
+	var other := radius_conflict(radius, pos, ignore)
 	if other < 0:
 		return ""
 	return "In der Reichweite von %s, Abstand mindestens %d" % [
 		_gem_label(focus.gems[other].gem, focus.gems[other].engraving),
-		int(maxf(gem.radius, focus.gems[other].gem.radius))]
+		int(maxf(radius, focus.gems[other].get_radius()))]
 
 
 ## Leer = Gem darf hier gesetzt werden, sonst der Grund.
@@ -233,7 +235,7 @@ func place_error(gem: GemDef, pos: Vector2) -> String:
 		return "Setze zuerst ein Hauptgem."
 	if _too_close(focus, pos, -1):
 		return "Zu nah an einem anderen Gem."
-	return _radius_error(gem, pos, -1)
+	return _radius_error(PlacedGem.radius_of(gem, placing_engraving), pos, -1)
 
 
 func _try_place(gem: GemDef, pos: Vector2) -> void:
@@ -275,7 +277,7 @@ func replace_error(idx: int) -> String:
 			else "Ein Nebengem braucht eine Nebengravur."
 	if placing_gem == placed.gem and placing_engraving == placed.engraving:
 		return "Das Gem hat schon diese Gravur und Form."
-	return _radius_error(placing_gem, placed.position, idx)
+	return _radius_error(PlacedGem.radius_of(placing_gem, placing_engraving), placed.position, idx)
 
 
 ## Ersetzt Gravur und Form des Gems `idx`; Position und Verbindungen bleiben.
@@ -296,18 +298,18 @@ func _try_replace(idx: int) -> void:
 ## wird sie auf deren Rand geschoben, sodass das Gem daran entlanggleitet.
 ## Gibt null zurück, wenn es keine erlaubte Position gibt (dann bleibt das Gem stehen).
 func _slide_position(idx: int, pos: Vector2) -> Variant:
-	var gem := focus.gems[idx].gem
+	var radius := focus.gems[idx].get_radius()
 	var target := pos
 	for attempt in SLIDE_ATTEMPTS:
-		var blocker := radius_conflict(gem, target, idx)
+		var blocker := radius_conflict(radius, target, idx)
 		if blocker < 0:
 			break
 		var other := focus.gems[blocker].position
 		var direction := target - other
 		if direction.length() < 0.001:
 			direction = focus.gems[idx].position - other
-		target = other + direction.normalized() * (maxf(gem.radius, focus.gems[blocker].gem.radius) + 0.01)
-	if radius_conflict(gem, target, idx) >= 0 or _too_close(focus, target, idx) \
+		target = other + direction.normalized() * (maxf(radius, focus.gems[blocker].get_radius()) + 0.01)
+	if radius_conflict(radius, target, idx) >= 0 or _too_close(focus, target, idx) \
 			or not focus.focus_def.shape.contains(target):
 		return null
 	return target
@@ -511,7 +513,7 @@ func _preview_dots(claimed: Dictionary) -> Array[EnergyDot]:
 		return dots
 	var center := _preview_position()
 	for dot in result.dots:
-		if not claimed.has(dot) and dot.position.distance_to(center) <= placing_gem.radius:
+		if not claimed.has(dot) and dot.position.distance_to(center) <= PlacedGem.radius_of(placing_gem, placing_engraving):
 			dots.append(dot)
 	return dots
 
@@ -600,14 +602,20 @@ func _draw_engraving(engraving: EngravingDef, pos: Vector2, gem_radius: float) -
 
 ## Essenz-Punkt als Bild, eingefärbt mit `color` (neutral: Kugel, Element: eigene Form
 ## aus ElementDef.dot_texture, sonst ein Kristall).
-func _draw_dot(dot: EnergyDot, radius: float, color: Color) -> void:
+## `doubled`: zählt doppelt (Spitz) – dann liegt eine versetzte Schattenkopie dahinter.
+func _draw_dot(dot: EnergyDot, radius: float, color: Color, doubled := false) -> void:
 	var texture: Texture2D = TEX_DOT_BASE
 	if not dot.is_base():
 		texture = TEX_DOT_ELEMENT
 		var element := content.get_element(dot.element_id) if content != null else null
 		if element != null and element.dot_texture != null:
 			texture = element.dot_texture
-	draw_texture_rect(texture, Rect2(dot.position - Vector2(radius, radius), Vector2(radius, radius) * 2.0), false, color)
+	var size := Vector2(radius, radius) * 2.0
+	if doubled:
+		var offset := Vector2(radius, -radius) * DOUBLE_OFFSET
+		var shadow := Color(color.r * 0.75, color.g * 0.75, color.b * 0.75, color.a * 0.8)
+		draw_texture_rect(texture, Rect2(dot.position - Vector2(radius, radius) + offset, size), false, shadow)
+	draw_texture_rect(texture, Rect2(dot.position - Vector2(radius, radius), size), false, color)
 
 
 func _gem_color(gem: GemDef) -> Color:
@@ -629,7 +637,7 @@ func _draw_sector(rr: GemResult, fill_alpha: float, border: Color, px: float) ->
 		return
 	var color := _gem_color(rr.placed.gem)
 	var polygon := FocusGeometry.sector_polygon(
-		rr.placed.position, rr.placed.gem.radius, rr.sector_start, rr.sector_sweep, 48)
+		rr.placed.position, rr.placed.get_radius(), rr.sector_start, rr.sector_sweep, 48)
 	draw_colored_polygon(polygon, Color(color, fill_alpha))
 	var outline := polygon.duplicate()
 	outline.append(polygon[0])
@@ -658,12 +666,16 @@ func _draw() -> void:
 
 	var valid := result != null and result.valid
 	var claimed := {}
+	## Punkte, die doppelt zählen (eingesammelt von einem Gem mit Multiplikator > 1)
+	var doubled := {}
 
 	# Einflussbereiche
 	if valid:
 		for rr in result.gem_results:
 			for dot in rr.collected:
 				claimed[dot] = true
+				if rr.multiplier > 1.0 + 0.001:
+					doubled[dot] = true
 			if show_sectors:
 				var color := _gem_color(rr.placed.gem)
 				_draw_sector(rr, 0.13, Color(color, 0.45), px)
@@ -671,7 +683,7 @@ func _draw() -> void:
 	# Reichweite (immer, solange noch kein gültiger Spell besteht)
 	if show_radii or not valid:
 		for placed in focus.gems:
-			draw_arc(placed.position, placed.gem.radius, 0.0, TAU, 64, Color(1, 1, 1, 0.18), 1.0 * px, true)
+			draw_arc(placed.position, placed.get_radius(), 0.0, TAU, 64, Color(1, 1, 1, 0.18), 1.0 * px, true)
 
 	# Verbindungen (kreuzende oder aus dem Fokus führende rot)
 	var edges := _loop_edges()
@@ -706,7 +718,7 @@ func _draw() -> void:
 			var preview_gem := _preview.gem_results[_preview_index]
 			_draw_sector(preview_gem, 0.22, COLOR_PREVIEW, px)
 		else:
-			draw_arc(_preview_position(), placing_gem.radius, 0.0, TAU, 64, Color(COLOR_PREVIEW, 0.7), 1.0 * px, true)
+			draw_arc(_preview_position(), PlacedGem.radius_of(placing_gem, placing_engraving), 0.0, TAU, 64, Color(COLOR_PREVIEW, 0.7), 1.0 * px, true)
 		_draw_preview_edges(px)
 		preview_dots = _preview_dots(claimed)
 
@@ -719,6 +731,11 @@ func _draw() -> void:
 			owned[dot] = true
 			var line_color := Color(_element_color(dot.element_id, COLOR_BASE_DOT), 0.5)
 			draw_line(owner.placed.position, dot.position, line_color, 1.0 * px, true)
+			# doppelt zählend: auch eine Linie zur Schattenkopie (gleicher Versatz wie in _draw_dot)
+			if doubled.has(dot):
+				var dot_radius := 4.0 * (1.0 if dot.is_base() else ELEMENT_DOT_SCALE) * px
+				var shadow_pos := dot.position + Vector2(dot_radius, -dot_radius) * DOUBLE_OFFSET
+				draw_line(owner.placed.position, shadow_pos, Color(line_color, 0.35), 1.0 * px, true)
 
 	# Energiepunkte
 	# Essenz-Punkte sind größer als neutrale (sie zählen mehr). Beim Hervorheben
@@ -728,28 +745,29 @@ func _draw() -> void:
 			var color := _element_color(dot.element_id, COLOR_BASE_DOT)
 			var scale := 1.0 if dot.is_base() else ELEMENT_DOT_SCALE
 			if owned.has(dot):
-				_draw_dot(dot, 4.0 * scale * px, color)
-				_draw_dot_rings(dot.position, 5.5 * scale * px, Color(1, 1, 1, 0.85), owner.multiplier, px)
+				_draw_dot(dot, 4.0 * scale * px, color, doubled.has(dot))
+				_draw_dot_ring(dot.position, 5.5 * scale * px, Color(1, 1, 1, 0.85), px)
 			elif claimed.has(dot):
-				_draw_dot(dot, 3.6 * scale * px, Color(color, 0.35 if owner != null else 1.0))
+				_draw_dot(dot, 3.6 * scale * px, Color(color, 0.35 if owner != null else 1.0), doubled.has(dot))
 			elif show_free_dots:
 				_draw_dot(dot, 2.6 * scale * px, Color(color, 0.4))
 	for dot in preview_dots:
 		var color := _element_color(dot.element_id, COLOR_BASE_DOT)
 		var scale := 1.0 if dot.is_base() else ELEMENT_DOT_SCALE
-		_draw_dot(dot, 3.6 * scale * px, color)
-		_draw_dot_rings(dot.position, 6.0 * scale * px, COLOR_PREVIEW, placing_gem.get_multiplier(), px)
+		_draw_dot(dot, 3.6 * scale * px, color, placing_gem.get_multiplier() > 1.0 + 0.001)
+		_draw_dot_ring(dot.position, 6.0 * scale * px, COLOR_PREVIEW, px)
 
 	# Geist der zu setzenden Gem
 	if show_ghost:
 		var ghost_color := Color(COLOR_OK if _preview_error == "" else COLOR_BAD, 0.6)
 		if _preview_error != "":
-			draw_arc(_mouse_focus, placing_gem.radius, 0.0, TAU, 64, Color(COLOR_BAD, 0.4), 1.0 * px, true)
+			draw_arc(_mouse_focus, PlacedGem.radius_of(placing_gem, placing_engraving), 0.0, TAU, 64, Color(COLOR_BAD, 0.4), 1.0 * px, true)
 			# Reichweite des Gems, das im Weg ist
-			var blocker := radius_conflict(placing_gem, _mouse_focus, -1)
+			var ghost_radius := PlacedGem.radius_of(placing_gem, placing_engraving)
+			var blocker := radius_conflict(ghost_radius, _mouse_focus, -1)
 			if blocker >= 0:
 				var other := focus.gems[blocker]
-				draw_arc(other.position, maxf(other.gem.radius, placing_gem.radius), 0.0, TAU, 64,
+				draw_arc(other.position, maxf(other.get_radius(), ghost_radius), 0.0, TAU, 64,
 					Color(COLOR_BAD, 0.8), 2.0 * px, true)
 		var ghost_size := MAIN_GEM_SIZE if placing_gem.role == GemDef.Role.MAIN else MINOR_GEM_SIZE
 		_draw_gem_sprite(placing_gem, _mouse_focus, ghost_size * px, ghost_color)
@@ -831,8 +849,6 @@ static func _count_text(count: int, multiplier: float) -> String:
 	return "%d ×%s = %s" % [count, m, t]
 
 
-## Ring um einen hervorgehobenen Punkt; zählt er doppelt (Spitz), ein zweiter Ring.
-func _draw_dot_rings(pos: Vector2, radius: float, color: Color, multiplier: float, px: float) -> void:
+## Ring um einen hervorgehobenen Punkt.
+func _draw_dot_ring(pos: Vector2, radius: float, color: Color, px: float) -> void:
 	draw_arc(pos, radius, 0.0, TAU, 16, color, 1.5 * px, true)
-	if multiplier > 1.0 + 0.001:
-		draw_arc(pos, radius + 3.0 * px, 0.0, TAU, 16, color, 1.5 * px, true)

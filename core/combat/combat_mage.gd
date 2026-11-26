@@ -10,6 +10,10 @@ var mage_name: String
 var spells: Array[SpellResult] = []
 ## Anzeigename pro Spell (Name des gespeicherten Fokus)
 var spell_names := PackedStringArray()
+## Aktivierungsbedingung pro Spell (null = immer)
+var conditions: Array[SpellCondition] = []
+## Wie oft jeder Spell gecastet wurde (für "Einmal")
+var cast_counts := PackedInt32Array()
 
 var hp := 0.0
 var max_hp := 0.0
@@ -29,8 +33,9 @@ var waiting_for_mana := false
 
 
 ## Magier aus gespeicherten Foki; ungültige Foki werden übersprungen und in `warnings` gemeldet.
+## `conditions` (optional) gehört Index für Index zu `foci`.
 static func from_foci(p_name: String, foci: Array[FocusInstance], names: PackedStringArray,
-		elements: Array[ElementDef], warnings: Array[String]) -> CombatMage:
+		elements: Array[ElementDef], warnings: Array[String], conditions: Array[SpellCondition] = []) -> CombatMage:
 	var mage := CombatMage.new()
 	mage.mage_name = p_name
 	for i in mini(foci.size(), MAX_SPELLS):
@@ -39,9 +44,21 @@ static func from_foci(p_name: String, foci: Array[FocusInstance], names: PackedS
 		if not result.valid:
 			warnings.append("%s: „%s“ ist kein gültiger Spell und wird übersprungen." % [p_name, spell_name])
 			continue
-		mage.spells.append(result)
-		mage.spell_names.append(spell_name)
+		mage.add_spell(result, spell_name, conditions[i] if i < conditions.size() else null)
 	return mage
+
+
+func add_spell(spell: SpellResult, spell_name: String, condition: SpellCondition = null) -> void:
+	spells.append(spell)
+	spell_names.append(spell_name)
+	conditions.append(condition)
+	cast_counts.append(0)
+
+
+func condition_met(index: int, enemy: CombatMage) -> bool:
+	var condition := conditions[index] if index < conditions.size() else null
+	var casts := cast_counts[index] if index < cast_counts.size() else 0
+	return condition == null or condition.is_met(self, enemy, casts)
 
 
 func stacks(stat: StringName) -> int:

@@ -20,3 +20,4 @@ element_ids = Array[StringName]([&"air"])
 icon = ExtResource("2_bd6o7")
 description = "1 Hasted pro 20 Punkte. Punkte: neutrale Essenz 1, Luft-Essenz 5, andere Essenz 0"
 rules = Array[ExtResource("3_toegy")]([SubResource("Resource_eygpc")])
+target = 1

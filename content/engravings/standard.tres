@@ -8,7 +8,8 @@
 [resource]
 script = ExtResource("4_m3355")
 id = &"standard"
-display_name = "Standard"
+display_name = "Power Transfer"
 icon = ExtResource("2_q67jo")
-description = "Gibt seine neutrale Essenz und Essenzen an das Hauptgem weiter. Dort zählen sie nach den Regeln des Hauptgems"
+description = "Gibt seine neutrale Essenz und Essenzen an das Hauptgem weiter. Dort zählen sie nach den Regeln des Hauptgems. Das Gem sammelt nur mit halbem Radius"
 transfer_to_main = true
+radius_factor = 0.5

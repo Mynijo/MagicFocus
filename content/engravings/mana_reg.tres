@@ -20,3 +20,4 @@ element_ids = Array[StringName]([&"lightning"])
 icon = ExtResource("2_icu0k")
 description = "1 Mana-Reg pro 2 Punkte. Punkte: neutrale Essenz 1, Blitz-Essenz 5, andere Essenz 0"
 rules = Array[ExtResource("3_2bwmm")]([SubResource("Resource_cf0af")])
+target = 1

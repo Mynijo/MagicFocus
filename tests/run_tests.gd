@@ -59,6 +59,9 @@ func _init() -> void:
 		test_combat_run_and_determinism,
 		test_combat_mage_from_foci,
 		test_combat_statistics,
+		test_combat_targets_and_next_cast,
+		test_combat_conditions,
+		test_power_transfer_half_radius,
 		test_freeze_counts_water_and_air,
 		test_focus_shapes,
 		test_allowed_elements,
@@ -614,8 +617,11 @@ func evaluate_real(focus: FocusInstance) -> SpellResult:
 
 # --- Werkstatt --------------------------------------------------------------
 
-func place_on(canvas: FocusCanvas, gem: GemDef, pos: Vector2) -> void:
-	canvas.placing_engraving = engraving(&"magischer_bolzen") if gem.role == MAIN else engraving(&"standard")
+func place_on(canvas: FocusCanvas, gem: GemDef, pos: Vector2, p_engraving: EngravingDef = null) -> void:
+	if p_engraving != null:
+		canvas.placing_engraving = p_engraving
+	else:
+		canvas.placing_engraving = engraving(&"magischer_bolzen") if gem.role == MAIN else engraving(&"standard")
 	canvas._try_place(gem, pos)
 
 
@@ -976,16 +982,16 @@ func test_gems_outside_other_radius() -> void:
 	canvas.message.connect(func(text: String) -> void: messages.append(text))
 
 	place_on(canvas, main, Vector2(0, 0))
-	place_on(canvas, minor, Vector2(110, 0))
+	place_on(canvas, minor, Vector2(110, 0), engraving(&"crit"))
 	check(focus.gems.size() == 1 and messages.back().contains("Reichweite"), "Nebengem im Radius des Hauptgems abgelehnt")
-	place_on(canvas, minor, Vector2(130, 0))
+	place_on(canvas, minor, Vector2(130, 0), engraving(&"crit"))
 	check(focus.gems.size() == 2, "Außerhalb des Hauptgem-Radius erlaubt")
-	place_on(canvas, minor, Vector2(130, 40))  # 40 vom Nebengem (Radius 60)
+	place_on(canvas, minor, Vector2(130, 40), engraving(&"crit"))  # 40 vom Nebengem (Radius 60)
 	check(focus.gems.size() == 2, "Im Radius eines Nebengems abgelehnt")
-	place_on(canvas, big, Vector2(0, -130))
+	place_on(canvas, big, Vector2(0, -130), engraving(&"crit"))
 	check(focus.gems.size() == 3, "Großes Nebengem mit genug Abstand erlaubt")
 	# beide Richtungen: kleiner Abstand zum großen Gem reicht nicht, auch wenn das neue Gem kleiner ist
-	place_on(canvas, minor, Vector2(-70, -130))
+	place_on(canvas, minor, Vector2(-70, -130), engraving(&"crit"))
 	check(focus.gems.size() == 3 and messages.back().contains("90"), "Abstand mindestens der größere Radius")
 
 	# Ziehen in einen Radius: das Gem gleitet am Rand entlang statt hängen zu bleiben
@@ -1051,11 +1057,15 @@ func test_tooltip_pinning() -> void:
 
 # --- Kampf (M6) ---------------------------------------------------------------
 
-func make_spell(stats: Dictionary, cast_time := 1.0, mana_cost := 10.0) -> SpellResult:
+func make_spell(stats: Dictionary, cast_time := 1.0, mana_cost := 10.0,
+		target: EngravingDef.Target = EngravingDef.Target.ENEMY) -> SpellResult:
 	var spell := SpellResult.new()
 	spell.valid = true
 	spell.cast_time = cast_time
 	spell.mana_cost = mana_cost
+	spell.engraving = EngravingDef.new()
+	spell.engraving.role = MAIN
+	spell.engraving.target = target
 	for stat: StringName in stats:
 		spell.stats[stat] = float(stats[stat])
 	return spell
@@ -1064,9 +1074,8 @@ func make_spell(stats: Dictionary, cast_time := 1.0, mana_cost := 10.0) -> Spell
 func make_mage(p_name: String, spells: Array[SpellResult]) -> CombatMage:
 	var mage := CombatMage.new()
 	mage.mage_name = p_name
-	mage.spells = spells
 	for i in spells.size():
-		mage.spell_names.append("Spell %d" % (i + 1))
+		mage.add_spell(spells[i], "Spell %d" % (i + 1))
 	return mage
 
 
@@ -1082,11 +1091,11 @@ func test_combat_damage_armor_crit() -> void:
 	c = duel([make_spell({ &"damage": 50, &"crit": 100 })], [])
 	c._apply_spell(0, 0)
 	check(is_equal_approx(c.mages[1].hp, c.rules.max_hp - 100.0), "100 %% Crit = doppelter Schaden, HP %s" % c.mages[1].hp)
-	c = duel([make_spell({ &"heal": 30, &"armor": 5, &"hasted": 2 })], [])
+	c = duel([make_spell({ &"heal": 30, &"armor": 5, &"hasted": 2 }, 1.0, 10.0, EngravingDef.Target.SELF)], [])
 	c.mages[0].hp = c.rules.max_hp - 100.0
 	c._apply_spell(0, 0)
 	check(is_equal_approx(c.mages[0].hp, c.rules.max_hp - 70.0) and c.mages[0].stacks(&"armor") == 5 and c.mages[0].stacks(&"hasted") == 2,
-		"Heilung, Armor und Hasted wirken auf den Caster")
+		"Selbst-Spell: Heilung, Armor und Hasted auf den Caster")
 
 
 func test_combat_status_rules() -> void:
@@ -1186,7 +1195,7 @@ func test_combat_mage_from_foci() -> void:
 
 
 func test_combat_statistics() -> void:
-	var c := duel([make_spell({ &"damage": 50, &"crit": 100, &"burn": 3 })], [make_spell({ &"heal": 40 })])
+	var c := duel([make_spell({ &"damage": 50, &"crit": 100, &"burn": 3 })], [make_spell({ &"heal": 40 }, 1.0, 10.0, EngravingDef.Target.SELF)])
 	c.mages[1].add_stacks(&"armor", 20)
 	c._apply_spell(0, 0)  # 100 Schaden (Crit), 20 von Armor abgefangen, 3 Burn
 	c._pulse(1)           # Burn: 3 Stacks Schaden, zählt für den Verursacher
@@ -1201,3 +1210,69 @@ func test_combat_statistics() -> void:
 	check(is_equal_approx(Combat.total(s.damage), 80.0 + 3 * c.rules.burn_damage), "Gesamtschaden")
 	c.step()
 	check(int(c.statistics[0].casts.get("Spell 1", 0)) == 1, "Cast gezählt")
+
+
+## Neue Regeln: Ziel aus der Hauptgravur, Slowed/Hasted nur für den nächsten Cast, Bedingungen.
+func test_combat_targets_and_next_cast() -> void:
+	# Angriff mit Armor-Nebengem: Armor landet beim Gegner (alles aufs Ziel)
+	var c := duel([make_spell({ &"damage": 10, &"armor": 5 })], [])
+	c._apply_spell(0, 0)
+	check(c.mages[1].stacks(&"armor") == 5 and c.mages[0].stacks(&"armor") == 0, "Armor geht aufs Ziel des Angriffs")
+	# beide Spieler (Rain)
+	c = duel([make_spell({ &"burn": 2 }, 1.0, 10.0, EngravingDef.Target.BOTH)], [])
+	c._apply_spell(0, 0)
+	check(c.mages[0].stacks(&"burn") == 2 and c.mages[1].stacks(&"burn") == 2, "Rain trifft beide")
+	# Slowed: nur nächster Cast, wird verbraucht, kein Abbau pro Sekunde
+	var rules := CombatRules.new()
+	c = duel([], [make_spell({}, 2.0, 10.0)])
+	c.mages[1].add_stacks(&"slow", 3)
+	c._pulse(1)
+	check(c.mages[1].stacks(&"slow") == 3, "Slowed baut sich nicht über Zeit ab")
+	c.step()
+	check(is_equal_approx(c.mages[1].cast_total, 2.0 + 3 * rules.slowed_seconds) and c.mages[1].stacks(&"slow") == 0,
+		"Slowed verlängert den nächsten Cast und wird verbraucht")
+
+
+func test_combat_conditions() -> void:
+	var a := make_mage("A", [])
+	a.add_spell(make_spell({ &"heal": 50 }, 1.0, 10.0, EngravingDef.Target.SELF), "Heal",
+		SpellCondition.create(SpellCondition.Type.OWN_HP_BELOW, 50.0))
+	a.add_spell(make_spell({ &"damage": 10 }), "Bolzen")
+	a.add_spell(make_spell({ &"burn": 1 }), "Opener", SpellCondition.create(SpellCondition.Type.ONCE))
+	var c := Combat.new(a, make_mage("B", []), CombatRules.new(), 1)
+	c.step()
+	check(a.casting == 1, "Heal übersprungen (Leben über 50 %%), Bolzen gecastet")
+	a.casting = -1
+	c.step()
+	check(a.casting == 2, "Einmal-Spell beim ersten Mal")
+	a.casting = -1
+	a.hp = 100.0
+	c.step()
+	check(a.casting == 0, "Unter 50 %% Leben: Heal")
+	a.casting = -1
+	a.next_spell = 2
+	a.hp = a.max_hp
+	c.step()
+	check(a.casting == 1, "Einmal-Spell nicht ein zweites Mal")
+	check(SpellCondition.create(SpellCondition.Type.ENEMY_HAS_STATUS, 0.0, &"burn").describe() == "Gegner hat Status Burn", "Beschreibung")
+	var enemy_burn := SpellCondition.create(SpellCondition.Type.ENEMY_HAS_STATUS, 0.0, &"burn")
+	check(not enemy_burn.is_met(a, c.mages[1], 0), "Gegner ohne Burn")
+	c.mages[1].add_stacks(&"burn", 1)
+	check(enemy_burn.is_met(a, c.mages[1], 0), "Gegner mit Burn")
+
+
+func test_power_transfer_half_radius() -> void:
+	var minor := content.get_gem(&"nebengem_mittel_grob")
+	check(engraving(&"standard").display_name == "Power Transfer", "Standard heißt jetzt Power Transfer")
+	check(is_equal_approx(PlacedGem.radius_of(minor, engraving(&"standard")), minor.radius * 0.5), "Power Transfer: halber Radius")
+	check(is_equal_approx(PlacedGem.radius_of(minor, engraving(&"crit")), minor.radius), "Andere Gravuren: voller Radius")
+	# Einsammeln nutzt den halben Radius
+	var main := make_gem(MAIN, GROB, 10)
+	var gem := make_gem(MINOR, GROB, 80)
+	var dots := dots_line(MINOR_POS, MINOR_OUTER, 10)  # Abstände 10 .. 46
+	var transfer := EngravingDef.new()
+	transfer.role = MINOR
+	transfer.transfer_to_main = true
+	transfer.radius_factor = 0.5
+	var r := evaluate(lab(main, engraving(&"magischer_bolzen"), gem, transfer), dots)
+	check(r.gem_results[1].base_count == 8, "Radius 40 statt 80: 8 von 10 Punkten, waren %d" % r.gem_results[1].base_count)

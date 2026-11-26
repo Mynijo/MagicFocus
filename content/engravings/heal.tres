@@ -20,3 +20,4 @@ element_ids = Array[StringName]([&"water"])
 icon = ExtResource("2_1ushk")
 description = "5 Heilung pro Punkt. Punkte: neutrale Essenz 1, Wasser-Essenz 5, andere Essenz 0"
 rules = Array[ExtResource("3_mnchd")]([SubResource("Resource_pk654")])
+target = 1

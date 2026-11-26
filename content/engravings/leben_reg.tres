@@ -20,3 +20,4 @@ element_ids = Array[StringName]([&"water"])
 icon = ExtResource("2_od06i")
 description = "1 Leben-Reg pro 2 Punkte. Punkte: neutrale Essenz 1, Wasser-Essenz 5, andere Essenz 0"
 rules = Array[ExtResource("3_ayyri")]([SubResource("Resource_vq2r7")])
+target = 1

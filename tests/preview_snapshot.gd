@@ -35,11 +35,26 @@ func _ready() -> void:
 			workshop.focus.gems = gems
 			workshop.focus.loop = PackedInt32Array([0, 1, 2])
 			workshop.focus.loop_closed = true
+			# Optional: --seed=N für reproduzierbare Punkte
+			for seed_arg in OS.get_cmdline_user_args():
+				if seed_arg.begins_with("--seed="):
+					workshop.focus.dot_seed = int(seed_arg.trim_prefix("--seed="))
 			# Optional: --all-elements füllt alle fünf Elemente (zum Ansehen der Essenz-Formen)
 			if OS.get_cmdline_user_args().has("--all-elements"):
 				workshop.focus.element_fill = {&"fire": 8, &"water": 8, &"earth": 8, &"air": 8, &"lightning": 8}
 				workshop._sync_fill_ui()
 			workshop._refresh()
+			# Optional: --hover=N auch hier (Maus über Gem N)
+			for hover_arg in OS.get_cmdline_user_args():
+				if hover_arg.begins_with("--hover="):
+					var n := int(hover_arg.trim_prefix("--hover="))
+					canvas.placing_gem = workshop.focus.gems[n].gem
+					canvas.placing_engraving = workshop.focus.gems[n].engraving
+					canvas._mouse_inside = true
+					canvas._hovered = n
+					canvas._mouse_focus = workshop.focus.gems[n].position
+					canvas.update_preview()
+					canvas.queue_redraw()
 			# Optional: --place zeigt die Vorschau eines vierten Gems
 			if OS.get_cmdline_user_args().has("--place"):
 				canvas.placing_gem = content.get_gem(&"nebengem_klein_spitz")
@@ -72,12 +87,18 @@ func _ready() -> void:
 		tips.set_process(false)
 		return
 	# Optional: --hover zeigt, welche Punkte das Hauptgem einsammelt (Maus darüber)
-	if OS.get_cmdline_user_args().has("--hover"):
-		canvas.placing_gem = workshop.focus.gems[0].gem
-		canvas.placing_engraving = workshop.focus.gems[0].engraving
+	var hover_index := -1
+	for hover_arg in OS.get_cmdline_user_args():
+		if hover_arg == "--hover":
+			hover_index = 0
+		elif hover_arg.begins_with("--hover="):
+			hover_index = int(hover_arg.trim_prefix("--hover="))
+	if hover_index >= 0:
+		canvas.placing_gem = workshop.focus.gems[hover_index].gem
+		canvas.placing_engraving = workshop.focus.gems[hover_index].engraving
 		canvas._mouse_inside = true
-		canvas._hovered = 0
-		canvas._mouse_focus = workshop.focus.gems[0].position
+		canvas._hovered = hover_index
+		canvas._mouse_focus = workshop.focus.gems[hover_index].position
 		canvas.update_preview()
 		canvas.queue_redraw()
 		return
